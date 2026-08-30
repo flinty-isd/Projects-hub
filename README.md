@@ -1,8 +1,14 @@
 # 📊 SharePoint PM Dashboard
 
-A Streamlit dashboard for tracking project status, timeline, KPIs, and
-risks/issues, backed by SharePoint task and risk lists via the Microsoft
-Graph API.
+Two implementations of the same dashboard for tracking project status,
+timeline, KPIs, and risks/issues, backed by SharePoint task and risk lists
+via the Microsoft Graph API:
+
+- **`/` (root)** — a Python/Streamlit version. See below.
+- **`/aspx`** — a classic ASP.NET Web Forms (`.aspx`) version for IIS/on-prem
+  hosting. See "ASP.NET Web Forms version" further down.
+
+## Streamlit version
 
 ### How to run it locally
 
@@ -71,3 +77,55 @@ app's **Secrets** settings instead of committing a `secrets.toml` file.
 $ pip install -r requirements-dev.txt
 $ pytest
 ```
+
+## ASP.NET Web Forms version
+
+The `/aspx` folder is a classic ASP.NET Web Forms port of the same
+dashboard (Overview, Timeline, KPIs, Risks & Issues), for teams that need
+to host this on IIS/on-prem infrastructure rather than Streamlit.
+
+**Important limitation:** classic Web Forms (`.aspx`) only runs on .NET
+Framework under IIS on Windows — it cannot be built or run on Linux/macOS
+or with the modern cross-platform `dotnet` CLI. This code has been
+reviewed carefully but **has not been compiled or run**, since no Windows
+build environment was available when it was written. Open it in Visual
+Studio (File → Open → Web Site → select the `aspx` folder) or deploy it to
+an IIS server to verify it builds before relying on it.
+
+### Setup
+
+1. **Open as a Website project.** `/aspx` is structured as a classic ASP.NET
+   "Web Site" (not a Web Application with a `.csproj`) — App_Code compiles
+   automatically, no project file needed. In Visual Studio: File → Open →
+   Web Site.
+2. **Add required assemblies.** The SharePoint integration needs
+   `Microsoft.Identity.Client` (MSAL.NET) and `Newtonsoft.Json`. Install
+   them via the NuGet Package Manager Console (`Install-Package
+   Microsoft.Identity.Client`, `Install-Package Newtonsoft.Json`) against
+   the site, or place the DLLs directly in `/aspx/bin`.
+3. **Configure SharePoint credentials** in `aspx/Web.config` under
+   `<appSettings>` (same Azure AD app registration steps as the Streamlit
+   version above: register an app, grant it the `Sites.Read.All` Graph
+   application permission with admin consent, create a client secret).
+   Leave any value blank to run in demo mode with sample data. Don't
+   commit real secrets to `Web.config` in production — use IIS/Azure App
+   Service application settings instead.
+4. Deploy to IIS (or run via Visual Studio's IIS Express) and browse to
+   `Default.aspx`.
+
+### Project structure
+
+- `Default.aspx` / `Timeline.aspx` / `Kpis.aspx` / `Risks.aspx` — the four
+  dashboard tabs, each a page + code-behind pair
+- `Site.Master` — shared layout, nav tabs, and the demo/live/error banner
+- `App_Code/SharePointClient.cs` — Microsoft Graph API auth (MSAL.NET) and
+  list-fetching, mirroring `sharepoint_client.py` and `data_transform.py`
+- `App_Code/Kpis.cs` — the same KPI calculations as `kpis.py`
+- `App_Code/MockData.cs` — the same sample data as `mock_data.py`
+- `App_Code/DashboardDataProvider.cs` — live-vs-demo-mode fallback and caching
+- `App_Code/FilterState.cs` — persists the Overview tab's filters in
+  Session so the Timeline/KPIs tabs can apply them too (each `.aspx` page
+  is a separate request, unlike Streamlit's single shared process)
+
+Charts use Google Charts (loaded from `gstatic.com`) and the timeline is a
+simple CSS-bar Gantt — no server-side charting library dependency.
