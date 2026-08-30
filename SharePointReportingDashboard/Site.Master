@@ -1,0 +1,35 @@
+<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="Site.Master.cs" Inherits="SharePointReportingDashboard.SiteMaster" %>
+<!DOCTYPE html>
+<html lang="en">
+<head runat="server">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><asp:ContentPlaceHolder ID="TitleContent" runat="server">SharePoint Reporting Dashboard</asp:ContentPlaceHolder></title>
+    <link rel="stylesheet" type="text/css" href="Content/Site.css" />
+</head>
+<body>
+    <form id="mainForm" runat="server">
+        <header class="app-header">
+            <div class="app-header-inner">
+                <span class="app-title">SharePoint Reporting Dashboard</span>
+                <span class="app-subtitle">Mock data &mdash; contoso.sharepoint.com</span>
+            </div>
+            <nav class="app-nav">
+                <a runat="server" id="navOverview" href="~/Default.aspx">Overview</a>
+                <a runat="server" id="navSites" href="~/Sites.aspx">Sites &amp; Lists</a>
+                <a runat="server" id="navActivity" href="~/Activity.aspx">Activity</a>
+                <a runat="server" id="navPermissions" href="~/Permissions.aspx">Permissions</a>
+            </nav>
+        </header>
+
+        <main class="app-main">
+            <asp:ContentPlaceHolder ID="MainContent" runat="server" />
+        </main>
+
+        <footer class="app-footer">
+            <span>Data source: Mock (see Web.config <code>UseMockData</code>)</span>
+            <span id="footerTimestamp" runat="server"></span>
+        </footer>
+    </form>
+</body>
+</html>

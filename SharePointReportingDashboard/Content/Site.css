@@ -1,0 +1,274 @@
+/* SharePoint Reporting Dashboard - shared styles */
+
+:root {
+    --sp-blue: #0078d4;
+    --sp-blue-dark: #005a9e;
+    --sp-ink: #201f1e;
+    --sp-muted: #605e5c;
+    --sp-border: #e1dfdd;
+    --sp-bg: #f3f2f1;
+    --sp-card: #ffffff;
+    --sp-good: #107c10;
+    --sp-warn: #d83b01;
+    --sp-danger: #a4262c;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--sp-bg);
+    color: var(--sp-ink);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+}
+
+a {
+    color: var(--sp-blue);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.app-header {
+    background: var(--sp-blue-dark);
+    color: #fff;
+}
+
+.app-header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 16px 24px 8px;
+}
+
+.app-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-right: 12px;
+}
+
+.app-subtitle {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.app-nav {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    gap: 4px;
+}
+
+.app-nav a {
+    color: #fff;
+    opacity: 0.85;
+    padding: 10px 14px;
+    display: inline-block;
+    border-bottom: 3px solid transparent;
+    font-size: 14px;
+}
+
+.app-nav a:hover {
+    opacity: 1;
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.app-nav a.active {
+    opacity: 1;
+    border-bottom-color: #fff;
+    font-weight: 600;
+}
+
+.app-main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.app-footer {
+    max-width: 1200px;
+    margin: 24px auto 0;
+    padding: 16px 24px 32px;
+    color: var(--sp-muted);
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid var(--sp-border);
+}
+
+h1.page-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0 0 4px;
+}
+
+p.page-lead {
+    color: var(--sp-muted);
+    margin: 0 0 20px;
+}
+
+.card {
+    background: var(--sp-card);
+    border: 1px solid var(--sp-border);
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.card h2 {
+    font-size: 16px;
+    margin: 0 0 14px;
+}
+
+/* Stat tiles */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.stat-tile {
+    background: var(--sp-card);
+    border: 1px solid var(--sp-border);
+    border-left: 4px solid var(--sp-blue);
+    border-radius: 4px;
+    padding: 16px 18px;
+}
+
+.stat-tile .stat-value {
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.stat-tile .stat-label {
+    color: var(--sp-muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* Simple CSS bar chart */
+.bar-chart-row {
+    display: grid;
+    grid-template-columns: 160px 1fr 90px;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+}
+
+.bar-chart-label {
+    font-size: 13px;
+    color: var(--sp-ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bar-chart-track {
+    background: var(--sp-bg);
+    border-radius: 3px;
+    height: 14px;
+    overflow: hidden;
+}
+
+.bar-chart-fill {
+    background: var(--sp-blue);
+    height: 100%;
+    border-radius: 3px 0 0 3px;
+}
+
+.bar-chart-value {
+    font-size: 12px;
+    color: var(--sp-muted);
+    text-align: right;
+}
+
+/* Data tables (GridView output) */
+table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+table.data-table th {
+    text-align: left;
+    background: var(--sp-bg);
+    color: var(--sp-ink);
+    font-weight: 600;
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--sp-border);
+}
+
+table.data-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--sp-border);
+    vertical-align: top;
+}
+
+table.data-table tr:hover td {
+    background: #faf9f8;
+}
+
+.filter-bar {
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-bar label {
+    font-size: 13px;
+    color: var(--sp-muted);
+}
+
+.filter-bar select {
+    padding: 6px 10px;
+    border: 1px solid var(--sp-border);
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.badge-external {
+    background: #fde7e9;
+    color: var(--sp-danger);
+}
+
+.badge-broken {
+    background: #fff4ce;
+    color: #8a6d00;
+}
+
+.badge-ok {
+    background: #dff6dd;
+    color: var(--sp-good);
+}
+
+.two-col {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .two-col {
+        grid-template-columns: 1fr;
+    }
+}
