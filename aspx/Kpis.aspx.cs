@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 using SharePointPmDashboard.App_Code;
 
 public partial class KpisPage : System.Web.UI.Page
@@ -24,13 +23,6 @@ public partial class KpisPage : System.Web.UI.Page
         OverdueTasks = Kpis.OverdueCount(filteredTasks, DateTime.Now);
         OpenRisks = Kpis.OpenRiskCount(data.Risks);
 
-        var ownerCounts = Kpis.TasksByOwner(filteredTasks);
-        var sb = new StringBuilder("[['Owner','Count']");
-        foreach (var kv in ownerCounts)
-        {
-            sb.Append(",['").Append(kv.Key.Replace("'", "\\'")).Append("',").Append(kv.Value).Append("]");
-        }
-        sb.Append("]");
-        OwnerChartDataJson = sb.ToString();
+        OwnerChartDataJson = ChartData.ToJsArray("Owner", "Count", Kpis.TasksByOwner(filteredTasks));
     }
 }

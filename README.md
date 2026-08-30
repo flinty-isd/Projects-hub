@@ -1,12 +1,20 @@
-# 📊 SharePoint PM Dashboard
+# 📊 SharePoint dashboards
 
-Two implementations of the same dashboard for tracking project status,
-timeline, KPIs, and risks/issues, backed by SharePoint task and risk lists
-via the Microsoft Graph API:
+SharePoint-backed dashboards built on the Microsoft Graph API. Each one
+falls back to demo data with sample content when no credentials are
+configured, so it renders immediately.
+
+**PM dashboard** — project status, timeline, KPIs, risks/issues:
 
 - **`/` (root)** — a Python/Streamlit version. See below.
 - **`/aspx`** — a classic ASP.NET Web Forms (`.aspx`) version for IIS/on-prem
   hosting. See "ASP.NET Web Forms version" further down.
+
+**IT Governance site** — policies, control compliance, audit findings, risk
+register, exceptions:
+
+- **`/governance-aspx`** — ASP.NET Web Forms. See "IT Governance site" at
+  the bottom.
 
 ## Streamlit version
 
@@ -129,3 +137,53 @@ an IIS server to verify it builds before relying on it.
 
 Charts use Google Charts (loaded from `gstatic.com`) and the timeline is a
 simple CSS-bar Gantt — no server-side charting library dependency.
+
+## IT Governance site
+
+`/governance-aspx` is a separate ASP.NET Web Forms site covering IT
+governance rather than project delivery. Same architecture as the PM
+`/aspx` site (Graph app-only auth, demo-mode fallback, Google Charts), with
+five pages:
+
+| Page | Contents |
+| --- | --- |
+| `Default.aspx` | Policy & standards register — currency rate, policies due for review, filters by status/category |
+| `Compliance.aspx` | Control compliance across frameworks (ISO 27001, NIST CSF, SOC 2, COBIT) — compliance rate, non-compliant and unassessed counts |
+| `Findings.aspx` | Audit findings — open/overdue/critical counts, overdue rows highlighted, filters by severity/status/source |
+| `Risks.aspx` | IT risk register with a 5×5 likelihood × impact heat map |
+| `Exceptions.aspx` | Policy exceptions & waivers — active count and a 90-day expiry warning |
+
+**Same limitation as the PM `/aspx` site:** classic Web Forms only builds
+and runs on .NET Framework under IIS on Windows. This code has been
+reviewed but **not compiled or run** — verify it builds in Visual Studio
+before relying on it.
+
+### Setup
+
+1. Open as a Website project (File → Open → Web Site → `governance-aspx`).
+2. Add `Microsoft.Identity.Client` (MSAL.NET) and `Newtonsoft.Json` via
+   NuGet, or drop the DLLs in `governance-aspx/bin`.
+3. Configure credentials in `governance-aspx/Web.config` — same Azure AD
+   app registration steps as the PM version (an app with the
+   `Sites.Read.All` Graph application permission and admin consent).
+   Leave any of the first five values blank to stay in demo mode.
+4. Point the list keys at your own lists. Defaults are `Policies`,
+   `Controls`, `AuditFindings`, `RiskRegister`, `PolicyExceptions`.
+
+### Expected list columns
+
+| List | Columns |
+| --- | --- |
+| Policies | `Title`, `Category`, `Owner`, `Status`, `Version`, `LastReviewed`, `NextReview` |
+| Controls | `ControlId`, `Title`, `Framework`, `Owner`, `Status`, `LastAssessed` |
+| AuditFindings | `Title`, `Severity`, `Source`, `Owner`, `Status`, `RaisedDate`, `DueDate` |
+| RiskRegister | `Title`, `Category`, `Owner`, `Treatment`, `Status`, `Likelihood`, `Impact` |
+| PolicyExceptions | `Title`, `PolicyRef`, `RequestedBy`, `Approver`, `Status`, `ExpiryDate` |
+
+`Likelihood` and `Impact` are 1–5; risk score is their product, and 15+
+counts as high/extreme. Controls with status `Not Assessed` are excluded
+from the compliance-rate denominator. Findings with status `Closed`,
+`Resolved`, or `Done` count as closed. If your lists use different internal
+column names, adjust the field lookups in
+`governance-aspx/App_Code/SharePointClient.cs` (find internal names via
+Graph Explorer: `GET /sites/{site-id}/lists/{list-id}/columns`).

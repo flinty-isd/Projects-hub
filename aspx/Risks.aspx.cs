@@ -1,6 +1,6 @@
 using System;
 using System.Linq;
-using System.Text;
+using System.Collections.Generic;
 using SharePointPmDashboard.App_Code;
 
 public partial class RisksPage : System.Web.UI.Page
@@ -19,16 +19,10 @@ public partial class RisksPage : System.Web.UI.Page
 
         var severityCounts = data.Risks
             .GroupBy(r => r.Severity ?? "")
-            .Select(g => new { Severity = g.Key, Count = g.Count() })
-            .OrderByDescending(x => x.Count)
+            .Select(g => new KeyValuePair<string, int>(g.Key, g.Count()))
+            .OrderByDescending(kv => kv.Value)
             .ToList();
 
-        var sb = new StringBuilder("[['Severity','Count']");
-        foreach (var sc in severityCounts)
-        {
-            sb.Append(",['").Append(sc.Severity.Replace("'", "\\'")).Append("',").Append(sc.Count).Append("]");
-        }
-        sb.Append("]");
-        SeverityChartDataJson = sb.ToString();
+        SeverityChartDataJson = ChartData.ToJsArray("Severity", "Count", severityCounts);
     }
 }

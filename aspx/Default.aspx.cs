@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Text;
 using System.Web.UI.WebControls;
 using SharePointPmDashboard.App_Code;
 
@@ -58,13 +57,6 @@ public partial class _Default : System.Web.UI.Page
         TasksGrid.DataSource = filtered;
         TasksGrid.DataBind();
 
-        var statusCounts = Kpis.TasksByStatus(filtered);
-        var sb = new StringBuilder("[['Status','Count']");
-        foreach (var kv in statusCounts)
-        {
-            sb.Append(",['").Append(kv.Key.Replace("'", "\\'")).Append("',").Append(kv.Value).Append("]");
-        }
-        sb.Append("]");
-        StatusChartDataJson = sb.ToString();
+        StatusChartDataJson = ChartData.ToJsArray("Status", "Count", Kpis.TasksByStatus(filtered));
     }
 }
