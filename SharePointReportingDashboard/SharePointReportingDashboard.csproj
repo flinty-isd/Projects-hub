@@ -59,22 +59,25 @@
     <Compile Include="Default.aspx.cs">
       <DependentUpon>Default.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Sites.aspx.cs">
-      <DependentUpon>Sites.aspx</DependentUpon>
+    <Compile Include="Migration.aspx.cs">
+      <DependentUpon>Migration.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Activity.aspx.cs">
-      <DependentUpon>Activity.aspx</DependentUpon>
+    <Compile Include="Pages.aspx.cs">
+      <DependentUpon>Pages.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Permissions.aspx.cs">
-      <DependentUpon>Permissions.aspx</DependentUpon>
+    <Compile Include="Governance.aspx.cs">
+      <DependentUpon>Governance.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Models\SiteSummary.cs" />
-    <Compile Include="Models\ListSummary.cs" />
-    <Compile Include="Models\ActivityRecord.cs" />
-    <Compile Include="Models\PermissionEntry.cs" />
-    <Compile Include="Models\DashboardStats.cs" />
-    <Compile Include="Services\ISharePointDataService.cs" />
-    <Compile Include="Services\MockSharePointDataService.cs" />
+    <Compile Include="Models\MigrationSite.cs" />
+    <Compile Include="Models\PageDeliveryItem.cs" />
+    <Compile Include="Models\ActionItem.cs" />
+    <Compile Include="Models\RaidItem.cs" />
+    <Compile Include="Models\Decision.cs" />
+    <Compile Include="Models\ProjectUpdateSnapshot.cs" />
+    <Compile Include="Models\ProgrammeHealthArea.cs" />
+    <Compile Include="Models\ProgrammeKpis.cs" />
+    <Compile Include="Services\IProjectControlDataService.cs" />
+    <Compile Include="Services\MockProjectControlDataService.cs" />
     <Compile Include="Services\DataServiceFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -82,9 +85,9 @@
     <Content Include="Global.asax" />
     <Content Include="Site.Master" />
     <Content Include="Default.aspx" />
-    <Content Include="Sites.aspx" />
-    <Content Include="Activity.aspx" />
-    <Content Include="Permissions.aspx" />
+    <Content Include="Migration.aspx" />
+    <Content Include="Pages.aspx" />
+    <Content Include="Governance.aspx" />
     <Content Include="Web.config" />
     <Content Include="Content\Site.css" />
   </ItemGroup>

@@ -260,6 +260,83 @@ table.data-table tr:hover td {
     color: var(--sp-good);
 }
 
+/* RAG status badges */
+.rag-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.rag-red {
+    background: #fde7e9;
+    color: var(--sp-danger);
+}
+
+.rag-amber {
+    background: #fff4ce;
+    color: #8a6d00;
+}
+
+.rag-green {
+    background: #dff6dd;
+    color: var(--sp-good);
+}
+
+.rag-grey {
+    background: var(--sp-bg);
+    color: var(--sp-muted);
+}
+
+/* Info / caveat banner */
+.info-banner {
+    background: #eff6fc;
+    border: 1px solid #c7e0f4;
+    border-left: 4px solid var(--sp-blue);
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 20px;
+}
+
+/* Delivery lifecycle timeline */
+.timeline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 10px 0 4px;
+}
+
+.timeline-step {
+    flex: 1 1 auto;
+    min-width: 100px;
+    text-align: center;
+    padding: 10px 6px;
+    font-size: 12px;
+    border-bottom: 4px solid var(--sp-border);
+    color: var(--sp-muted);
+}
+
+.timeline-step.done {
+    border-bottom-color: var(--sp-good);
+    color: var(--sp-ink);
+    font-weight: 600;
+}
+
+.timeline-step.current {
+    border-bottom-color: var(--sp-blue);
+    color: var(--sp-ink);
+    font-weight: 700;
+}
+
+.kpi-note {
+    font-size: 11px;
+    color: var(--sp-muted);
+    margin-top: 2px;
+}
+
 .two-col {
     display: grid;
     grid-template-columns: 2fr 1fr;
