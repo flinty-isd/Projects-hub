@@ -16,6 +16,14 @@ register, exceptions:
 - **`/governance-aspx`** — ASP.NET Web Forms. See "IT Governance site" at
   the bottom.
 
+**Supporting scripts**
+
+- **`/provisioning`** — PnP PowerShell that creates the SharePoint lists both
+  dashboards read, plus a sample-data seeder.
+- **`/sharepoint-modern`** — renders both dashboards *natively in SharePoint*
+  using JSON column/view formatting and modern pages, with no app to host. An
+  alternative to the two app implementations above.
+
 ## Streamlit version
 
 ### How to run it locally
