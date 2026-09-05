@@ -1,0 +1,130 @@
+name: Power Platform CI
+
+# Packs and validates each Power Platform solution under solutions/*, and
+# deploys to Test/UAT on merge to main. See docs/infopath-migration/architecture.md
+# for the full pipeline description.
+#
+# Requires these repository/environment secrets to actually run against a
+# tenant (not configured yet — this workflow will fail auth until they exist):
+#   POWER_PLATFORM_SP_APP_ID, POWER_PLATFORM_SP_CLIENT_SECRET,
+#   POWER_PLATFORM_TENANT_ID, POWER_PLATFORM_TEST_URL, POWER_PLATFORM_PROD_URL
+#
+# NOTE: pack-solution expects a full unpacked Dataverse solution folder
+# (Other/Solution.xml, Other/Customizations.xml, plus the canvas app/flow
+# components). solutions/<name>/powerapps/src only has the canvas app source.
+# The first time a solution is created, export it once from a real dev
+# environment (`pac solution add-reference` / `pac solution export --unpack`)
+# so those wrapper files exist under solutions/<name>/, then point
+# solution-folder at that unpacked root instead of powerapps/src.
+
+on:
+  pull_request:
+    paths:
+      - "solutions/**"
+  push:
+    branches: [main]
+    paths:
+      - "solutions/**"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Environment to deploy to (test or prod)"
+        required: true
+        default: "test"
+        type: choice
+        options:
+          - test
+          - prod
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      solutions: ${{ steps.list.outputs.solutions }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        run: |
+          dirs=$(find solutions -mindepth 1 -maxdepth 1 -type d -printf '"%f",' | sed 's/,$//')
+          echo "solutions=[$dirs]" >> "$GITHUB_OUTPUT"
+
+  pack-and-check:
+    needs: discover
+    if: needs.discover.outputs.solutions != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        solution: ${{ fromJson(needs.discover.outputs.solutions) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pack solution (unmanaged) for validation
+        uses: microsoft/powerplatform-actions/pack-solution@v1
+        with:
+          solution-file: out/${{ matrix.solution }}.zip
+          solution-folder: solutions/${{ matrix.solution }}/powerapps/src
+          solution-type: Unmanaged
+
+      - name: Run solution checker
+        if: github.event_name == 'pull_request'
+        uses: microsoft/powerplatform-actions/check-solution@v1
+        with:
+          environment-url: ${{ secrets.POWER_PLATFORM_TEST_URL }}
+          app-id: ${{ secrets.POWER_PLATFORM_SP_APP_ID }}
+          client-secret: ${{ secrets.POWER_PLATFORM_SP_CLIENT_SECRET }}
+          tenant-id: ${{ secrets.POWER_PLATFORM_TENANT_ID }}
+          path: out/${{ matrix.solution }}.zip
+
+  deploy-test:
+    needs: [discover, pack-and-check]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: test
+    strategy:
+      matrix:
+        solution: ${{ fromJson(needs.discover.outputs.solutions) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pack solution (managed)
+        uses: microsoft/powerplatform-actions/pack-solution@v1
+        with:
+          solution-file: out/${{ matrix.solution }}.zip
+          solution-folder: solutions/${{ matrix.solution }}/powerapps/src
+          solution-type: Managed
+
+      - name: Import to Test/UAT
+        uses: microsoft/powerplatform-actions/import-solution@v1
+        with:
+          environment-url: ${{ secrets.POWER_PLATFORM_TEST_URL }}
+          app-id: ${{ secrets.POWER_PLATFORM_SP_APP_ID }}
+          client-secret: ${{ secrets.POWER_PLATFORM_SP_CLIENT_SECRET }}
+          tenant-id: ${{ secrets.POWER_PLATFORM_TENANT_ID }}
+          path: out/${{ matrix.solution }}.zip
+
+  deploy-prod:
+    needs: discover
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'prod'
+    runs-on: ubuntu-latest
+    environment: prod
+    strategy:
+      matrix:
+        solution: ${{ fromJson(needs.discover.outputs.solutions) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pack solution (managed)
+        uses: microsoft/powerplatform-actions/pack-solution@v1
+        with:
+          solution-file: out/${{ matrix.solution }}.zip
+          solution-folder: solutions/${{ matrix.solution }}/powerapps/src
+          solution-type: Managed
+
+      - name: Import to Prod
+        uses: microsoft/powerplatform-actions/import-solution@v1
+        with:
+          environment-url: ${{ secrets.POWER_PLATFORM_PROD_URL }}
+          app-id: ${{ secrets.POWER_PLATFORM_SP_APP_ID }}
+          client-secret: ${{ secrets.POWER_PLATFORM_SP_CLIENT_SECRET }}
+          tenant-id: ${{ secrets.POWER_PLATFORM_TENANT_ID }}
+          path: out/${{ matrix.solution }}.zip

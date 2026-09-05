@@ -1,0 +1,91 @@
+{
+  "$comment": "Data schema for the 'IT Equipment Request' list. Replaces the InfoPath form's XML data source. Apply with PnP.PowerShell (New-PnPField / Add-PnPField) or the Graph API — this file is the source of truth reviewed in PRs, not something SharePoint reads directly.",
+  "listTitle": "IT Equipment Requests",
+  "listDescription": "Requests for new/replacement IT equipment. Replaces the legacy InfoPath 'Equipment Request' form.",
+  "contentType": "Item",
+  "fields": [
+    {
+      "internalName": "RequestorName",
+      "displayName": "Requestor Name",
+      "type": "Text",
+      "required": true,
+      "infopathSource": "text field: /my:myFields/my:requestorName"
+    },
+    {
+      "internalName": "RequestorEmail",
+      "displayName": "Requestor Email",
+      "type": "Text",
+      "required": true,
+      "infopathSource": "text field: /my:myFields/my:requestorEmail"
+    },
+    {
+      "internalName": "Department",
+      "displayName": "Department",
+      "type": "Choice",
+      "choices": ["IT", "Finance", "HR", "Operations", "Sales", "Marketing"],
+      "required": true,
+      "infopathSource": "dropdown: /my:myFields/my:department"
+    },
+    {
+      "internalName": "EquipmentType",
+      "displayName": "Equipment Type",
+      "type": "Choice",
+      "choices": ["Laptop", "Monitor", "Headset", "Docking Station", "Mobile Phone", "Other"],
+      "required": true,
+      "infopathSource": "dropdown: /my:myFields/my:equipmentType"
+    },
+    {
+      "internalName": "Quantity",
+      "displayName": "Quantity",
+      "type": "Number",
+      "min": 1,
+      "default": 1,
+      "required": true,
+      "infopathSource": "number field: /my:myFields/my:quantity"
+    },
+    {
+      "internalName": "Justification",
+      "displayName": "Business Justification",
+      "type": "Note",
+      "richText": false,
+      "required": true,
+      "infopathSource": "multiline text: /my:myFields/my:justification"
+    },
+    {
+      "internalName": "NeededBy",
+      "displayName": "Needed By",
+      "type": "DateTime",
+      "displayFormat": "DateOnly",
+      "required": true,
+      "infopathSource": "date picker: /my:myFields/my:neededBy"
+    },
+    {
+      "internalName": "ApprovalStatus",
+      "displayName": "Approval Status",
+      "type": "Choice",
+      "choices": ["Pending", "Approved", "Rejected"],
+      "default": "Pending",
+      "required": true,
+      "infopathSource": "set by workflow, not user-entered"
+    },
+    {
+      "internalName": "ApproverComments",
+      "displayName": "Approver Comments",
+      "type": "Note",
+      "richText": false,
+      "required": false,
+      "infopathSource": "set by workflow, not user-entered"
+    },
+    {
+      "internalName": "Manager",
+      "displayName": "Manager",
+      "type": "Person",
+      "required": true,
+      "infopathSource": "person picker: /my:myFields/my:manager (was a free-text field in InfoPath; upgraded to a real person field)"
+    }
+  ],
+  "notes": [
+    "InfoPath's repeating-table 'multiple items per request' pattern (if a form needed several equipment lines) is modeled as a separate child list 'IT Equipment Request Lines' with a Lookup column back to this list, not as multiple flat columns.",
+    "ApprovalStatus/ApproverComments are written by the Power Automate flow (see ../powerautomate/flows/Submit-EquipmentRequest.json), not editable by the requester in the Power Apps form."
+  ]
+}

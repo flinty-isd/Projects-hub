@@ -1,0 +1,112 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Route and approve IT Equipment Request",
+  "description": "Replaces the InfoPath 'Equipment Request' form's submit rule and manual approval workflow. Triggers when Power Apps creates a new item in the 'IT Equipment Requests' SharePoint list, routes it to the requester's manager for approval, and writes the outcome back to the list.",
+  "triggers": {
+    "When_an_item_is_created": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnNewItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+          "table": "IT Equipment Requests"
+        }
+      },
+      "splitOn": "@triggerOutputs()?['body/value']"
+    }
+  },
+  "actions": {
+    "Start_and_wait_for_an_approval": {
+      "type": "OpenApiConnection",
+      "runAfter": {},
+      "inputs": {
+        "host": {
+          "connectionName": "shared_approvals",
+          "operationId": "StartAndWaitForAnApproval",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+        },
+        "parameters": {
+          "approvalType": "Basic",
+          "title": "@{concat('Equipment request: ', triggerBody()?['EquipmentType'], ' x', triggerBody()?['Quantity'], ' for ', triggerBody()?['RequestorName'])}",
+          "assignedTo": "@triggerBody()?['Manager']?['Email']",
+          "details": "@triggerBody()?['Justification']"
+        }
+      }
+    },
+    "Condition_Approved": {
+      "type": "If",
+      "runAfter": {
+        "Start_and_wait_for_an_approval": ["Succeeded"]
+      },
+      "expression": {
+        "equals": [
+          "@outputs('Start_and_wait_for_an_approval')?['body/outcome']",
+          "Approve"
+        ]
+      },
+      "actions": {
+        "Update_item_Approved": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "PatchItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+              "table": "IT Equipment Requests",
+              "id": "@triggerBody()?['ID']",
+              "item/ApprovalStatus": "Approved",
+              "item/ApproverComments": "@outputs('Start_and_wait_for_an_approval')?['body/responses'][0]['comments']"
+            }
+          }
+        }
+      },
+      "else": {
+        "actions": {
+          "Update_item_Rejected": {
+            "type": "OpenApiConnection",
+            "inputs": {
+              "host": {
+                "connectionName": "shared_sharepointonline",
+                "operationId": "PatchItem",
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+              },
+              "parameters": {
+                "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+                "table": "IT Equipment Requests",
+                "id": "@triggerBody()?['ID']",
+                "item/ApprovalStatus": "Rejected",
+                "item/ApproverComments": "@outputs('Start_and_wait_for_an_approval')?['body/responses'][0]['comments']"
+              }
+            }
+          }
+        }
+      }
+    },
+    "Send_an_email_notification_to_requester": {
+      "type": "OpenApiConnection",
+      "runAfter": {
+        "Condition_Approved": ["Succeeded"]
+      },
+      "inputs": {
+        "host": {
+          "connectionName": "shared_office365",
+          "operationId": "SendEmailV2",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+        },
+        "parameters": {
+          "emailMessage/To": "@triggerBody()?['RequestorEmail']",
+          "emailMessage/Subject": "@{concat('Your equipment request was ', outputs('Start_and_wait_for_an_approval')?['body/outcome'])}",
+          "emailMessage/Body": "@{concat('Your request for ', triggerBody()?['Quantity'], ' x ', triggerBody()?['EquipmentType'], ' was ', outputs('Start_and_wait_for_an_approval')?['body/outcome'], '. Comments: ', outputs('Start_and_wait_for_an_approval')?['body/responses'][0]['comments'])}"
+        }
+      }
+    }
+  }
+}

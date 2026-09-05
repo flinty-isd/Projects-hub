@@ -1,0 +1,91 @@
+# Canvas app source (pac canvas pack format) for the single-screen replacement
+# of the legacy InfoPath 'Equipment Request' form.
+Screens:
+  RequestForm:
+    Properties:
+      OnVisible: |
+        =ResetForm(FormRequest)
+    Children:
+      - TitleLabel:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="IT Equipment Request"
+            Size: =20
+            FontWeight: =FontWeight.Bold
+            X: =32
+            Y: =24
+            Width: =Parent.Width - 64
+
+      - FormRequest:
+          Control: Form@2.5.1
+          Properties:
+            DataSource: ='IT Equipment Requests'
+            DefaultMode: =FormMode.New
+            Item: =Blank()
+            X: =32
+            Y: =80
+            Width: =Parent.Width - 64
+            Height: =Parent.Height - 200
+            OnSuccess: |
+              =Notify("Request submitted. Your manager will be notified for approval.", NotificationType.Success);
+              ResetForm(FormRequest);
+              Navigate(RequestForm)
+          Children:
+            - RequestorNameCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="RequestorName"
+            - RequestorEmailCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="RequestorEmail"
+            - DepartmentCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="Department"
+            - EquipmentTypeCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="EquipmentType"
+            - QuantityCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="Quantity"
+            - JustificationCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="Justification"
+            - NeededByCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="NeededBy"
+            - ManagerCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="Manager"
+
+      - SubmitButton:
+          Control: Button@2.5.1
+          Properties:
+            Text: ="Submit Request"
+            X: =32
+            Y: =Parent.Height - 96
+            Width: =160
+            Height: =48
+            OnSelect: |
+              =If(
+                  IsBlank(FormRequest.LastSubmit) || FormRequest.Valid,
+                  SubmitForm(FormRequest),
+                  Notify("Please complete all required fields.", NotificationType.Error)
+              )
+
+      - CancelButton:
+          Control: Button@2.5.1
+          Properties:
+            Text: ="Cancel"
+            X: =208
+            Y: =Parent.Height - 96
+            Width: =120
+            Height: =48
+            OnSelect: |
+              =ResetForm(FormRequest)

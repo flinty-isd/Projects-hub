@@ -1,0 +1,23 @@
+{
+  "FormatVersion": "2.3",
+  "Properties": {
+    "Name": "IT Equipment Request",
+    "Description": "Replaces the legacy InfoPath 'Equipment Request' form. Requesters submit a device request; a Power Automate flow routes it to their manager for approval.",
+    "AppPreviewFlagsMap": {
+      "usePowerFxDirectFormulaBar": true
+    }
+  },
+  "DataSources": [
+    {
+      "Name": "'IT Equipment Requests'",
+      "Type": "SharePoint",
+      "DatasetName": "https://{tenant}.sharepoint.com/sites/{site}",
+      "TableName": "IT Equipment Requests",
+      "Schema": "../../sharepoint/list-schema.json"
+    }
+  ],
+  "Screens": [
+    "RequestForm"
+  ],
+  "StartScreen": "RequestForm"
+}
