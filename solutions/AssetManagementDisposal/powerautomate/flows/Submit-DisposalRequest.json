@@ -1,0 +1,227 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Route and approve Asset Disposal Request",
+  "description": "Replaces the legacy InfoPath 'IT Asset Disposal Form' workflow. Triggers when Power Apps creates a new item in 'Disposal Requests'. Blocks approval for data-bearing assets that lack a data-wipe certificate, otherwise routes to the asset manager for approval and updates the Asset Register lifecycle status on the outcome.",
+  "triggers": {
+    "When_a_disposal_request_is_created": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnNewItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+          "table": "Disposal Requests"
+        }
+      },
+      "splitOn": "@triggerOutputs()?['body/value']"
+    }
+  },
+  "actions": {
+    "Initialize_AssetManagerEmail": {
+      "type": "InitializeVariable",
+      "runAfter": {},
+      "inputs": {
+        "variables": [
+          {
+            "name": "AssetManagerEmail",
+            "type": "string",
+            "value": "assetmanager@{tenant}.onmicrosoft.com"
+          }
+        ]
+      },
+      "$comment": "Placeholder — replace with the real asset manager mailbox/group, or look it up (e.g. from a Settings list) rather than hardcoding per environment."
+    },
+    "Get_linked_asset": {
+      "type": "OpenApiConnection",
+      "runAfter": {
+        "Initialize_AssetManagerEmail": ["Succeeded"]
+      },
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetItem",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+          "table": "Asset Register",
+          "id": "@triggerBody()?['Asset']?['Value']"
+        }
+      }
+    },
+    "Condition_DataWipeRequired": {
+      "type": "If",
+      "runAfter": {
+        "Get_linked_asset": ["Succeeded"]
+      },
+      "expression": {
+        "and": [
+          {
+            "equals": [
+              "@outputs('Get_linked_asset')?['body/StoresData']",
+              true
+            ]
+          },
+          {
+            "not": {
+              "equals": [
+                "@triggerBody()?['DataWipeCertified']",
+                true
+              ]
+            }
+          }
+        ]
+      },
+      "actions": {
+        "Block_pending_data_wipe": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "PatchItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+              "table": "Disposal Requests",
+              "id": "@triggerBody()?['ID']",
+              "item/ApprovalStatus": "Blocked - Data Wipe Required"
+            }
+          }
+        },
+        "Notify_requester_of_block": {
+          "type": "OpenApiConnection",
+          "runAfter": {
+            "Block_pending_data_wipe": ["Succeeded"]
+          },
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@triggerBody()?['RequestedBy']?['Email']",
+              "emailMessage/Subject": "Disposal request blocked: data wipe certificate required",
+              "emailMessage/Body": "@{concat('This asset stores data and cannot be disposed until a data wipe certificate is recorded. Please resubmit with DataWipeCertified checked and a certificate number, asset: ', outputs('Get_linked_asset')?['body/AssetTag'])}"
+            }
+          }
+        }
+      },
+      "else": {
+        "actions": {
+          "Start_and_wait_for_an_approval": {
+            "type": "OpenApiConnection",
+            "inputs": {
+              "host": {
+                "connectionName": "shared_approvals",
+                "operationId": "StartAndWaitForAnApproval",
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+              },
+              "parameters": {
+                "approvalType": "Basic",
+                "title": "@{concat('Dispose asset ', outputs('Get_linked_asset')?['body/AssetTag'], ' (', triggerBody()?['DisposalMethod'], ')')}",
+                "assignedTo": "@variables('AssetManagerEmail')",
+                "details": "@{concat('Reason: ', triggerBody()?['Reason'], '. Stores data: ', outputs('Get_linked_asset')?['body/StoresData'])}"
+              }
+            }
+          },
+          "Condition_Approved": {
+            "type": "If",
+            "runAfter": {
+              "Start_and_wait_for_an_approval": ["Succeeded"]
+            },
+            "expression": {
+              "equals": [
+                "@outputs('Start_and_wait_for_an_approval')?['body/outcome']",
+                "Approve"
+              ]
+            },
+            "actions": {
+              "Update_disposal_request_Approved": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_sharepointonline",
+                    "operationId": "PatchItem",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                  },
+                  "parameters": {
+                    "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+                    "table": "Disposal Requests",
+                    "id": "@triggerBody()?['ID']",
+                    "item/ApprovalStatus": "Approved",
+                    "item/ApproverComments": "@outputs('Start_and_wait_for_an_approval')?['body/responses'][0]['comments']",
+                    "item/DisposalDate": "@utcNow()"
+                  }
+                }
+              },
+              "Update_asset_register_Disposed": {
+                "type": "OpenApiConnection",
+                "runAfter": {
+                  "Update_disposal_request_Approved": ["Succeeded"]
+                },
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_sharepointonline",
+                    "operationId": "PatchItem",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                  },
+                  "parameters": {
+                    "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+                    "table": "Asset Register",
+                    "id": "@triggerBody()?['Asset']?['Value']",
+                    "item/LifecycleStatus": "Disposed"
+                  }
+                }
+              }
+            },
+            "else": {
+              "actions": {
+                "Update_disposal_request_Rejected": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "PatchItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+                      "table": "Disposal Requests",
+                      "id": "@triggerBody()?['ID']",
+                      "item/ApprovalStatus": "Rejected",
+                      "item/ApproverComments": "@outputs('Start_and_wait_for_an_approval')?['body/responses'][0]['comments']"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "Notify_requester_of_outcome": {
+            "type": "OpenApiConnection",
+            "runAfter": {
+              "Condition_Approved": ["Succeeded"]
+            },
+            "inputs": {
+              "host": {
+                "connectionName": "shared_office365",
+                "operationId": "SendEmailV2",
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+              },
+              "parameters": {
+                "emailMessage/To": "@triggerBody()?['RequestedBy']?['Email']",
+                "emailMessage/Subject": "@{concat('Disposal request ', outputs('Start_and_wait_for_an_approval')?['body/outcome'], ': ', outputs('Get_linked_asset')?['body/AssetTag'])}",
+                "emailMessage/Body": "@{concat('Comments: ', outputs('Start_and_wait_for_an_approval')?['body/responses'][0]['comments'])}"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

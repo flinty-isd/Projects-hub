@@ -1,0 +1,65 @@
+# Canvas app source (pac canvas pack format). Browse/search screen for the
+# Asset Register list; selecting an asset navigates to the disposal request form.
+Screens:
+  AssetRegister:
+    Properties:
+      OnVisible: |
+        =Set(varSearch, "")
+    Children:
+      - TitleLabel:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Asset Register"
+            Size: =20
+            FontWeight: =FontWeight.Bold
+            X: =32
+            Y: =24
+            Width: =Parent.Width - 64
+
+      - SearchBox:
+          Control: TextInput@2.5.1
+          Properties:
+            HintText: ="Search by asset tag or description..."
+            X: =32
+            Y: =72
+            Width: =Parent.Width - 64
+            OnChange: |
+              =Set(varSearch, Self.Text)
+
+      - AssetGallery:
+          Control: Gallery@2.5.1
+          Properties:
+            Layout: =GalleryLayout.Vertical
+            Items: |
+              =Filter(
+                  'Asset Register',
+                  IsBlank(varSearch)
+                  || AssetTag.Value in varSearch
+                  || Description in varSearch
+              )
+            X: =32
+            Y: =120
+            Width: =Parent.Width - 64
+            Height: =Parent.Height - 200
+          Children:
+            - AssetTagLabel:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.AssetTag
+                  FontWeight: =FontWeight.Semibold
+            - DescriptionLabel:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.Description
+            - StatusLabel:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.LifecycleStatus.Value
+            - RequestDisposalButton:
+                Control: Button@2.5.1
+                Properties:
+                  Text: ="Request Disposal"
+                  Visible: =ThisItem.LifecycleStatus.Value <> "Disposed"
+                  OnSelect: |
+                    =Set(varSelectedAsset, ThisItem);
+                    Navigate(DisposalRequestForm)

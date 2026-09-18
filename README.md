@@ -8,9 +8,10 @@ migration strategy, the per-form guide, and the target ALM architecture.
 - [`docs/infopath-migration/`](docs/infopath-migration/README.md) — start here:
   why InfoPath is being retired, the replacement mapping, and the migration
   backlog.
-- [`solutions/ITEquipmentRequest/`](solutions/ITEquipmentRequest/) — a fully
-  worked example migration (SharePoint list schema, Power Apps canvas source,
-  Power Automate flow) to copy for the next form.
+- [`solutions/ITEquipmentRequest/`](solutions/ITEquipmentRequest/) and
+  [`solutions/AssetManagementDisposal/`](solutions/AssetManagementDisposal/) —
+  fully worked example migrations (SharePoint list schema, Power Apps canvas
+  source, Power Automate flow) to copy for the next form.
 - [`.github/workflows/power-platform-ci.yml`](.github/workflows/power-platform-ci.yml) —
   CI/CD pipeline that packs and deploys solutions from source.
 

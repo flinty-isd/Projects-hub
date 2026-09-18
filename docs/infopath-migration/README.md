@@ -20,6 +20,10 @@ replace remaining InfoPath forms with supported Microsoft 365 tooling:
 - [`../../solutions/ITEquipmentRequest`](../../solutions/ITEquipmentRequest) — a
   fully worked example migration (source-controlled, ready to `pac` push into an
   environment) that new migrations can be copied from.
+- [`../../solutions/AssetManagementDisposal`](../../solutions/AssetManagementDisposal) —
+  a second example covering a two-list solution with a compliance gate (asset
+  register + disposal request approval, blocking disposal of data-bearing
+  assets without a data-wipe certificate).
 
 ## Why source-control the solution?
 
@@ -38,6 +42,7 @@ are identified (fill in once real InfoPath forms are inventoried):
 | Form name | Current host | Status | Solution folder |
 |-----------|--------------|--------|------------------|
 | IT Equipment Request | SharePoint on-prem list + InfoPath | ✅ Migrated (example) | `solutions/ITEquipmentRequest` |
+| Asset Management & Disposal | SharePoint on-prem list + InfoPath | ✅ Migrated (example) | `solutions/AssetManagementDisposal` |
 | _(add next form here)_ | | 🔲 Not started | |
 
 To add a new form, copy the `solutions/ITEquipmentRequest` folder structure and

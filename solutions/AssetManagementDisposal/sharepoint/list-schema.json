@@ -1,0 +1,183 @@
+{
+  "$comment": "Data schema for the Asset Management & Disposal solution. Replaces the InfoPath 'IT Asset Disposal Form' XML data source plus the informal asset-tracking spreadsheet. Apply with PnP.PowerShell (New-PnPField / Add-PnPField) or the Graph API — this file is the source of truth reviewed in PRs, not something SharePoint reads directly.",
+  "lists": [
+    {
+      "listTitle": "Asset Register",
+      "listDescription": "Master inventory of IT/corporate assets and their lifecycle status.",
+      "contentType": "Item",
+      "fields": [
+        {
+          "internalName": "AssetTag",
+          "displayName": "Asset Tag",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "infopathSource": "text field: /my:myFields/my:assetTag"
+        },
+        {
+          "internalName": "AssetType",
+          "displayName": "Asset Type",
+          "type": "Choice",
+          "choices": ["Laptop", "Desktop", "Monitor", "Mobile Phone", "Server", "Networking", "Printer", "Furniture", "Other"],
+          "required": true,
+          "infopathSource": "dropdown: /my:myFields/my:assetType"
+        },
+        {
+          "internalName": "Description",
+          "displayName": "Description",
+          "type": "Text",
+          "required": true,
+          "infopathSource": "text field: /my:myFields/my:description"
+        },
+        {
+          "internalName": "SerialNumber",
+          "displayName": "Serial Number",
+          "type": "Text",
+          "required": false,
+          "infopathSource": "text field: /my:myFields/my:serialNumber"
+        },
+        {
+          "internalName": "PurchaseDate",
+          "displayName": "Purchase Date",
+          "type": "DateTime",
+          "displayFormat": "DateOnly",
+          "required": false,
+          "infopathSource": "date picker: /my:myFields/my:purchaseDate"
+        },
+        {
+          "internalName": "PurchaseCost",
+          "displayName": "Purchase Cost",
+          "type": "Currency",
+          "required": false,
+          "infopathSource": "number field: /my:myFields/my:purchaseCost"
+        },
+        {
+          "internalName": "AssignedTo",
+          "displayName": "Assigned To",
+          "type": "Person",
+          "required": false,
+          "infopathSource": "free-text 'assigned user' field in InfoPath; upgraded to a real person field"
+        },
+        {
+          "internalName": "Location",
+          "displayName": "Location",
+          "type": "Text",
+          "required": false,
+          "infopathSource": "text field: /my:myFields/my:location"
+        },
+        {
+          "internalName": "Condition",
+          "displayName": "Condition",
+          "type": "Choice",
+          "choices": ["New", "Good", "Fair", "Poor", "Non-functional"],
+          "required": true,
+          "default": "Good"
+        },
+        {
+          "internalName": "StoresData",
+          "displayName": "Stores Data",
+          "type": "Boolean",
+          "required": true,
+          "default": false,
+          "notes": "Drives disposal compliance requirements — see solution README."
+        },
+        {
+          "internalName": "LifecycleStatus",
+          "displayName": "Lifecycle Status",
+          "type": "Choice",
+          "choices": ["In Use", "In Storage", "Pending Disposal", "Disposed"],
+          "default": "In Use",
+          "required": true,
+          "infopathSource": "set by app/flow, not free-text as it was in InfoPath"
+        }
+      ]
+    },
+    {
+      "listTitle": "Disposal Requests",
+      "listDescription": "Requests to retire/dispose of an asset from the Asset Register, routed through approval.",
+      "contentType": "Item",
+      "fields": [
+        {
+          "internalName": "Asset",
+          "displayName": "Asset",
+          "type": "Lookup",
+          "lookupList": "Asset Register",
+          "lookupField": "AssetTag",
+          "required": true,
+          "infopathSource": "was a free-typed asset tag; upgraded to a Lookup so requests can't reference a non-existent asset"
+        },
+        {
+          "internalName": "RequestedBy",
+          "displayName": "Requested By",
+          "type": "Person",
+          "required": true,
+          "infopathSource": "text field: /my:myFields/my:requestedBy"
+        },
+        {
+          "internalName": "Reason",
+          "displayName": "Reason",
+          "type": "Choice",
+          "choices": ["End of Life", "Damaged", "Upgraded/Replaced", "Surplus", "Lost/Stolen"],
+          "required": true,
+          "infopathSource": "dropdown: /my:myFields/my:reason"
+        },
+        {
+          "internalName": "DisposalMethod",
+          "displayName": "Disposal Method",
+          "type": "Choice",
+          "choices": ["Recycle (e-waste vendor)", "Resell/Trade-in", "Donate", "Destroy/Shred", "Return to Vendor"],
+          "required": true,
+          "infopathSource": "dropdown: /my:myFields/my:disposalMethod"
+        },
+        {
+          "internalName": "DataWipeCertified",
+          "displayName": "Data Wipe Certified",
+          "type": "Boolean",
+          "required": false,
+          "default": false,
+          "notes": "Required (must be true) before approval when the linked asset has StoresData = Yes; enforced by the flow, not just the form."
+        },
+        {
+          "internalName": "DataWipeCertificateNumber",
+          "displayName": "Data Wipe Certificate #",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "DisposalVendor",
+          "displayName": "Disposal Vendor",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "ApprovalStatus",
+          "displayName": "Approval Status",
+          "type": "Choice",
+          "choices": ["Pending", "Approved", "Rejected", "Blocked - Data Wipe Required"],
+          "default": "Pending",
+          "required": true,
+          "infopathSource": "set by workflow, not user-entered"
+        },
+        {
+          "internalName": "ApproverComments",
+          "displayName": "Approver Comments",
+          "type": "Note",
+          "richText": false,
+          "required": false
+        },
+        {
+          "internalName": "DisposalDate",
+          "displayName": "Disposal Date",
+          "type": "DateTime",
+          "displayFormat": "DateOnly",
+          "required": false,
+          "notes": "Set by the flow when ApprovalStatus becomes Approved and, for data-bearing assets, DataWipeCertified is true."
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Disposal Requests.Asset is a Lookup into Asset Register so a request can't be filed against an asset tag that doesn't exist — InfoPath had no equivalent referential integrity.",
+    "ApprovalStatus/ApproverComments/DisposalDate on Disposal Requests, and LifecycleStatus on Asset Register, are written by the Power Automate flow (see ../powerautomate/flows/Submit-DisposalRequest.json), not editable by the requester in the Power Apps form."
+  ]
+}

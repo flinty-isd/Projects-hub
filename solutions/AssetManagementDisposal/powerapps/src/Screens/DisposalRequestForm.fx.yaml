@@ -1,0 +1,97 @@
+# Canvas app source (pac canvas pack format). Disposal request form for the
+# asset selected on the AssetRegister screen (passed via varSelectedAsset).
+Screens:
+  DisposalRequestForm:
+    Properties:
+      OnVisible: |
+        =ResetForm(FormDisposal)
+    Children:
+      - TitleLabel:
+          Control: Label@2.5.1
+          Properties:
+            Text: |
+              =Concatenate("Request Disposal: ", varSelectedAsset.AssetTag)
+            Size: =20
+            FontWeight: =FontWeight.Bold
+            X: =32
+            Y: =24
+            Width: =Parent.Width - 64
+
+      - DataWarningLabel:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="This asset stores data. A data wipe certificate is required before it can be approved for disposal."
+            Visible: =varSelectedAsset.StoresData
+            Color: =Color.DarkOrange
+            X: =32
+            Y: =64
+            Width: =Parent.Width - 64
+
+      - FormDisposal:
+          Control: Form@2.5.1
+          Properties:
+            DataSource: ='Disposal Requests'
+            DefaultMode: =FormMode.New
+            Item: |
+              ={Asset: varSelectedAsset}
+            X: =32
+            Y: =104
+            Width: =Parent.Width - 64
+            Height: =Parent.Height - 224
+            OnSuccess: |
+              =Notify("Disposal request submitted for approval.", NotificationType.Success);
+              ResetForm(FormDisposal);
+              Navigate(AssetRegister)
+          Children:
+            - RequestedByCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="RequestedBy"
+            - ReasonCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="Reason"
+            - DisposalMethodCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="DisposalMethod"
+            - DataWipeCertifiedCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="DataWipeCertified"
+                  Visible: =varSelectedAsset.StoresData
+            - DataWipeCertificateNumberCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="DataWipeCertificateNumber"
+                  Visible: =varSelectedAsset.StoresData
+            - DisposalVendorCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="DisposalVendor"
+
+      - SubmitButton:
+          Control: Button@2.5.1
+          Properties:
+            Text: ="Submit Request"
+            X: =32
+            Y: =Parent.Height - 96
+            Width: =160
+            Height: =48
+            OnSelect: |
+              =If(
+                  varSelectedAsset.StoresData && !DataWipeCertifiedCard.Value,
+                  Notify("Data wipe certification is required for this asset before a disposal request can be submitted.", NotificationType.Error),
+                  SubmitForm(FormDisposal)
+              )
+
+      - CancelButton:
+          Control: Button@2.5.1
+          Properties:
+            Text: ="Cancel"
+            X: =208
+            Y: =Parent.Height - 96
+            Width: =120
+            Height: =48
+            OnSelect: |
+              =Navigate(AssetRegister)

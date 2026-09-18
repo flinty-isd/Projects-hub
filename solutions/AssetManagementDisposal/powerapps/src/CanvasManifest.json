@@ -1,0 +1,31 @@
+{
+  "FormatVersion": "2.3",
+  "Properties": {
+    "Name": "Asset Management & Disposal",
+    "Description": "Replaces the legacy InfoPath 'IT Asset Disposal Form'. Browse the asset register and submit a disposal request that is routed for approval, with mandatory data-wipe certification for data-bearing assets.",
+    "AppPreviewFlagsMap": {
+      "usePowerFxDirectFormulaBar": true
+    }
+  },
+  "DataSources": [
+    {
+      "Name": "'Asset Register'",
+      "Type": "SharePoint",
+      "DatasetName": "https://{tenant}.sharepoint.com/sites/{site}",
+      "TableName": "Asset Register",
+      "Schema": "../../sharepoint/list-schema.json"
+    },
+    {
+      "Name": "'Disposal Requests'",
+      "Type": "SharePoint",
+      "DatasetName": "https://{tenant}.sharepoint.com/sites/{site}",
+      "TableName": "Disposal Requests",
+      "Schema": "../../sharepoint/list-schema.json"
+    }
+  ],
+  "Screens": [
+    "AssetRegister",
+    "DisposalRequestForm"
+  ],
+  "StartScreen": "AssetRegister"
+}
