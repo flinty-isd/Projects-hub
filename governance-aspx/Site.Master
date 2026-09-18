@@ -1,0 +1,29 @@
+<%@ Master Language="C#" AutoEventWireup="true" CodeFile="Site.Master.cs" Inherits="GovernanceMaster" %>
+<!DOCTYPE html>
+<html>
+<head runat="server">
+    <title>IT Governance</title>
+    <link rel="stylesheet" type="text/css" href="Styles/governance.css" />
+</head>
+<body>
+    <form id="form1" runat="server">
+        <div class="header">
+            <h1>&#127963; IT Governance</h1>
+            <div class="subtitle">Policies, control compliance, audit findings, risk and exceptions</div>
+        </div>
+        <asp:Panel ID="StatusBanner" runat="server" CssClass="banner">
+            <asp:Literal ID="StatusMessage" runat="server" />
+        </asp:Panel>
+        <div class="tabs">
+            <asp:HyperLink ID="TabPolicies" runat="server" NavigateUrl="~/Default.aspx" CssClass="tab">Policies</asp:HyperLink>
+            <asp:HyperLink ID="TabCompliance" runat="server" NavigateUrl="~/Compliance.aspx" CssClass="tab">Control Compliance</asp:HyperLink>
+            <asp:HyperLink ID="TabFindings" runat="server" NavigateUrl="~/Findings.aspx" CssClass="tab">Audit Findings</asp:HyperLink>
+            <asp:HyperLink ID="TabRisks" runat="server" NavigateUrl="~/Risks.aspx" CssClass="tab">Risk Register</asp:HyperLink>
+            <asp:HyperLink ID="TabExceptions" runat="server" NavigateUrl="~/Exceptions.aspx" CssClass="tab">Exceptions</asp:HyperLink>
+        </div>
+        <div class="content">
+            <asp:ContentPlaceHolder ID="MainContent" runat="server" />
+        </div>
+    </form>
+</body>
+</html>
