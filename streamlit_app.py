@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import msal
 import pandas as pd
 import requests
@@ -8,7 +10,9 @@ st.title("🔐 SharePoint Site Permissions Audit")
 st.write(
     "Shows the **current** ('as now') permissions on a SharePoint site: "
     "site-level role assignments plus any lists/libraries that have broken "
-    "inheritance and carry their own unique permissions."
+    "inheritance and carry their own unique permissions. Optionally compare "
+    "against a previously downloaded snapshot to see what's changed "
+    "('as is' vs 'as now')."
 )
 
 with st.sidebar:
@@ -30,6 +34,13 @@ with st.sidebar:
         placeholder="https://contoso.sharepoint.com/sites/Marketing",
     )
     fetch = st.button("Fetch current permissions", type="primary")
+
+    st.header("Compare with a baseline")
+    st.caption(
+        "Upload a snapshot CSV downloaded from a previous run of this app "
+        "('as is') to see what's changed since then ('as now')."
+    )
+    baseline_file = st.file_uploader("Baseline snapshot (CSV)", type="csv")
 
 
 def get_access_token(tenant_id: str, client_id: str, client_secret: str, resource: str) -> str:
@@ -75,10 +86,49 @@ def role_assignments_to_rows(raw: dict, scope: str) -> list[dict]:
                 if member.get("PrincipalType") == 8
                 else member.get("PrincipalType"),
                 "Login name": member.get("LoginName"),
-                "Roles": ", ".join(roles),
+                "Roles": ", ".join(sorted(roles)),
             }
         )
     return rows
+
+
+def compare_permissions(baseline_df: pd.DataFrame, current_df: pd.DataFrame) -> pd.DataFrame:
+    key_cols = ["Scope", "Login name"]
+    baseline = baseline_df.fillna("").copy()
+    current = current_df.fillna("").copy()
+
+    merged = baseline.merge(
+        current,
+        on=key_cols,
+        how="outer",
+        suffixes=(" (baseline)", " (current)"),
+        indicator=True,
+    )
+
+    def status(row):
+        if row["_merge"] == "left_only":
+            return "Removed"
+        if row["_merge"] == "right_only":
+            return "Added"
+        if row["Roles (baseline)"] != row["Roles (current)"]:
+            return "Roles changed"
+        return "Unchanged"
+
+    merged["Status"] = merged.apply(status, axis=1)
+    merged["Principal"] = merged["Principal (current)"].where(
+        merged["_merge"] != "left_only", merged["Principal (baseline)"]
+    )
+
+    return merged[merged["Status"] != "Unchanged"][
+        [
+            "Status",
+            "Scope",
+            "Principal",
+            "Login name",
+            "Roles (baseline)",
+            "Roles (current)",
+        ]
+    ].sort_values(["Scope", "Status"])
 
 
 if fetch:
@@ -137,30 +187,64 @@ if fetch:
         st.error(f"Failed to fetch permissions: {e}")
         st.stop()
 
-    st.success(f"Fetched current permissions for **{web['Title']}**")
+    st.session_state["site_title"] = web["Title"]
+    st.session_state["unique_list_count"] = len(unique_lists)
+    st.session_state["current_df"] = pd.concat(
+        [pd.DataFrame(site_rows), pd.DataFrame(library_rows)], ignore_index=True
+    )
+    st.session_state["fetched_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+if "current_df" in st.session_state:
+    current_df = st.session_state["current_df"]
+
+    st.success(
+        f"Current permissions for **{st.session_state['site_title']}** "
+        f"(fetched {st.session_state['fetched_at']})"
+    )
 
     st.subheader("Site-level permissions")
-    site_df = pd.DataFrame(site_rows)
-    st.dataframe(site_df, use_container_width=True)
+    st.dataframe(
+        current_df[current_df["Scope"].str.startswith("Site:")],
+        use_container_width=True,
+    )
 
     st.subheader(
-        f"Libraries/lists with unique (broken-inheritance) permissions "
-        f"({len(unique_lists)} found)"
+        "Libraries/lists with unique (broken-inheritance) permissions "
+        f"({st.session_state['unique_list_count']} found)"
     )
-    if library_rows:
-        library_df = pd.DataFrame(library_rows)
+    library_df = current_df[current_df["Scope"].str.startswith("Library:")]
+    if not library_df.empty:
         st.dataframe(library_df, use_container_width=True)
     else:
         st.info("No lists or libraries have unique permissions — all inherit from the site.")
 
-    combined = pd.concat(
-        [pd.DataFrame(site_rows), pd.DataFrame(library_rows)], ignore_index=True
-    )
     st.download_button(
-        "Download full report as CSV",
-        combined.to_csv(index=False).encode("utf-8"),
-        file_name="sharepoint_permissions_current.csv",
+        "Download as baseline snapshot (CSV)",
+        current_df.to_csv(index=False).encode("utf-8"),
+        file_name=f"sharepoint_permissions_{st.session_state['fetched_at'].split(' ')[0]}.csv",
         mime="text/csv",
     )
-else:
-    st.info("Fill in the app registration details and site URL in the sidebar, then click **Fetch current permissions**.")
+
+    if baseline_file is not None:
+        st.subheader("Changes since baseline snapshot ('as is' → 'as now')")
+        try:
+            baseline_df = pd.read_csv(baseline_file)
+            diff_df = compare_permissions(baseline_df, current_df)
+        except Exception as e:
+            st.error(f"Could not compare against the uploaded baseline: {e}")
+        else:
+            if diff_df.empty:
+                st.info("No permission changes detected since the baseline snapshot.")
+            else:
+                st.dataframe(diff_df, use_container_width=True)
+                st.download_button(
+                    "Download changes as CSV",
+                    diff_df.to_csv(index=False).encode("utf-8"),
+                    file_name="sharepoint_permissions_changes.csv",
+                    mime="text/csv",
+                )
+elif not fetch:
+    st.info(
+        "Fill in the app registration details and site URL in the sidebar, "
+        "then click **Fetch current permissions**."
+    )
