@@ -3,10 +3,13 @@
 How to get the two dashboards onto a real SharePoint Online site, and how
 Fabric and Copilot agents fit on top of them.
 
-> **None of this has been run against a tenant.** There was no SharePoint
-> environment, no PowerShell runtime and no Fabric capacity available when it
-> was written. Treat it as a reviewed plan, not a tested procedure — do a
-> dry run in a dev site collection first, and use `-WhatIf` throughout.
+> **Not run against a tenant.** The scripts *are* executed in CI against a
+> stubbed `PnP.PowerShell` (`tests/powershell/`), which covers their control
+> flow, the column names they create, the JSON they hand SharePoint and their
+> re-run behaviour. What that cannot cover is the real API surface —
+> permissions, throttling, cmdlet parameter names, and the List web part
+> property shape. No Fabric capacity was available either. Do a dry run in a
+> dev site collection first, and use `-WhatIf` throughout.
 
 ## Layers
 
@@ -136,21 +139,27 @@ you build the *first* site; the template is how you copy it.
 
 ## Unattended / pipeline runs
 
-Interactive sign-in doesn't work in a build agent. Use app-only with a
-certificate:
+Interactive sign-in doesn't work in a build agent, so all four scripts take
+certificate parameters. Supply `-Tenant` plus either a thumbprint (certificate
+already in the machine store) or a PFX path:
 
 ```powershell
-Connect-PnPOnline -Url $url -ClientId $id -Tenant contoso.onmicrosoft.com `
-    -CertificatePath .\pnp.pfx -CertificatePassword (Read-Host -AsSecureString)
+.\provisioning\Provision-SharePointLists.ps1 -SiteUrl $url -ClientId $id `
+    -Tenant contoso.onmicrosoft.com -CertificateThumbprint $thumb
+
+.\provisioning\Provision-SharePointLists.ps1 -SiteUrl $url -ClientId $id `
+    -Tenant contoso.onmicrosoft.com -CertificatePath .\pnp.pfx `
+    -CertificatePassword (Read-Host -AsSecureString)
 ```
+
+Omit all of them and the script signs in interactively as before, so existing
+usage is unchanged. A certificate without `-Tenant` fails immediately rather
+than silently falling back to a browser prompt no build agent will answer.
 
 Prefer **`Sites.Selected`** over `Sites.FullControl.All` — it grants the app
 write access to named sites only, rather than every site in the tenant. Grant it
 per-site through Graph after consenting the app permission. Store the
 certificate in Key Vault, not in the repo.
-
-Note the scripts currently hardcode `-Interactive` in their `Connect-PnPOnline`
-calls, so running them unattended means parameterising that connect line first.
 
 ---
 
@@ -264,7 +273,12 @@ wrong number, which general users won't.
 
 # What isn't verified
 
-- No script here has been executed. No tenant, no PowerShell runtime.
+- **Nothing has touched a real tenant.** The scripts run green in CI against a
+  stubbed PnP module — 43 checks covering list and column creation, internal
+  names, formatter JSON, page/web-part construction, sample-data ranges,
+  idempotent re-runs and the auth branch. That proves the logic, not the API:
+  a cmdlet parameter that doesn't exist in real PnP.PowerShell would pass the
+  stub and fail on the tenant.
 - The List web part properties in `Provision-ModernPages.ps1` are the least
   stable part and may need hand-correction on first run.
 - Fabric and agent capabilities move quickly. The shapes above were accurate as

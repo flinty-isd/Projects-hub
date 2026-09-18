@@ -52,6 +52,17 @@ param(
     [Parameter(Mandatory = $true)]
     [string] $ClientId,
 
+    # Certificate auth, for unattended runs. Supply -Tenant plus either
+    # -CertificatePath (with -CertificatePassword) or -CertificateThumbprint.
+    # Omit all of these to sign in interactively.
+    [string] $Tenant,
+
+    [string] $CertificatePath,
+
+    [securestring] $CertificatePassword,
+
+    [string] $CertificateThumbprint,
+
     [ValidateSet('Pm', 'Governance', 'All')]
     [string] $Include = 'All',
 
@@ -64,7 +75,23 @@ $ErrorActionPreference = 'Stop'
 Import-Module PnP.PowerShell
 
 Write-Host "Connecting to $SiteUrl ..." -ForegroundColor Yellow
-Connect-PnPOnline -Url $SiteUrl -Interactive -ClientId $ClientId
+if ($CertificatePath -or $CertificateThumbprint) {
+    if (-not $Tenant) {
+        throw "-Tenant is required with certificate auth (e.g. contoso.onmicrosoft.com)."
+    }
+    $connectArgs = @{ Url = $SiteUrl; ClientId = $ClientId; Tenant = $Tenant }
+    if ($CertificatePath) {
+        $connectArgs['CertificatePath'] = $CertificatePath
+        if ($CertificatePassword) { $connectArgs['CertificatePassword'] = $CertificatePassword }
+    }
+    else {
+        $connectArgs['Thumbprint'] = $CertificateThumbprint
+    }
+    Connect-PnPOnline @connectArgs
+}
+else {
+    Connect-PnPOnline -Url $SiteUrl -Interactive -ClientId $ClientId
+}
 
 function Get-ListWebPartProperties {
     param([Parameter(Mandatory = $true)][string] $ListTitle)
