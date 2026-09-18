@@ -27,6 +27,11 @@ Each folder's README has the detail, including what native mode gives up
 (the Gantt timeline and the 5×5 heat-map grid — see the "Charts" notes in
 `sharepoint-modern/README.md`).
 
+**[`DEPLOYMENT.md`](DEPLOYMENT.md)** is the runbook for a real M365 tenant:
+prerequisites and permissions, site layout, dry run and verification,
+promoting dev → test → prod, unattended pipeline runs, and how Microsoft
+Fabric and Copilot agents layer on top of the same lists.
+
 ## Hosted app implementations
 
 Kept as alternatives for anyone who needs the custom charts and the Gantt, or
