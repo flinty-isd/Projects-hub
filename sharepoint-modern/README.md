@@ -4,9 +4,10 @@ Renders both dashboards **natively inside SharePoint** — no external app to ho
 The lists themselves become the dashboard: JSON formatting supplies the visual
 encoding, and modern pages group the lists together.
 
-Use this if you'd rather not deploy the `/aspx` or Streamlit apps. It gives up
-the custom charts and the Gantt timeline, but it needs no hosting, no Azure AD
-app registration, and it honours SharePoint permissions automatically.
+This is the route the project runs on. It gives up the custom charts and the
+Gantt timeline, but it needs no hosting, no Azure AD app registration, and it
+honours SharePoint permissions automatically. The `/aspx` and Streamlit apps
+remain in the repo as alternatives for the charts.
 
 | File | Purpose |
 | --- | --- |

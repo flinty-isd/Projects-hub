@@ -1,28 +1,42 @@
 # 📊 SharePoint dashboards
 
-SharePoint-backed dashboards built on the Microsoft Graph API. Each one
-falls back to demo data with sample content when no credentials are
-configured, so it renders immediately.
+Two dashboards over SharePoint list data — a **PM dashboard** (project status,
+timeline, KPIs, risks/issues) and an **IT Governance site** (policies, control
+compliance, audit findings, risk register, exceptions).
 
-**PM dashboard** — project status, timeline, KPIs, risks/issues:
+## Native mode — the chosen route
 
-- **`/` (root)** — a Python/Streamlit version. See below.
-- **`/aspx`** — a classic ASP.NET Web Forms (`.aspx`) version for IIS/on-prem
-  hosting. See "ASP.NET Web Forms version" further down.
+Both dashboards render **natively inside SharePoint**. Nothing to host, no
+Azure AD app registration, and SharePoint's own permissions apply.
 
-**IT Governance site** — policies, control compliance, audit findings, risk
-register, exceptions:
+1. **`/provisioning`** — PnP PowerShell that creates the seven lists, with the
+   exact internal column names everything else expects. Plus a sample-data
+   seeder.
+2. **`/sharepoint-modern`** — JSON column/view formatting (status pills, a
+   `% Complete` progress bar, red past-due dates, amber expiry warnings, a
+   heat-coloured risk score) and PnP scripts that apply it and build the two
+   modern pages.
 
-- **`/governance-aspx`** — ASP.NET Web Forms. See "IT Governance site" at
-  the bottom.
+```powershell
+.\provisioning\Provision-SharePointLists.ps1 -SiteUrl $url -ClientId $id
+.\sharepoint-modern\Apply-Formatting.ps1     -SiteUrl $url -ClientId $id
+.\sharepoint-modern\Provision-ModernPages.ps1 -SiteUrl $url -ClientId $id -Publish
+```
 
-**Supporting scripts**
+Each folder's README has the detail, including what native mode gives up
+(the Gantt timeline and the 5×5 heat-map grid — see the "Charts" notes in
+`sharepoint-modern/README.md`).
 
-- **`/provisioning`** — PnP PowerShell that creates the SharePoint lists both
-  dashboards read, plus a sample-data seeder.
-- **`/sharepoint-modern`** — renders both dashboards *natively in SharePoint*
-  using JSON column/view formatting and modern pages, with no app to host. An
-  alternative to the two app implementations above.
+## Hosted app implementations
+
+Kept as alternatives for anyone who needs the custom charts and the Gantt, or
+who wants the data outside SharePoint's own rendering. Each falls back to demo
+data when no credentials are configured, so it renders immediately.
+
+- **`/` (root)** — Python/Streamlit PM dashboard, and the `pytest` suite and
+  CI that run against it. See "Streamlit version" below.
+- **`/aspx`** — classic ASP.NET Web Forms PM dashboard for IIS/on-prem.
+- **`/governance-aspx`** — ASP.NET Web Forms IT Governance site.
 
 ## Streamlit version
 
