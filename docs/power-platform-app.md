@@ -12,14 +12,14 @@ live in your Power Platform environment, not in git. Follow these steps in
 [make.powerapps.com](https://make.powerapps.com) to build it.
 
 **Why there's no ready-to-import `.msapp`/solution file here**: canvas apps
-and flows are packaged as versioned binary/JSON formats with internal
-template GUIDs that only Power Apps/Power Automate Studio (or the Power
-Platform CLI against a real environment) can generate correctly. A
-hand-authored package risks failing import with an opaque error instead of
-just working, so this guide gives you the exact actions and formulas to
-paste into the designers instead — about 10-15 minutes of clicking, and
-guaranteed to work. The one piece safe to ship as a ready file is the list
-schema below, since it's just plain data.
+are packaged as versioned binary formats with internal template GUIDs that
+only Power Apps Studio (or the Power Platform CLI against a real
+environment) can generate correctly, so build the app screens below by hand
+— about 10 minutes of clicking. The flow, however, *is* provided as a
+pasteable file: see [`power-platform/flow-definition.json`](../power-platform/flow-definition.json)
+and [`power-platform/README.md`](../power-platform/README.md) for import
+steps — it saves building the ~15 flow actions one at a time. The section
+below still documents each flow action for reference/troubleshooting.
 
 ## Prerequisites
 

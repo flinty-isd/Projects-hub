@@ -1,0 +1,212 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    },
+    "$authentication": {
+      "defaultValue": {},
+      "type": "SecureObject"
+    }
+  },
+  "triggers": {
+    "manual": {
+      "type": "Request",
+      "kind": "PowerAppV2",
+      "inputs": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "title": "SiteUrl",
+              "description": "The SharePoint site URL to audit",
+              "type": "string",
+              "x-ms-content-hint": "TEXT"
+            }
+          },
+          "required": ["text"]
+        }
+      }
+    }
+  },
+  "actions": {
+    "Initialize_AllPermissions": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "AllPermissions",
+            "type": "array",
+            "value": []
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "HTTP_Web": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "HttpRequest",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@triggerBody()?['text']",
+          "parameters/method": "GET",
+          "parameters/uri": "_api/web?$select=Title,HasUniqueRoleAssignments",
+          "parameters/headers": {
+            "Accept": "application/json;odata=verbose"
+          }
+        },
+        "authentication": "@parameters('$authentication')"
+      },
+      "runAfter": {
+        "Initialize_AllPermissions": ["Succeeded"]
+      }
+    },
+    "HTTP_SiteRoles": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "HttpRequest",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@triggerBody()?['text']",
+          "parameters/method": "GET",
+          "parameters/uri": "_api/web/roleassignments?$expand=Member,RoleDefinitionBindings",
+          "parameters/headers": {
+            "Accept": "application/json;odata=verbose"
+          }
+        },
+        "authentication": "@parameters('$authentication')"
+      },
+      "runAfter": {
+        "HTTP_Web": ["Succeeded"]
+      }
+    },
+    "Apply_to_each_Site_Role": {
+      "type": "Foreach",
+      "foreach": "@body('HTTP_SiteRoles')?['d']?['results']",
+      "actions": {
+        "Append_site_role_to_AllPermissions": {
+          "type": "AppendToArrayVariable",
+          "inputs": {
+            "name": "AllPermissions",
+            "value": {
+              "Scope": "@concat('Site: ', body('HTTP_Web')?['d']?['Title'])",
+              "Principal": "@items('Apply_to_each_Site_Role')?['Member']?['Title']",
+              "LoginName": "@items('Apply_to_each_Site_Role')?['Member']?['LoginName']",
+              "Roles": "@join(select(items('Apply_to_each_Site_Role')?['RoleDefinitionBindings']?['results'], item()?['Name']), ', ')"
+            }
+          },
+          "runAfter": {}
+        }
+      },
+      "runAfter": {
+        "HTTP_SiteRoles": ["Succeeded"]
+      }
+    },
+    "HTTP_Lists": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "HttpRequest",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@triggerBody()?['text']",
+          "parameters/method": "GET",
+          "parameters/uri": "_api/web/lists?$select=Title,Id,HasUniqueRoleAssignments,Hidden",
+          "parameters/headers": {
+            "Accept": "application/json;odata=verbose"
+          }
+        },
+        "authentication": "@parameters('$authentication')"
+      },
+      "runAfter": {
+        "Apply_to_each_Site_Role": ["Succeeded"]
+      }
+    },
+    "Filter_unique_lists": {
+      "type": "Query",
+      "inputs": {
+        "from": "@body('HTTP_Lists')?['d']?['results']",
+        "where": "@and(equals(item()?['HasUniqueRoleAssignments'], true), equals(item()?['Hidden'], false))"
+      },
+      "runAfter": {
+        "HTTP_Lists": ["Succeeded"]
+      }
+    },
+    "Apply_to_each_List": {
+      "type": "Foreach",
+      "foreach": "@body('Filter_unique_lists')",
+      "actions": {
+        "HTTP_Lib_Roles": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@triggerBody()?['text']",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/lists(guid''', items('Apply_to_each_List')?['Id'], ''')/roleassignments?$expand=Member,RoleDefinitionBindings')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=verbose"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "runAfter": {}
+        },
+        "Apply_to_each_Lib_Role": {
+          "type": "Foreach",
+          "foreach": "@body('HTTP_Lib_Roles')?['d']?['results']",
+          "actions": {
+            "Append_lib_role_to_AllPermissions": {
+              "type": "AppendToArrayVariable",
+              "inputs": {
+                "name": "AllPermissions",
+                "value": {
+                  "Scope": "@concat('Library: ', items('Apply_to_each_List')?['Title'])",
+                  "Principal": "@items('Apply_to_each_Lib_Role')?['Member']?['Title']",
+                  "LoginName": "@items('Apply_to_each_Lib_Role')?['Member']?['LoginName']",
+                  "Roles": "@join(select(items('Apply_to_each_Lib_Role')?['RoleDefinitionBindings']?['results'], item()?['Name']), ', ')"
+                }
+              },
+              "runAfter": {}
+            }
+          },
+          "runAfter": {
+            "HTTP_Lib_Roles": ["Succeeded"]
+          }
+        }
+      },
+      "runAfter": {
+        "Filter_unique_lists": ["Succeeded"]
+      }
+    },
+    "Respond_to_a_PowerApp_or_flow": {
+      "type": "Response",
+      "kind": "PowerApp",
+      "inputs": {
+        "statusCode": 200,
+        "body": {
+          "permissions": "@variables('AllPermissions')"
+        }
+      },
+      "runAfter": {
+        "Apply_to_each_List": ["Succeeded"]
+      }
+    }
+  },
+  "outputs": {}
+}
