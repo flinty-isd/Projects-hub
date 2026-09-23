@@ -11,6 +11,16 @@ live in your Power Platform environment, not in git. Follow these steps in
 [make.powerautomate.com](https://make.powerautomate.com) and
 [make.powerapps.com](https://make.powerapps.com) to build it.
 
+**Why there's no ready-to-import `.msapp`/solution file here**: canvas apps
+and flows are packaged as versioned binary/JSON formats with internal
+template GUIDs that only Power Apps/Power Automate Studio (or the Power
+Platform CLI against a real environment) can generate correctly. A
+hand-authored package risks failing import with an opaque error instead of
+just working, so this guide gives you the exact actions and formulas to
+paste into the designers instead — about 10-15 minutes of clicking, and
+guaranteed to work. The one piece safe to ship as a ready file is the list
+schema below, since it's just plain data.
+
 ## Prerequisites
 
 - A Power Apps/Power Automate license available in your Microsoft 365 tenant
@@ -21,8 +31,16 @@ live in your Power Platform environment, not in git. Follow these steps in
 
 ## 1. Storage: a SharePoint list for snapshots
 
-Create a SharePoint list called **PermissionSnapshots** (in any site you
-control, e.g. a team site) with these columns:
+Fastest way: use the ready-made
+[`PermissionSnapshots-list-template.xlsx`](PermissionSnapshots-list-template.xlsx)
+in this repo. In any SharePoint site you control, go to **+ New → List →
+From Excel**, upload that file, and SharePoint creates the list with all
+seven columns and correct types (including `SnapshotDate` as Date and Time)
+already set up. Delete its two sample rows afterward — they're only there
+so SharePoint can infer each column's type correctly during import.
+
+Or create it by hand as a list called **PermissionSnapshots** with these
+columns:
 
 | Column | Type |
 |---|---|
