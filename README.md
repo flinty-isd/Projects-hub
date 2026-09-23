@@ -61,3 +61,11 @@ network. The quickest option is **Streamlit Community Cloud** (free):
 If your organization restricts external hosting, deploy the same app to an
 internal server instead and use its internal URL — the app itself doesn't
 need any changes either way.
+
+### Microsoft-native alternative (Power Apps + Power Automate)
+
+If you'd rather stay entirely inside Microsoft 365 — no Azure AD app
+registration, no separate hosting, native iOS access via the Power Apps
+mobile app — see [`docs/power-platform-app.md`](docs/power-platform-app.md)
+for a full build guide covering the equivalent Power Automate flow and
+Power Apps canvas app, including the same baseline-comparison feature.
