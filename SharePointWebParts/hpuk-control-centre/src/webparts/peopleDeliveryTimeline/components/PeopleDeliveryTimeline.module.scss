@@ -1,0 +1,53 @@
+@import '~@fluentui/react/dist/sass/References.scss';
+
+.peopleDeliveryTimeline {
+  font-family: $ms-font-family-base;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: $ms-color-neutralSecondary;
+  margin: 0 0 14px;
+}
+
+.timeline {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.step {
+  flex: 1 1 auto;
+  min-width: 90px;
+  text-align: center;
+  padding: 10px 6px;
+  font-size: 12px;
+  color: $ms-color-neutralSecondary;
+  border-bottom: 3px solid $ms-color-neutralLight;
+}
+
+.stepDone {
+  color: $ms-color-neutralPrimary;
+  font-weight: 600;
+  border-bottom-color: $ms-color-green;
+}
+
+.stepCurrent {
+  color: $ms-color-neutralPrimary;
+  font-weight: 700;
+  border-bottom-color: $ms-color-themePrimary;
+}
+
+.loading {
+  color: $ms-color-neutralSecondary;
+  font-style: italic;
+}
+
+.error {
+  color: $ms-color-redDark;
+}

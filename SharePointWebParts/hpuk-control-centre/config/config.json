@@ -1,0 +1,27 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "programme-overview-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/programmeOverview/ProgrammeOverviewWebPart.js",
+          "manifest": "./src/webparts/programmeOverview/ProgrammeOverviewWebPart.manifest.json"
+        }
+      ]
+    },
+    "people-delivery-timeline-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/peopleDeliveryTimeline/PeopleDeliveryTimelineWebPart.js",
+          "manifest": "./src/webparts/peopleDeliveryTimeline/PeopleDeliveryTimelineWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "ProgrammeOverviewWebPartStrings": "lib/webparts/programmeOverview/loc/{locale}.js",
+    "PeopleDeliveryTimelineWebPartStrings": "lib/webparts/peopleDeliveryTimeline/loc/{locale}.js"
+  }
+}

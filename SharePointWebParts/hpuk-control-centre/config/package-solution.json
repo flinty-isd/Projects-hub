@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "hpuk-control-centre-client-side-solution",
+    "id": "36760df7-61c5-4526-a79e-08f2dd424cbd",
+    "version": "0.0.1.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "HPUK Project Control Centre",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.23.2"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "HPUK Programme Control Centre web parts"
+      },
+      "longDescription": {
+        "default": "Programme Overview (unified Attention Required) and People Delivery Timeline web parts for the HPUK SharePoint Project Control Centre."
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "HPUK Control Centre Feature",
+        "description": "Deploys the Programme Overview and People Delivery Timeline web parts.",
+        "id": "53056cf7-1d6a-40af-a819-f6b328a7299b",
+        "version": "0.0.1.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/hpuk-control-centre.sppkg"
+  }
+}

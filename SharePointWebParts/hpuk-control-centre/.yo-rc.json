@@ -1,0 +1,17 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "version": "1.23.2",
+    "libraryName": "hpuk-control-centre",
+    "libraryId": "36760df7-61c5-4526-a79e-08f2dd424cbd",
+    "environment": "spo",
+    "packageManager": "npm",
+    "solutionName": "hpuk-control-centre",
+    "solutionShortDescription": "HPUK Programme Control Centre web parts",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "componentType": "webpart",
+    "useHeft": false
+  }
+}

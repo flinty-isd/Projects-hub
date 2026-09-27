@@ -1,0 +1,103 @@
+@import '~@fluentui/react/dist/sass/References.scss';
+
+.programmeOverview {
+  font-family: $ms-font-family-base;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.kpiTile {
+  border: 1px solid $ms-color-neutralLight;
+  border-left: 3px solid $ms-color-themePrimary;
+  border-radius: 2px;
+  padding: 12px 14px;
+}
+
+.kpiValue {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.kpiLabel {
+  font-size: 11px;
+  color: $ms-color-neutralSecondary;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 4px;
+}
+
+.sectionHeading {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table th {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 2px solid $ms-color-neutralLight;
+  color: $ms-color-neutralSecondary;
+  font-weight: 600;
+}
+
+.table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid $ms-color-neutralLighter;
+  vertical-align: top;
+}
+
+.emptyState {
+  color: $ms-color-neutralSecondary;
+  font-style: italic;
+  padding: 12px 0;
+}
+
+.ragBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ragRed {
+  background: $ms-color-redDark;
+  color: #fff;
+}
+
+.ragAmber {
+  background: #c98a1f;
+  color: #fff;
+}
+
+.ragGreen {
+  background: $ms-color-green;
+  color: #fff;
+}
+
+.loading {
+  color: $ms-color-neutralSecondary;
+  font-style: italic;
+}
+
+.error {
+  color: $ms-color-redDark;
+}

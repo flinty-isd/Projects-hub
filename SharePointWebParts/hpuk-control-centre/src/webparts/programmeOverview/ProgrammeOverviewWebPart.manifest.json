@@ -1,0 +1,24 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
+  "id": "350e8de7-5967-47e8-bf85-ca2afbd695a2",
+  "alias": "ProgrammeOverviewWebPart",
+  "componentType": "WebPart",
+
+  "version": "*",
+  "manifestVersion": 2,
+
+  "requiresCustomScript": false,
+  "supportedHosts": ["SharePointWebPart", "TeamsPersonalApp", "TeamsTab", "SharePointFullPage"],
+  "supportsThemeVariants": true,
+
+  "preconfiguredEntries": [{
+    "groupId": "5c03119e-3074-46fd-976b-c60198311f70",
+    "group": { "default": "Advanced" },
+    "title": { "default": "Programme Overview" },
+    "description": { "default": "HPUK Control Centre: KPIs and a unified Attention Required table (Red RAID, overdue actions, blocked sites, decisions required) across the six Control Centre lists - fills the gap a stock List web part can't (one list at a time)." },
+    "officeFabricIconFontName": "ReportDocument",
+    "properties": {
+      "title": "Programme Overview"
+    }
+  }]
+}
