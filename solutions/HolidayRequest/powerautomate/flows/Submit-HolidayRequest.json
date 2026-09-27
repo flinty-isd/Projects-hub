@@ -1,0 +1,270 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Route and approve Holiday Request",
+  "description": "Replaces the legacy InfoPath 'Holiday/Annual Leave Request Form' workflow. Triggers when Power Apps creates a new item in 'Holiday Requests'. For Annual Leave, blocks requests that exceed the employee's remaining balance instead of routing them for approval; otherwise routes to the manager, updates the balance and books a calendar event on approval.",
+  "triggers": {
+    "When_a_holiday_request_is_created": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnNewItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+          "table": "Holiday Requests"
+        }
+      },
+      "splitOn": "@triggerOutputs()?['body/value']"
+    }
+  },
+  "actions": {
+    "Condition_IsAnnualLeave": {
+      "type": "If",
+      "runAfter": {},
+      "expression": {
+        "equals": [
+          "@triggerBody()?['HolidayType']?['Value']",
+          "Annual Leave"
+        ]
+      },
+      "actions": {
+        "Get_holiday_balance": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+              "table": "Holiday Balances",
+              "$filter": "@{concat('Employee/EMail eq ''', triggerBody()?['Employee']?['Email'], ''' and Year eq ', formatDateTime(triggerBody()?['StartDate'], 'yyyy'))}",
+              "$top": 1
+            }
+          }
+        },
+        "Condition_ExceedsBalance": {
+          "type": "If",
+          "runAfter": {
+            "Get_holiday_balance": ["Succeeded"]
+          },
+          "expression": {
+            "greater": [
+              "@triggerBody()?['TotalDaysRequested']",
+              "@first(outputs('Get_holiday_balance')?['body/value'])?['RemainingDays']"
+            ]
+          },
+          "actions": {
+            "Block_pending_balance": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PatchItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+                  "table": "Holiday Requests",
+                  "id": "@triggerBody()?['ID']",
+                  "item/ApprovalStatus": "Blocked - Insufficient Balance"
+                }
+              }
+            },
+            "Notify_requester_of_block": {
+              "type": "OpenApiConnection",
+              "runAfter": {
+                "Block_pending_balance": ["Succeeded"]
+              },
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@triggerBody()?['Employee']?['Email']",
+                  "emailMessage/Subject": "Holiday request blocked: insufficient balance",
+                  "emailMessage/Body": "@{concat('You requested ', triggerBody()?['TotalDaysRequested'], ' day(s) but only have ', first(outputs('Get_holiday_balance')?['body/value'])?['RemainingDays'], ' day(s) remaining. Please resubmit with a shorter date range or contact HR.')}"
+                }
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Start_and_wait_for_an_approval": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_approvals",
+                    "operationId": "StartAndWaitForAnApproval",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                  },
+                  "parameters": {
+                    "approvalType": "Basic",
+                    "title": "@{concat('Holiday request: ', triggerBody()?['TotalDaysRequested'], ' day(s) from ', formatDateTime(triggerBody()?['StartDate'], 'yyyy-MM-dd'))}",
+                    "assignedTo": "@triggerBody()?['Manager']?['Email']",
+                    "details": "@triggerBody()?['Reason']"
+                  }
+                }
+              },
+              "Condition_Approved": {
+                "type": "If",
+                "runAfter": {
+                  "Start_and_wait_for_an_approval": ["Succeeded"]
+                },
+                "expression": {
+                  "equals": [
+                    "@outputs('Start_and_wait_for_an_approval')?['body/outcome']",
+                    "Approve"
+                  ]
+                },
+                "actions": {
+                  "Update_request_Approved": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_sharepointonline",
+                        "operationId": "PatchItem",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                      },
+                      "parameters": {
+                        "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+                        "table": "Holiday Requests",
+                        "id": "@triggerBody()?['ID']",
+                        "item/ApprovalStatus": "Approved",
+                        "item/ApproverComments": "@outputs('Start_and_wait_for_an_approval')?['body/responses'][0]['comments']"
+                      }
+                    }
+                  },
+                  "Update_balance_TakenDays": {
+                    "type": "OpenApiConnection",
+                    "runAfter": {
+                      "Update_request_Approved": ["Succeeded"]
+                    },
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_sharepointonline",
+                        "operationId": "PatchItem",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                      },
+                      "parameters": {
+                        "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+                        "table": "Holiday Balances",
+                        "id": "@first(outputs('Get_holiday_balance')?['body/value'])?['ID']",
+                        "item/TakenDays": "@add(first(outputs('Get_holiday_balance')?['body/value'])?['TakenDays'], triggerBody()?['TotalDaysRequested'])"
+                      }
+                    }
+                  },
+                  "Create_calendar_event": {
+                    "type": "OpenApiConnection",
+                    "runAfter": {
+                      "Update_balance_TakenDays": ["Succeeded"]
+                    },
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_office365",
+                        "operationId": "CreateEventV2",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                      },
+                      "parameters": {
+                        "calendarId": "Calendar",
+                        "subject": "@{concat(triggerBody()?['Employee']?['DisplayName'], ' - Annual Leave')}",
+                        "start": "@triggerBody()?['StartDate']",
+                        "end": "@triggerBody()?['EndDate']",
+                        "isAllDay": true
+                      }
+                    }
+                  }
+                },
+                "else": {
+                  "actions": {
+                    "Update_request_Rejected": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PatchItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+                          "table": "Holiday Requests",
+                          "id": "@triggerBody()?['ID']",
+                          "item/ApprovalStatus": "Rejected",
+                          "item/ApproverComments": "@outputs('Start_and_wait_for_an_approval')?['body/responses'][0]['comments']"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "Notify_requester_of_outcome": {
+                "type": "OpenApiConnection",
+                "runAfter": {
+                  "Condition_Approved": ["Succeeded"]
+                },
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_office365",
+                    "operationId": "SendEmailV2",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                  },
+                  "parameters": {
+                    "emailMessage/To": "@triggerBody()?['Employee']?['Email']",
+                    "emailMessage/Subject": "@{concat('Holiday request ', outputs('Start_and_wait_for_an_approval')?['body/outcome'])}",
+                    "emailMessage/Body": "@{concat('Comments: ', outputs('Start_and_wait_for_an_approval')?['body/responses'][0]['comments'])}"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "actions": {
+          "Start_and_wait_for_an_approval_NonAnnual": {
+            "type": "OpenApiConnection",
+            "inputs": {
+              "host": {
+                "connectionName": "shared_approvals",
+                "operationId": "StartAndWaitForAnApproval",
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+              },
+              "parameters": {
+                "approvalType": "Basic",
+                "title": "@{concat(triggerBody()?['HolidayType']?['Value'], ' request: ', triggerBody()?['TotalDaysRequested'], ' day(s) from ', formatDateTime(triggerBody()?['StartDate'], 'yyyy-MM-dd'))}",
+                "assignedTo": "@triggerBody()?['Manager']?['Email']",
+                "details": "@triggerBody()?['Reason']"
+              }
+            }
+          },
+          "Update_request_NonAnnual": {
+            "type": "OpenApiConnection",
+            "runAfter": {
+              "Start_and_wait_for_an_approval_NonAnnual": ["Succeeded"]
+            },
+            "inputs": {
+              "host": {
+                "connectionName": "shared_sharepointonline",
+                "operationId": "PatchItem",
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+              },
+              "parameters": {
+                "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+                "table": "Holiday Requests",
+                "id": "@triggerBody()?['ID']",
+                "item/ApprovalStatus": "@if(equals(outputs('Start_and_wait_for_an_approval_NonAnnual')?['body/outcome'], 'Approve'), 'Approved', 'Rejected')",
+                "item/ApproverComments": "@outputs('Start_and_wait_for_an_approval_NonAnnual')?['body/responses'][0]['comments']"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

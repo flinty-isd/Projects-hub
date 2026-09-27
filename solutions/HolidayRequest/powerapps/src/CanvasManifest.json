@@ -1,0 +1,31 @@
+{
+  "FormatVersion": "2.3",
+  "Properties": {
+    "Name": "Holiday Request",
+    "Description": "Replaces the legacy InfoPath 'Holiday/Annual Leave Request Form'. Shows the requester's leave balance and lets them submit a new request, routed to their manager for approval with a balance check.",
+    "AppPreviewFlagsMap": {
+      "usePowerFxDirectFormulaBar": true
+    }
+  },
+  "DataSources": [
+    {
+      "Name": "'Holiday Balances'",
+      "Type": "SharePoint",
+      "DatasetName": "https://{tenant}.sharepoint.com/sites/{site}",
+      "TableName": "Holiday Balances",
+      "Schema": "../../sharepoint/list-schema.json"
+    },
+    {
+      "Name": "'Holiday Requests'",
+      "Type": "SharePoint",
+      "DatasetName": "https://{tenant}.sharepoint.com/sites/{site}",
+      "TableName": "Holiday Requests",
+      "Schema": "../../sharepoint/list-schema.json"
+    }
+  ],
+  "Screens": [
+    "MyRequests",
+    "NewRequestForm"
+  ],
+  "StartScreen": "MyRequests"
+}

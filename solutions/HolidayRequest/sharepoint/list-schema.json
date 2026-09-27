@@ -1,0 +1,135 @@
+{
+  "$comment": "Data schema for the Holiday Request solution. Replaces the InfoPath 'Holiday/Annual Leave Request Form' XML data source. Apply with PnP.PowerShell (New-PnPField / Add-PnPField) or the Graph API — this file is the source of truth reviewed in PRs, not something SharePoint reads directly.",
+  "lists": [
+    {
+      "listTitle": "Holiday Balances",
+      "listDescription": "Each employee's leave entitlement, taken, and remaining days for a given year.",
+      "contentType": "Item",
+      "fields": [
+        {
+          "internalName": "Employee",
+          "displayName": "Employee",
+          "type": "Person",
+          "required": true,
+          "infopathSource": "was a free-text name field in InfoPath; upgraded to a real person field"
+        },
+        {
+          "internalName": "Year",
+          "displayName": "Year",
+          "type": "Number",
+          "required": true
+        },
+        {
+          "internalName": "EntitlementDays",
+          "displayName": "Entitlement (Days)",
+          "type": "Number",
+          "required": true,
+          "infopathSource": "text field: /my:myFields/my:entitlement"
+        },
+        {
+          "internalName": "CarriedOverDays",
+          "displayName": "Carried Over (Days)",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "internalName": "TakenDays",
+          "displayName": "Taken (Days)",
+          "type": "Number",
+          "required": true,
+          "default": 0,
+          "notes": "Incremented by the flow when a request against this balance is approved — not user-editable in the app."
+        },
+        {
+          "internalName": "RemainingDays",
+          "displayName": "Remaining (Days)",
+          "type": "Number",
+          "calculated": true,
+          "formula": "=[EntitlementDays]+[CarriedOverDays]-[TakenDays]",
+          "notes": "InfoPath computed this client-side and never re-validated it; here it's a calculated column so it can't drift."
+        }
+      ]
+    },
+    {
+      "listTitle": "Holiday Requests",
+      "listDescription": "Requests for time off, routed to the employee's manager for approval.",
+      "contentType": "Item",
+      "fields": [
+        {
+          "internalName": "Employee",
+          "displayName": "Employee",
+          "type": "Person",
+          "required": true,
+          "infopathSource": "text field: /my:myFields/my:employeeName"
+        },
+        {
+          "internalName": "Manager",
+          "displayName": "Manager",
+          "type": "Person",
+          "required": true,
+          "infopathSource": "free-text 'manager name' field in InfoPath; upgraded to a real person field"
+        },
+        {
+          "internalName": "HolidayType",
+          "displayName": "Holiday Type",
+          "type": "Choice",
+          "choices": ["Annual Leave", "Sick Leave", "Unpaid Leave", "Compassionate Leave", "Other"],
+          "required": true,
+          "infopathSource": "dropdown: /my:myFields/my:leaveType"
+        },
+        {
+          "internalName": "StartDate",
+          "displayName": "Start Date",
+          "type": "DateTime",
+          "displayFormat": "DateOnly",
+          "required": true,
+          "infopathSource": "date picker: /my:myFields/my:startDate"
+        },
+        {
+          "internalName": "EndDate",
+          "displayName": "End Date",
+          "type": "DateTime",
+          "displayFormat": "DateOnly",
+          "required": true,
+          "infopathSource": "date picker: /my:myFields/my:endDate"
+        },
+        {
+          "internalName": "TotalDaysRequested",
+          "displayName": "Total Days Requested",
+          "type": "Number",
+          "required": true,
+          "infopathSource": "was manually entered and could disagree with the date range; the Power Apps form now computes it from StartDate/EndDate (see powerapps/README.md)"
+        },
+        {
+          "internalName": "Reason",
+          "displayName": "Reason / Comments",
+          "type": "Note",
+          "richText": false,
+          "required": false,
+          "infopathSource": "multiline text: /my:myFields/my:comments"
+        },
+        {
+          "internalName": "ApprovalStatus",
+          "displayName": "Approval Status",
+          "type": "Choice",
+          "choices": ["Pending", "Approved", "Rejected", "Blocked - Insufficient Balance", "Cancelled"],
+          "default": "Pending",
+          "required": true,
+          "infopathSource": "set by workflow, not user-entered"
+        },
+        {
+          "internalName": "ApproverComments",
+          "displayName": "Approver Comments",
+          "type": "Note",
+          "richText": false,
+          "required": false
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "TotalDaysRequested is a plain Number rather than a calculated column because it should count working days only (excluding weekends/holidays), which SharePoint calculated columns can't express — the Power Apps form computes it (see powerapps/README.md) and the flow re-validates it against the balance rather than trusting it blindly.",
+    "ApprovalStatus/ApproverComments on Holiday Requests, and TakenDays on Holiday Balances, are written by the Power Automate flow (see ../powerautomate/flows/Submit-HolidayRequest.json), not editable by the requester in the Power Apps form."
+  ]
+}

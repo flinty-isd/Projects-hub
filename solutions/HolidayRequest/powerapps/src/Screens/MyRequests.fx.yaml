@@ -1,0 +1,93 @@
+# Canvas app source (pac canvas pack format). Shows the signed-in user's
+# leave balance and their past/pending holiday requests.
+Screens:
+  MyRequests:
+    Properties:
+      OnVisible: |
+        =Set(
+            varMyBalance,
+            LookUp(
+                'Holiday Balances',
+                Employee.Email = User().Email && Year = Year(Today())
+            )
+        )
+    Children:
+      - TitleLabel:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="My Holiday Requests"
+            Size: =20
+            FontWeight: =FontWeight.Bold
+            X: =32
+            Y: =24
+            Width: =Parent.Width - 64
+
+      - BalanceSummaryLabel:
+          Control: Label@2.5.1
+          Properties:
+            Text: |
+              =Concatenate(
+                  "Remaining: ", varMyBalance.RemainingDays, " days  (Entitlement ",
+                  varMyBalance.EntitlementDays, " + carried over ", varMyBalance.CarriedOverDays,
+                  " - taken ", varMyBalance.TakenDays, ")"
+              )
+            X: =32
+            Y: =64
+            Width: =Parent.Width - 64
+
+      - NewRequestButton:
+          Control: Button@2.5.1
+          Properties:
+            Text: ="New Request"
+            X: =32
+            Y: =104
+            Width: =160
+            Height: =48
+            OnSelect: |
+              =Navigate(NewRequestForm)
+
+      - RequestGallery:
+          Control: Gallery@2.5.1
+          Properties:
+            Layout: =GalleryLayout.Vertical
+            Items: |
+              =SortByColumns(
+                  Filter('Holiday Requests', Employee.Email = User().Email),
+                  "StartDate",
+                  SortOrder.Descending
+              )
+            X: =32
+            Y: =168
+            Width: =Parent.Width - 64
+            Height: =Parent.Height - 200
+          Children:
+            - DateRangeLabel:
+                Control: Label@2.5.1
+                Properties:
+                  Text: |
+                    =Concatenate(
+                        Text(ThisItem.StartDate, "dd mmm yyyy"), " - ",
+                        Text(ThisItem.EndDate, "dd mmm yyyy")
+                    )
+                  FontWeight: =FontWeight.Semibold
+            - HolidayTypeLabel:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.HolidayType.Value
+            - TotalDaysLabel:
+                Control: Label@2.5.1
+                Properties:
+                  Text: |
+                    =Concatenate(ThisItem.TotalDaysRequested, " day(s)")
+            - StatusLabel:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.ApprovalStatus.Value
+                  Color: |
+                    =Switch(
+                        ThisItem.ApprovalStatus.Value,
+                        "Approved", Color.Green,
+                        "Rejected", Color.Red,
+                        "Blocked - Insufficient Balance", Color.Red,
+                        Color.DarkGray
+                    )

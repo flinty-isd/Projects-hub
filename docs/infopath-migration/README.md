@@ -24,6 +24,10 @@ replace remaining InfoPath forms with supported Microsoft 365 tooling:
   a second example covering a two-list solution with a compliance gate (asset
   register + disposal request approval, blocking disposal of data-bearing
   assets without a data-wipe certificate).
+- [`../../solutions/HolidayRequest`](../../solutions/HolidayRequest) — a third
+  example covering a balance-tracked approval (leave request checked against
+  a remaining-entitlement calculation before it's routed to a manager, with
+  the approved days booked to a shared calendar).
 
 ## Why source-control the solution?
 
@@ -43,6 +47,7 @@ are identified (fill in once real InfoPath forms are inventoried):
 |-----------|--------------|--------|------------------|
 | IT Equipment Request | SharePoint on-prem list + InfoPath | ✅ Migrated (example) | `solutions/ITEquipmentRequest` |
 | Asset Management & Disposal | SharePoint on-prem list + InfoPath | ✅ Migrated (example) | `solutions/AssetManagementDisposal` |
+| Holiday Request | SharePoint on-prem list + InfoPath | ✅ Migrated (example) | `solutions/HolidayRequest` |
 | _(add next form here)_ | | 🔲 Not started | |
 
 To add a new form, copy the `solutions/ITEquipmentRequest` folder structure and

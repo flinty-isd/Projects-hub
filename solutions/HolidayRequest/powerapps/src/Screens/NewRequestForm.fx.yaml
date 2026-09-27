@@ -1,0 +1,120 @@
+# Canvas app source (pac canvas pack format). New holiday request form.
+# TotalDaysRequested is computed from the date range, not typed in free-hand
+# as it was in InfoPath — see ../../README.md#working-day-calculation.
+Screens:
+  NewRequestForm:
+    Properties:
+      OnVisible: |
+        =Set(varManager, Office365Users.ManagerV2(User().Email).mail)
+    Children:
+      - TitleLabel:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="New Holiday Request"
+            Size: =20
+            FontWeight: =FontWeight.Bold
+            X: =32
+            Y: =24
+            Width: =Parent.Width - 64
+
+      - HolidayTypeDropdown:
+          Control: Dropdown@2.5.1
+          Properties:
+            Items: =Choices('Holiday Requests'.HolidayType)
+            Default: ="Annual Leave"
+            X: =32
+            Y: =72
+            Width: =300
+
+      - StartDatePicker:
+          Control: DatePicker@2.5.1
+          Properties:
+            DefaultDate: =Today()
+            X: =32
+            Y: =128
+            Width: =200
+
+      - EndDatePicker:
+          Control: DatePicker@2.5.1
+          Properties:
+            DefaultDate: =Today()
+            X: =248
+            Y: =128
+            Width: =200
+
+      - TotalDaysLabel:
+          Control: Label@2.5.1
+          Properties:
+            Text: |
+              =Concatenate(
+                  "Total working days: ",
+                  RoundUp(
+                      CountRows(
+                          Filter(
+                              Sequence(EndDatePicker.SelectedDate - StartDatePicker.SelectedDate + 1),
+                              Weekday(StartDatePicker.SelectedDate + Value - 1) <> 1 &&
+                              Weekday(StartDatePicker.SelectedDate + Value - 1) <> 7
+                          )
+                      ),
+                      0
+                  )
+              )
+            X: =32
+            Y: =176
+            Width: =Parent.Width - 64
+
+      - ReasonInput:
+          Control: TextInput@2.5.1
+          Properties:
+            Mode: =TextMode.MultiLine
+            HintText: ="Reason / comments (optional)"
+            X: =32
+            Y: =216
+            Width: =Parent.Width - 64
+            Height: =100
+
+      - SubmitButton:
+          Control: Button@2.5.1
+          Properties:
+            Text: ="Submit Request"
+            X: =32
+            Y: =336
+            Width: =160
+            Height: =48
+            OnSelect: |
+              =Patch(
+                  'Holiday Requests',
+                  Defaults('Holiday Requests'),
+                  {
+                      Employee: User(),
+                      Manager: {Email: varManager},
+                      HolidayType: HolidayTypeDropdown.Selected,
+                      StartDate: StartDatePicker.SelectedDate,
+                      EndDate: EndDatePicker.SelectedDate,
+                      TotalDaysRequested: RoundUp(
+                          CountRows(
+                              Filter(
+                                  Sequence(EndDatePicker.SelectedDate - StartDatePicker.SelectedDate + 1),
+                                  Weekday(StartDatePicker.SelectedDate + Value - 1) <> 1 &&
+                                  Weekday(StartDatePicker.SelectedDate + Value - 1) <> 7
+                              )
+                          ),
+                          0
+                      ),
+                      Reason: ReasonInput.Text,
+                      ApprovalStatus: "Pending"
+                  }
+              );
+              Notify("Request submitted for approval.", NotificationType.Success);
+              Navigate(MyRequests)
+
+      - CancelButton:
+          Control: Button@2.5.1
+          Properties:
+            Text: ="Cancel"
+            X: =208
+            Y: =336
+            Width: =120
+            Height: =48
+            OnSelect: |
+              =Navigate(MyRequests)
