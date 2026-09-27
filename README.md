@@ -69,3 +69,8 @@ registration, no separate hosting, native iOS access via the Power Apps
 mobile app — see [`docs/power-platform-app.md`](docs/power-platform-app.md)
 for a full build guide covering the equivalent Power Automate flow and
 Power Apps canvas app, including the same baseline-comparison feature.
+
+### Operating this day-to-day
+
+See [`docs/runbook.md`](docs/runbook.md) for routine audit steps,
+credential rotation, and troubleshooting common errors on either version.
