@@ -1,0 +1,17 @@
+{
+  "v": 4,
+  "createdOnFiles": {"v": 1, "at": "2026-09-28T10:00:00Z"},
+  "title": "SharePoint 2013 to 365 — IT Briefing",
+  "order": ["cover", "position", "why", "output", "types", "strongest", "money", "efficiency", "capability", "disbenefits", "dashboard", "golive", "risks", "baselines", "asks", "reviews", "close"],
+  "sections": {
+    "s1": {"description": "Where the migration stands today and why SharePoint 2013 had to go", "start": "cover"},
+    "s2": {"description": "The benefits of SharePoint Online, stated honestly, with the costs alongside", "start": "output"},
+    "s3": {"description": "The residual run plan from programme closure to final cutover on 30/10", "start": "dashboard"},
+    "s4": {"description": "What the IT department needs to do next to make the benefits real", "start": "baselines"}
+  },
+  "faces": {
+    "ibm-plex-sans": {"family": "IBM Plex Sans", "href": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"},
+    "ibm-plex-mono": {"family": "IBM Plex Mono", "href": "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap"}
+  },
+  "designSystems": []
+}

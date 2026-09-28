@@ -1,0 +1,78 @@
+<section id="dashboard" data-transition="fade" style="background:#F5F4EF; color:#14233B; font-family:'IBM Plex Sans', Arial, sans-serif; padding:128px 128px 160px; display:flex; flex-direction:column; gap:16px">
+<p style="font-family:'IBM Plex Mono', 'Courier New', monospace; font-size:24px; letter-spacing:3px; text-transform:uppercase; color:#1F66A6">Residual run plan · 28/09 → 30/10/2026</p>
+<h2 style="font-size:56px; font-weight:600; line-height:1.15">From closure to final cutover in 25 working days</h2>
+<x-embed style="position:absolute; left:128px; top:258px; width:1664px; height:690px"><!doctype html><html><head><meta charset="utf-8"><style>
+html,body{margin:0;height:100%;background:#F5F4EF;overflow:hidden}
+svg{display:block;width:100%;height:100%;font-family:"Segoe UI",Helvetica,Arial,sans-serif}
+.m{transform-box:fill-box;transform-origin:center;transition:opacity .35s,transform .35s;opacity:0;transform:scale(.2)}
+.m.on{opacity:1;transform:scale(1)}
+</style></head><body>
+<svg id="s" viewBox="0 0 1664 704" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Animated residual timeline dashboard"></svg>
+<script>
+var NS='http://www.w3.org/2000/svg',S=document.getElementById('s');
+function el(t,a,p){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);(p||S).appendChild(e);return e}
+function tx(x,y,s,a,p){var e=el('text',Object.assign({x:x,y:y},a||{}),p);e.textContent=s;return e}
+var L=236,R=1656,DAYS=37,XS=(R-L)/DAYS;function X(d){return L+d*XS}
+var TOP=222,LH=90,INK='#14233B',SOFT='#3E4A5A';
+var LANES=['Decisions','Cyber Security','PFL HR','Closure & BAU'],COL=['#B85613','#1F66A6','#0E7C6B','#5A6676'];
+/* KPI tiles */
+var tiles=[[0,280,'Date'],[296,300,'Working day'],[612,736,'Phase'],[1364,300,'Go-lives done']],K=[];
+tiles.forEach(function(t){el('rect',{x:t[0],y:0,width:t[1],height:108,rx:12,fill:'#FDFDFB',stroke:'#DCDDD6'});
+tx(t[0]+22,36,t[2],{'font-size':24,fill:SOFT});K.push(tx(t[0]+22,88,'',{'font-size':t[2]=='Phase'?32:42,'font-weight':600,fill:'#1F66A6'}))});
+/* week bands */
+var W=[[0,7,'Wk 0 · Decisions','HIGH LOAD'],[7,14,'Wk 1 · CS build','PEAK'],[14,21,'Wk 2–3 · Go-live','CUTOVER · HYPERCARE'],[21,28,'Wk 4 · HR prep','MEDIUM'],[28,33,'Wk 5–6 · Delta','CUTOVER'],[33,37,'Nov →','BAU']];
+W.forEach(function(w,i){el('rect',{x:X(w[0]),y:128,width:X(w[1])-X(w[0]),height:TOP+4*LH-128,fill:i%2?'#EFEEE8':'#E6EBF1'});
+tx(X(w[0])+10,158,w[2],{'font-size':24,'font-weight':600,fill:INK});tx(X(w[0])+10,188,w[3],{'font-size':24,fill:SOFT})});
+/* weekends */
+[5,12,19,26].forEach(function(d){el('rect',{x:X(d),y:TOP,width:2*XS,height:4*LH,fill:'#14233B',opacity:.05})});
+/* lanes */
+LANES.forEach(function(n,i){var y=TOP+i*LH;el('line',{x1:0,x2:R,y1:y,y2:y,stroke:'#DCDDD6'});
+el('rect',{x:0,y:y+22,width:10,height:46,rx:3,fill:COL[i]});tx(22,y+54,n,{'font-size':24,'font-weight':600,fill:INK})});
+/* bars, revealed by a clip that follows the cursor */
+var cp=el('clipPath',{id:'c'},el('defs',{}));var CR=el('rect',{x:L,y:0,width:0,height:704},cp);
+var BG=el('g',{'clip-path':'url(#c)'});
+var B=[[0,0,5,'Decisions'],[1,1,5,'Prereqs'],[1,7,12,'Build'],[1,14,16,'Test'],[1,16,19,''],[1,21,26,'Tier 2 flows'],[2,21,26,'Prep + review'],[2,28,31,'Delta'],[3,33,37,'Tier 3 · BAU']];
+B.forEach(function(b){var y=TOP+b[0]*LH+14,w=X(b[2])-X(b[1]);
+el('rect',{x:X(b[1])+2,y:y,width:w-4,height:44,rx:8,fill:COL[b[0]],opacity:b[4]===''||b[3]===''?.35:1},BG);
+if(b[3])tx(X(b[1])+14,y+31,b[3],{'font-size':24,fill:'#F5F4EF','font-weight':600},BG)});
+/* milestones [lane, day, caption] */
+var M=[[3,0,'28/09 closure'],[0,1,''],[0,.4,''],[2,3,''],[1,4,''],[1,16,'14/10 go-live'],[1,30,'28/10 decom'],[2,22,''],[2,31,''],[2,32,'30/10 go-live']],MG=[];
+M.forEach(function(m){var cx=X(m[1])+XS/2,cy=TOP+m[0]*LH+36,g=el('g',{'class':'m'});
+el('path',{d:'M'+cx+' '+(cy-18)+'l18 18l-18 18l-18-18z',fill:m[2]?'#E0873F':'#FDFDFB',stroke:m[2]?INK:COL[m[0]],'stroke-width':3},g);
+if(m[2])tx(cx+(m[1]>28?-24:24),cy+46,m[2],{'font-size':24,'font-weight':600,fill:INK,'text-anchor':m[1]>28?'end':'start'},g);MG.push([m[1],g])});
+/* today marker (28/09) */
+el('line',{x1:X(0)+1,x2:X(0)+1,y1:128,y2:TOP+4*LH,stroke:INK,'stroke-width':2,'stroke-dasharray':'6 6'});
+/* cursor */
+var CUR=el('g',{});el('line',{x1:0,x2:0,y1:204,y2:TOP+4*LH,stroke:'#E0873F','stroke-width':4},CUR);el('circle',{cx:0,cy:204,r:9,fill:'#E0873F'},CUR);
+/* ticker */
+el('rect',{x:0,y:600,width:1664,height:104,rx:12,fill:INK});tx(28,662,'NOW',{'font-size':26,'font-weight':700,fill:'#E0873F'});
+var TK=tx(112,662,'',{'font-size':28,fill:'#F5F4EF'});
+var E=[[0,'28/09 · Programme closure: 220 sites signed off, BAU handover, final training'],[.4,'28/09 · Control Board: D-GSA-08 build vs buy · D-PR-05 InfoPath stage 2 owner'],
+[1,'29/09 · D-CS-03 named InfoSec content owner: the only red risk (hard gate)'],[1.5,'29/09 · D-52 T&P delta date · R0-06 reconcile 220 vs the 232 baseline'],
+[2,'30/09 · Sites.Selected grants ×3 · R0-04 InfoPath count · SPFx 1.18'],[3,'01/10 · RB-15/16/17 published to Azure Automation · PFL T&P delta cutover'],
+[4,'02/10 · Incident form built · D-CS-05 out-of-hours escalation resolved'],[7,'05/10 · Peak week: RB-15 dry run, live run and idempotency run'],
+[8,'06/10 · RB-16 Tier 1 lists · schema CSV read · Flow 35 build starts'],[9,'07/10 · RB-17 read-back · navigation and search · manual web parts'],
+[10,'08/10 · Content approved and moved into the RB-15 source · Flow 36'],[11,'09/10 · Final content run · flow testing · acceptance tests begin'],
+[14,'12/10 · Acceptance tests: T-CS-15 restricted search must return nothing'],[15,'13/10 · Service Desk briefing · go / no-go pack · freeze'],
+[16,'14/10 · CYBER SECURITY SITE GO-LIVE · Tier 1 scope, 10 hard criteria'],[16.6,'14–16/10 · Protected hypercare: nothing else scheduled'],
+[21,'19/10 · PFL HR grants + freeze notice · Tier 2 Flows 37, 43, 44'],[22,'20/10 · HR content classification review: hard gate on permissions'],
+[24,'22/10 · Dry-run delta to staging · ShareGate report read in full'],[28,'26/10 · PFL HR content freeze begins'],
+[29,'27/10 · Pre-cutover checks: permissions, navigation, hub, search scope'],[30,'28/10 · Delta run · CS hypercare closes · 2013 CS site decommissioned'],
+[31,'29/10 · Verification and go / no-go: eight criteria, six hard'],[32,'30/10 · PFL HR GO-LIVE · residual plan complete'],
+[33,'Nov → · Cyber Security Tier 3 assurance layer · InfoPath rebuild in stage 2']];
+var PH=[[5,'Wk 0 · Decisions & prerequisites'],[14,'Wk 1 · Cyber Security build'],[16,'Wk 2 · Test, freeze, go-live'],[21,'Wk 3 · Protected hypercare'],[28,'Wk 4 · PFL HR preparation'],[32,'Wk 5 · Freeze, delta, verify'],[33,'Wk 6 · Final cutover'],[99,'Beyond · BAU change control']];
+var D0=Date.UTC(2026,8,28);
+function fmt(d){var t=new Date(D0+Math.floor(d)*864e5);return('0'+t.getUTCDate()).slice(-2)+'/'+('0'+(t.getUTCMonth()+1)).slice(-2)}
+function wd(d){var n=0;for(var i=0;i<=Math.floor(d)&&i<33;i++)if(i%7<5)n++;return n}
+var SWEEP=18000,HOLD=4000,st=null,last='';
+function f(ts){if(st===null)st=ts;var t=(ts-st)%(SWEEP+HOLD),d=Math.min(t/SWEEP,1)*DAYS,x=X(d);
+CR.setAttribute('width',Math.max(0,x-L));CUR.setAttribute('transform','translate('+x+',0)');
+MG.forEach(function(m){m[1].setAttribute('class',d>=m[0]?'m on':'m')});
+var ev=E[0][1];for(var i=0;i<E.length;i++)if(d>=E[i][0])ev=E[i][1];if(ev!==last){TK.textContent=ev;last=ev}
+K[0].textContent=d>=33?'Nov 2026':fmt(d);K[1].textContent=wd(d)+' / 25';
+for(var j=0;j<PH.length;j++)if(d<PH[j][0]){K[2].textContent=PH[j][1];break}
+K[3].textContent=(d>=32?2:d>=16?1:0)+' / 2';requestAnimationFrame(f)}
+requestAnimationFrame(f);
+</script></body></html></x-embed>
+<aside>This is the animated residual timeline. The orange cursor walks the plan from programme closure today, 28/09, through to final cutover on 30/10 and into November. The tiles at the top show the date, working day out of 25, the current phase and go-lives completed; the dark bar at the bottom names what happens on each day. Week 0 is decisions and prerequisites and is high load. Week 1 is the Cyber Security build peak. Week 2 is test, freeze and go-live on 14/10, followed by three protected hypercare days. Week 4 is PFL HR preparation including the HR content classification review on 20/10. Week 5 is freeze, delta run and verification, and week 6 is the PFL HR go-live on 30/10. Beyond the plan, Cyber Security Tier 3 and the InfoPath rebuild move to BAU change control. The loop restarts every 22 seconds. In a PDF or PowerPoint export this slide shows a still frame.</aside>
+</section>
