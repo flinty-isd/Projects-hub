@@ -22,14 +22,51 @@ Fabric and Copilot agents fit on top of them.
 Each layer is optional and sits on the one above it. Deploy layer 1, confirm it,
 then decide whether you need 2 and 3.
 
+## Do you need admin rights?
+
+Short answer: **not for the scripts themselves** — they only ever touch one
+site, so site-level rights are enough. Two one-time setup steps do need a
+tenant admin, and everything beyond layer 1 needs more.
+
+| What you're doing | Role required | Scope | Avoidable? |
+| --- | --- | --- | --- |
+| Run the three deploy scripts | Site Collection Administrator, or site owner with Full Control | One site | This is the floor |
+| Seed sample data | Same as above | One site | — |
+| Create the site | SharePoint Administrator | Tenant | **Yes** — use self-service site creation, or ask for a site and point the scripts at it |
+| Register the PnP app / consent to its delegated permissions | Global Administrator, or Application / Cloud Application Administrator | Tenant, once | **Yes** — reuse the client ID of any existing app registration that already has delegated SharePoint permissions |
+| Certificate auth for pipelines (`Sites.Selected` or `Sites.Read.All` **application** permission) | Global Administrator to consent; `Sites.Selected` per-site grants are made by an admin through Graph | Tenant | No |
+| Publish a Power BI report to a workspace | Workspace Member or Admin | Workspace | — |
+| Assign a workspace to Fabric capacity | Fabric / capacity admin | Tenant | No |
+| Embed a Power BI report in a SharePoint page | May be gated by a Power BI tenant setting | Tenant | No, if the setting is off |
+| Create a SharePoint agent on a site | Edit rights on the site, plus an M365 Copilot licence | Site | — |
+| Assign Copilot licences | User or Global Administrator | Tenant | No |
+| Publish a Copilot Studio agent | Depends on your environment's maker policy | Environment | — |
+
+**If you are not an admin**, the whole of layer 1 needs exactly two things from
+someone who is, both one-time:
+
+1. A **client ID** for a PnP app registration.
+2. A **site** you are Site Collection Administrator of.
+
+After that you can provision, re-provision, format and rebuild pages
+indefinitely without going back to them. The scripts make no tenant-level
+change at any point.
+
+To check what you already have: if `Connect-PnPOnline -Url $url -Interactive
+-ClientId $id` succeeds and `Get-PnPWeb` returns the site, you have enough to
+run everything in layer 1.
+
 ---
 
 # 1. SharePoint Online
 
 ## Prerequisites
 
-- **Role:** Site Collection Administrator on the target site. Creating the site
-  from scratch also needs SharePoint Administrator.
+See **"Do you need admin rights?"** above for the full picture; in short:
+
+- **Role:** Site Collection Administrator on the target site. That is all the
+  scripts need. Creating the site from scratch additionally needs SharePoint
+  Administrator.
 - **Module:** `Install-Module PnP.PowerShell -Scope CurrentUser` (2.x or later).
 - **An Entra ID app registration** for PnP itself. Since PnP.PowerShell 2.x the
   old multi-tenant PnP Management Shell app is gone, so `-ClientId` is required
@@ -39,6 +76,13 @@ then decide whether you need 2 and 3.
   Register-PnPEntraIDApp -ApplicationName "PnP Provisioning" `
       -Tenant contoso.onmicrosoft.com -Interactive
   ```
+
+  **This step needs a tenant admin** — it registers an app and consents to its
+  delegated permissions, and many tenants also block non-admins from
+  registering apps at all. It is one-time and tenant-wide, so an admin runs it
+  once and hands you the client ID. Any existing app registration with
+  delegated SharePoint permissions works just as well; reuse its client ID and
+  skip this entirely.
 
   This is separate from the app-only registration the hosted dashboards use at
   runtime. That one needs `Sites.Read.All`; this one needs delegated SharePoint
