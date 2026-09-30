@@ -1,0 +1,4 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/row-formatting.schema.json",
+  "additionalRowClass": "=if([$Status] == 'Active' && [$ExpiryDate] != '' && Number([$ExpiryDate]) < Number(@now), 'sp-field-severity--severeWarning', if([$Status] == 'Active' && [$ExpiryDate] != '' && Number([$ExpiryDate]) >= Number(@now) && Number([$ExpiryDate]) <= Number(@now) + 7776000000, 'sp-field-severity--warning', ''))"
+}

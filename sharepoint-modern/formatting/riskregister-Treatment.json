@@ -1,0 +1,15 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
+  "elmType": "div",
+  "txtContent": "@currentField",
+  "style": {
+    "display": "inline-block",
+    "padding": "2px 10px",
+    "border-radius": "12px",
+    "font-size": "12px",
+    "font-weight": "600",
+    "white-space": "nowrap",
+    "color": "=if(@currentField == 'Mitigate','#004578', if(@currentField == 'Transfer','#5c2e91', if(@currentField == 'Accept','#605e5c', if(@currentField == 'Avoid','#0b6a0b', '#605e5c'))))",
+    "background-color": "=if(@currentField == 'Mitigate','#deecf9', if(@currentField == 'Transfer','#e9dff5', if(@currentField == 'Accept','#f3f2f1', if(@currentField == 'Avoid','#dff6dd', '#f3f2f1'))))"
+  }
+}

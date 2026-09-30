@@ -1,0 +1,13 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
+  "elmType": "div",
+  "txtContent": "=if(@currentField == '', 'No review date', toLocaleDateString(@currentField))",
+  "attributes": {
+    "title": "=if(@currentField == '', 'Counts as not current', if(Number(@currentField) < Number(@now), 'Review overdue', ''))"
+  },
+  "style": {
+    "color": "=if(@currentField == '', '#8a6116', if(Number(@currentField) < Number(@now), '#a4262c', ''))",
+    "font-weight": "=if(@currentField == '' || Number(@currentField) < Number(@now), '600', 'normal')",
+    "font-style": "=if(@currentField == '', 'italic', 'normal')"
+  }
+}

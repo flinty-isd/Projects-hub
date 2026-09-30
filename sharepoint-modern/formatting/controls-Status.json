@@ -1,0 +1,15 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
+  "elmType": "div",
+  "txtContent": "@currentField",
+  "style": {
+    "display": "inline-block",
+    "padding": "2px 10px",
+    "border-radius": "12px",
+    "font-size": "12px",
+    "font-weight": "600",
+    "white-space": "nowrap",
+    "color": "=if(@currentField == 'Compliant','#0b6a0b', if(@currentField == 'Partial','#8a6116', if(@currentField == 'Non-Compliant','#a4262c', if(@currentField == 'Not Assessed','#605e5c', '#605e5c'))))",
+    "background-color": "=if(@currentField == 'Compliant','#dff6dd', if(@currentField == 'Partial','#fff4ce', if(@currentField == 'Non-Compliant','#fde7e9', if(@currentField == 'Not Assessed','#f3f2f1', '#f3f2f1'))))"
+  }
+}
