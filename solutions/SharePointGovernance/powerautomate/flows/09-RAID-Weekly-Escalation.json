@@ -1,0 +1,223 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Escalate RAID items weekly",
+  "description": "Runs every Monday at 07:00, before the weekly delivery checkpoint. Emails the Project Manager every open RAID item that is high severity, overdue, unowned or forecast to exceed tolerance, and escalates items forecast to exceed tolerance to the Sponsor and Portfolio Manager, as the PID's risk and tolerance management requires.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "GovernanceSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{governance-site}"
+    },
+    "TenantRootUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com"
+    },
+    "ProjectManagerEmail": {
+      "type": "String",
+      "defaultValue": "{it-project-manager}@{domain}"
+    },
+    "InfoSecApproverEmail": {
+      "type": "String",
+      "defaultValue": "{security-and-architecture}@{domain}"
+    },
+    "SponsorEmail": {
+      "type": "String",
+      "defaultValue": "{project-sponsor}@{domain}"
+    },
+    "PortfolioManagerEmail": {
+      "type": "String",
+      "defaultValue": "{it-portfolio-manager}@{domain}"
+    },
+    "ITOpsOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{it-operations-owner}@{domain}"
+    },
+    "BusinessAnalystEmail": {
+      "type": "String",
+      "defaultValue": "{business-analyst}@{domain}"
+    },
+    "ServiceDeskEmail": {
+      "type": "String",
+      "defaultValue": "{service-desk}@{domain}"
+    }
+  },
+  "triggers": {
+    "Weekly_Monday_0700": {
+      "type": "Recurrence",
+      "recurrence": {
+        "frequency": "Week",
+        "interval": 1,
+        "timeZone": "GMT Standard Time",
+        "schedule": {
+          "hours": [
+            7
+          ],
+          "minutes": [
+            0
+          ],
+          "weekDays": [
+            "Monday"
+          ]
+        }
+      }
+    }
+  },
+  "actions": {
+    "Get_open_RAID": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('GovernanceSiteUrl')",
+          "table": "RAID Log",
+          "$filter": "Status ne 'Closed'"
+        }
+      },
+      "runAfter": {}
+    },
+    "Filter_attention": {
+      "type": "Query",
+      "inputs": {
+        "from": "@outputs('Get_open_RAID')?['body/value']",
+        "where": "@or(equals(item()?['Severity']?['Value'], 'High'), equals(item()?['ForecastExceedsTolerance'], true), equals(item()?['Owner'], null), less(ticks(coalesce(item()?['DueDate'], '9999-12-31')), ticks(utcNow())))"
+      },
+      "runAfter": {
+        "Get_open_RAID": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Filter_tolerance_breaches": {
+      "type": "Query",
+      "runAfter": {
+        "Filter_attention": [
+          "Succeeded"
+        ]
+      },
+      "inputs": {
+        "from": "@body('Filter_attention')",
+        "where": "@equals(item()?['ForecastExceedsTolerance'], true)"
+      }
+    },
+    "Select_rows": {
+      "type": "Select",
+      "inputs": {
+        "from": "@body('Filter_attention')",
+        "select": {
+          "ID": "@item()?['ID']",
+          "Type": "@item()?['RaidType']?['Value']",
+          "Title": "@item()?['Title']",
+          "Severity": "@item()?['Severity']?['Value']",
+          "Owner": "@coalesce(item()?['Owner']?['DisplayName'], 'UNASSIGNED')",
+          "Due": "@if(equals(item()?['DueDate'], null), '', formatDateTime(item()?['DueDate'], 'dd MMM'))",
+          "Overdue": "@if(less(ticks(coalesce(item()?['DueDate'], '9999-12-31')), ticks(utcNow())), 'Yes', '')",
+          "Exceeds tolerance": "@if(equals(item()?['ForecastExceedsTolerance'], true), 'Yes', '')"
+        }
+      },
+      "runAfter": {
+        "Filter_tolerance_breaches": [
+          "Succeeded"
+        ]
+      }
+    },
+    "RAID_table": {
+      "type": "Table",
+      "inputs": {
+        "from": "@body('Select_rows')",
+        "format": "HTML"
+      },
+      "runAfter": {
+        "Select_rows": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Condition_AnyAttention": {
+      "type": "If",
+      "expression": {
+        "greater": [
+          "@length(body('Filter_attention'))",
+          0
+        ]
+      },
+      "actions": {
+        "Send_weekly_RAID_digest": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@parameters('ProjectManagerEmail')",
+              "emailMessage/Subject": "@{concat('RAID weekly review: ', string(length(body('Filter_attention'))), ' item(s) need attention')}",
+              "emailMessage/Body": "<p>Open RAID items that are high severity, overdue, unowned or forecast to exceed tolerance:</p>@{body('RAID_table')}<p>Review these at this week's delivery checkpoint. Unowned items need an owner today.</p>",
+              "emailMessage/Importance": "Normal"
+            }
+          },
+          "runAfter": {}
+        },
+        "Condition_ToleranceBreach": {
+          "type": "If",
+          "expression": {
+            "greater": [
+              "@length(body('Filter_tolerance_breaches'))",
+              0
+            ]
+          },
+          "actions": {
+            "Escalate_to_Sponsor_and_Portfolio": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@{concat(parameters('SponsorEmail'), ';', parameters('PortfolioManagerEmail'))}",
+                  "emailMessage/Subject": "@{concat('Exception: ', string(length(body('Filter_tolerance_breaches'))), ' RAID item(s) forecast to exceed tolerance')}",
+                  "emailMessage/Body": "<p>These items are forecast to exceed agreed project tolerances (time ±5 days, cost ±£5,000, or scope/quality/risk/benefit as agreed) and need a Project Board decision:</p>@{body('RAID_table')}<p>The Project Manager will raise change requests where needed.</p>",
+                  "emailMessage/Importance": "Normal",
+                  "emailMessage/Cc": "@parameters('ProjectManagerEmail')"
+                }
+              },
+              "runAfter": {}
+            }
+          },
+          "runAfter": {
+            "Send_weekly_RAID_digest": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "RAID_table": [
+          "Succeeded"
+        ]
+      }
+    }
+  }
+}
