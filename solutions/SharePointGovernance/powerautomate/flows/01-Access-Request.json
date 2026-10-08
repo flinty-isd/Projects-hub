@@ -1,0 +1,1356 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Govern SharePoint access requests",
+  "description": "Enforces the PID v3.1 Access Method Decision Table. Triggers on each new 'Access Requests' item and routes by user type: rejects service/shared accounts outright, redirects view-only staff to the Employee App and screens to display pages, checks M365 (SharePoint) and Entra ID P2 licences via Graph before any approval, makes contractor guest access time-bound with owner + InfoSec approval, and sends privileged admin requests to InfoSec for a PIM eligible assignment. Approved access is granted only through security groups.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    },
+    "shared_approvals": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+    },
+    "shared_webcontents": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "GovernanceSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{governance-site}"
+    },
+    "TenantRootUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com"
+    },
+    "ProjectManagerEmail": {
+      "type": "String",
+      "defaultValue": "{it-project-manager}@{domain}"
+    },
+    "InfoSecApproverEmail": {
+      "type": "String",
+      "defaultValue": "{security-and-architecture}@{domain}"
+    },
+    "SponsorEmail": {
+      "type": "String",
+      "defaultValue": "{project-sponsor}@{domain}"
+    },
+    "PortfolioManagerEmail": {
+      "type": "String",
+      "defaultValue": "{it-portfolio-manager}@{domain}"
+    },
+    "ITOpsOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{it-operations-owner}@{domain}"
+    },
+    "BusinessAnalystEmail": {
+      "type": "String",
+      "defaultValue": "{business-analyst}@{domain}"
+    },
+    "ServiceDeskEmail": {
+      "type": "String",
+      "defaultValue": "{service-desk}@{domain}"
+    }
+  },
+  "triggers": {
+    "When_an_access_request_is_created": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnNewItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('GovernanceSiteUrl')",
+          "table": "Access Requests"
+        }
+      },
+      "recurrence": {
+        "frequency": "Minute",
+        "interval": 5
+      },
+      "splitOn": "@triggerOutputs()?['body/value']"
+    }
+  },
+  "actions": {
+    "Get_target_site": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetItem",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('GovernanceSiteUrl')",
+          "table": "Site Register",
+          "id": "@triggerBody()?['TargetSite']?['Id']"
+        }
+      },
+      "runAfter": {}
+    },
+    "Switch_UserType": {
+      "type": "Switch",
+      "expression": "@triggerBody()?['UserType']?['Value']",
+      "cases": {
+        "Service_or_shared_account": {
+          "case": "Service / shared account",
+          "actions": {
+            "Svc_Reject": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PatchItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('GovernanceSiteUrl')",
+                  "table": "Access Requests",
+                  "id": "@triggerBody()?['ID']",
+                  "item/Status/Value": "Rejected - Prohibited",
+                  "item/DecisionLog": "Service, shared and generic accounts are explicitly prohibited from SharePoint access (PID v3.1, Access Method Decision Table)."
+                }
+              },
+              "runAfter": {}
+            },
+            "Svc_Notify": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+                  "emailMessage/Subject": "SharePoint access request rejected: shared accounts are prohibited",
+                  "emailMessage/Body": "<p>Service, shared and generic accounts are not permitted to access SharePoint Online. Each person must use their own named account.</p>",
+                  "emailMessage/Importance": "Normal",
+                  "emailMessage/Cc": "@parameters('InfoSecApproverEmail')"
+                }
+              },
+              "runAfter": {
+                "Svc_Reject": [
+                  "Succeeded"
+                ]
+              }
+            }
+          }
+        },
+        "Employee_view_only": {
+          "case": "Employee - view only",
+          "actions": {
+            "View_Redirect": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PatchItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('GovernanceSiteUrl')",
+                  "table": "Access Requests",
+                  "id": "@triggerBody()?['ID']",
+                  "item/Status/Value": "Closed - Use Employee App",
+                  "item/ApprovedAccessMethod": "Employee App (read-only)"
+                }
+              },
+              "runAfter": {}
+            },
+            "View_Notify": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+                  "emailMessage/Subject": "Use the Employee App to view this content",
+                  "emailMessage/Body": "<p>View-only access to departmental content, policies and H&amp;S information is provided through the Employee App, which needs no SharePoint licence. If you need to edit or collaborate, submit a new request choosing <i>Employee - edit / collaborate</i>.</p>",
+                  "emailMessage/Importance": "Normal"
+                }
+              },
+              "runAfter": {
+                "View_Redirect": [
+                  "Succeeded"
+                ]
+              }
+            }
+          }
+        },
+        "Screen_or_kiosk": {
+          "case": "Screen / kiosk / display",
+          "actions": {
+            "Kiosk_Redirect": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PatchItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('GovernanceSiteUrl')",
+                  "table": "Access Requests",
+                  "id": "@triggerBody()?['ID']",
+                  "item/Status/Value": "Closed - Use published display page",
+                  "item/ApprovedAccessMethod": "Published page (display mode)"
+                }
+              },
+              "runAfter": {}
+            },
+            "Kiosk_Notify": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+                  "emailMessage/Subject": "Screens and kiosks use published display pages",
+                  "emailMessage/Body": "<p>Screens and kiosks show published pages in display mode with no sign-in or input. The site owner can publish the notice page; no account will be created.</p>",
+                  "emailMessage/Importance": "Normal",
+                  "emailMessage/Cc": "@{body('Get_target_site')?['PrimaryOwner']?['Email']}"
+                }
+              },
+              "runAfter": {
+                "Kiosk_Redirect": [
+                  "Succeeded"
+                ]
+              }
+            }
+          }
+        },
+        "Employee_edit": {
+          "case": "Employee - edit / collaborate",
+          "actions": {
+            "Edit_Get_licence_details": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_webcontents",
+                  "operationId": "InvokeHttp",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                },
+                "parameters": {
+                  "request/method": "GET",
+                  "request/url": "https://graph.microsoft.com/v1.0/users/@{triggerBody()?['Requester']?['Email']}/licenseDetails"
+                }
+              },
+              "runAfter": {}
+            },
+            "Edit_Condition_Licensed": {
+              "type": "If",
+              "expression": {
+                "contains": [
+                  "@string(body('Edit_Get_licence_details'))",
+                  "SHAREPOINT"
+                ]
+              },
+              "actions": {
+                "Edit_Approval_site_owner": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_approvals",
+                      "operationId": "StartAndWaitForAnApproval",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                    },
+                    "parameters": {
+                      "approvalType": "Basic",
+                      "WebhookApprovalCreationInput/title": "@{concat('SharePoint edit access: ', triggerBody()?['Requester']?['Email'])}",
+                      "WebhookApprovalCreationInput/assignedTo": "@{body('Get_target_site')?['PrimaryOwner']?['Email']}",
+                      "WebhookApprovalCreationInput/details": "@{concat('Requester: ', triggerBody()?['Requester']?['Email'], decodeUriComponent('%0A'), 'Access type: ', triggerBody()?['UserType']?['Value'], decodeUriComponent('%0A'), 'Site: ', body('Get_target_site')?['SiteUrl'], decodeUriComponent('%0A'), 'Justification: ', triggerBody()?['BusinessJustification'])}",
+                      "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
+                      "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+                      "WebhookApprovalCreationInput/enableNotifications": true,
+                      "WebhookApprovalCreationInput/enableReassignment": true
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Edit_Condition_Approved": {
+                  "type": "If",
+                  "expression": {
+                    "equals": [
+                      "@outputs('Edit_Approval_site_owner')?['body/outcome']",
+                      "Approve"
+                    ]
+                  },
+                  "actions": {
+                    "Edit_Get_group": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_webcontents",
+                          "operationId": "InvokeHttp",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                        },
+                        "parameters": {
+                          "request/method": "GET",
+                          "request/url": "https://graph.microsoft.com/v1.0/groups/@{body('Get_target_site')?['MembersGroupId']}?$select=id,displayName,onPremisesSyncEnabled"
+                        }
+                      },
+                      "runAfter": {}
+                    },
+                    "Edit_Condition_GroupIsSynced": {
+                      "type": "If",
+                      "expression": {
+                        "equals": [
+                          "@body('Edit_Get_group')?['onPremisesSyncEnabled']",
+                          true
+                        ]
+                      },
+                      "actions": {
+                        "Edit_Raise_AD_group_change": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_office365",
+                              "operationId": "SendEmailV2",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                            },
+                            "parameters": {
+                              "emailMessage/To": "@parameters('ServiceDeskEmail')",
+                              "emailMessage/Subject": "@{concat('Add user to AD group: ', body('Edit_Get_group')?['displayName'])}",
+                              "emailMessage/Body": "<p>Approved SharePoint access request #@{triggerBody()?['ID']}.</p><p>Add <b>@{triggerBody()?['Requester']?['Email']}</b> to on-premises AD group <b>@{body('Edit_Get_group')?['displayName']}</b> (Member (read/write) on @{body('Get_target_site')?['SiteTitle']}). The group is synchronised from AD, so it cannot be changed from the cloud.</p>",
+                              "emailMessage/Importance": "Normal"
+                            }
+                          },
+                          "runAfter": {}
+                        },
+                        "Edit_Mark_pending_AD": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_sharepointonline",
+                              "operationId": "PatchItem",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                            },
+                            "parameters": {
+                              "dataset": "@parameters('GovernanceSiteUrl')",
+                              "table": "Access Requests",
+                              "id": "@triggerBody()?['ID']",
+                              "item/Status/Value": "Approved - awaiting AD group change",
+                              "item/ApprovedAccessMethod": "Member (read/write)"
+                            }
+                          },
+                          "runAfter": {
+                            "Edit_Raise_AD_group_change": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "Edit_Get_user": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_webcontents",
+                                "operationId": "InvokeHttp",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                              },
+                              "parameters": {
+                                "request/method": "GET",
+                                "request/url": "https://graph.microsoft.com/v1.0/users/@{triggerBody()?['Requester']?['Email']}?$select=id"
+                              }
+                            },
+                            "runAfter": {}
+                          },
+                          "Edit_Add_to_group": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_webcontents",
+                                "operationId": "InvokeHttp",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                              },
+                              "parameters": {
+                                "request/method": "POST",
+                                "request/url": "https://graph.microsoft.com/v1.0/groups/@{body('Get_target_site')?['MembersGroupId']}/members/$ref",
+                                "request/body": {
+                                  "@odata.id": "https://graph.microsoft.com/v1.0/directoryObjects/@{body('Edit_Get_user')?['id']}"
+                                },
+                                "request/headers": {
+                                  "Content-Type": "application/json"
+                                }
+                              }
+                            },
+                            "runAfter": {
+                              "Edit_Get_user": [
+                                "Succeeded"
+                              ]
+                            }
+                          },
+                          "Edit_Mark_granted": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_sharepointonline",
+                                "operationId": "PatchItem",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                              },
+                              "parameters": {
+                                "dataset": "@parameters('GovernanceSiteUrl')",
+                                "table": "Access Requests",
+                                "id": "@triggerBody()?['ID']",
+                                "item/Status/Value": "Granted",
+                                "item/ApprovedAccessMethod": "Member (read/write)"
+                              }
+                            },
+                            "runAfter": {
+                              "Edit_Add_to_group": [
+                                "Succeeded"
+                              ]
+                            }
+                          },
+                          "Edit_Notify_granted": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_office365",
+                                "operationId": "SendEmailV2",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                              },
+                              "parameters": {
+                                "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+                                "emailMessage/Subject": "SharePoint access granted",
+                                "emailMessage/Body": "<p>You now have Member (read/write) access to @{body('Get_target_site')?['SiteTitle']}: @{body('Get_target_site')?['SiteUrl']}</p><p>It can take up to an hour to apply.</p>",
+                                "emailMessage/Importance": "Normal"
+                              }
+                            },
+                            "runAfter": {
+                              "Edit_Mark_granted": [
+                                "Succeeded"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Edit_Get_group": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Edit_Mark_rejected": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_sharepointonline",
+                            "operationId": "PatchItem",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                          },
+                          "parameters": {
+                            "dataset": "@parameters('GovernanceSiteUrl')",
+                            "table": "Access Requests",
+                            "id": "@triggerBody()?['ID']",
+                            "item/Status/Value": "Rejected",
+                            "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Edit_Approval_site_owner')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+                          }
+                        },
+                        "runAfter": {}
+                      },
+                      "Edit_Notify_rejected": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_office365",
+                            "operationId": "SendEmailV2",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                          },
+                          "parameters": {
+                            "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+                            "emailMessage/Subject": "SharePoint access request rejected",
+                            "emailMessage/Body": "<p>Your request for access to @{body('Get_target_site')?['SiteTitle']} was rejected.</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Edit_Approval_site_owner')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
+                            "emailMessage/Importance": "Normal"
+                          }
+                        },
+                        "runAfter": {
+                          "Edit_Mark_rejected": [
+                            "Succeeded"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Edit_Approval_site_owner": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Edit_Block_unlicensed": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_sharepointonline",
+                        "operationId": "PatchItem",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                      },
+                      "parameters": {
+                        "dataset": "@parameters('GovernanceSiteUrl')",
+                        "table": "Access Requests",
+                        "id": "@triggerBody()?['ID']",
+                        "item/Status/Value": "Blocked - Licence required",
+                        "item/DecisionLog": "Editing SharePoint Online content requires a named Microsoft 365 licence that includes SharePoint (minimum M365 F3). No such licence is assigned to your account."
+                      }
+                    },
+                    "runAfter": {}
+                  },
+                  "Edit_Notify_unlicensed": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_office365",
+                        "operationId": "SendEmailV2",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                      },
+                      "parameters": {
+                        "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+                        "emailMessage/Subject": "SharePoint access request blocked: licence required",
+                        "emailMessage/Body": "<p>Editing SharePoint Online content requires a named Microsoft 365 licence that includes SharePoint (minimum M365 F3). No such licence is assigned to your account.</p><p>Your line manager can raise a licence request with the Service Desk; resubmit once it is assigned.</p>",
+                        "emailMessage/Importance": "Normal",
+                        "emailMessage/Cc": "@parameters('ProjectManagerEmail')"
+                      }
+                    },
+                    "runAfter": {
+                      "Edit_Block_unlicensed": [
+                        "Succeeded"
+                      ]
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Edit_Get_licence_details": [
+                  "Succeeded",
+                  "Failed"
+                ]
+              }
+            }
+          }
+        },
+        "Site_owner_or_author": {
+          "case": "Site Owner / Author",
+          "actions": {
+            "Owner_Get_licence_details": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_webcontents",
+                  "operationId": "InvokeHttp",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                },
+                "parameters": {
+                  "request/method": "GET",
+                  "request/url": "https://graph.microsoft.com/v1.0/users/@{triggerBody()?['Requester']?['Email']}/licenseDetails"
+                }
+              },
+              "runAfter": {}
+            },
+            "Owner_Condition_Licensed": {
+              "type": "If",
+              "expression": {
+                "contains": [
+                  "@string(body('Owner_Get_licence_details'))",
+                  "SHAREPOINT"
+                ]
+              },
+              "actions": {
+                "Owner_Condition_HasP2": {
+                  "type": "If",
+                  "expression": {
+                    "contains": [
+                      "@string(body('Owner_Get_licence_details'))",
+                      "AAD_PREMIUM_P2"
+                    ]
+                  },
+                  "actions": {
+                    "Owner_Approval_manager_and_PM": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_approvals",
+                          "operationId": "StartAndWaitForAnApproval",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                        },
+                        "parameters": {
+                          "approvalType": "BasicAwaitAll",
+                          "WebhookApprovalCreationInput/title": "@{concat('Site Owner/Author access: ', triggerBody()?['Requester']?['Email'])}",
+                          "WebhookApprovalCreationInput/assignedTo": "@{concat(triggerBody()?['LineManager']?['Email'], ';', parameters('ProjectManagerEmail'))}",
+                          "WebhookApprovalCreationInput/details": "@{concat('Requester: ', triggerBody()?['Requester']?['Email'], decodeUriComponent('%0A'), 'Access type: ', triggerBody()?['UserType']?['Value'], decodeUriComponent('%0A'), 'Site: ', body('Get_target_site')?['SiteUrl'], decodeUriComponent('%0A'), 'Justification: ', triggerBody()?['BusinessJustification'])}",
+                          "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
+                          "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+                          "WebhookApprovalCreationInput/enableNotifications": true,
+                          "WebhookApprovalCreationInput/enableReassignment": true
+                        }
+                      },
+                      "runAfter": {}
+                    },
+                    "Owner_Condition_Approved": {
+                      "type": "If",
+                      "expression": {
+                        "equals": [
+                          "@outputs('Owner_Approval_manager_and_PM')?['body/outcome']",
+                          "Approve"
+                        ]
+                      },
+                      "actions": {
+                        "Owner_Get_group": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_webcontents",
+                              "operationId": "InvokeHttp",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                            },
+                            "parameters": {
+                              "request/method": "GET",
+                              "request/url": "https://graph.microsoft.com/v1.0/groups/@{body('Get_target_site')?['OwnersGroupId']}?$select=id,displayName,onPremisesSyncEnabled"
+                            }
+                          },
+                          "runAfter": {}
+                        },
+                        "Owner_Condition_GroupIsSynced": {
+                          "type": "If",
+                          "expression": {
+                            "equals": [
+                              "@body('Owner_Get_group')?['onPremisesSyncEnabled']",
+                              true
+                            ]
+                          },
+                          "actions": {
+                            "Owner_Raise_AD_group_change": {
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "connectionName": "shared_office365",
+                                  "operationId": "SendEmailV2",
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                                },
+                                "parameters": {
+                                  "emailMessage/To": "@parameters('ServiceDeskEmail')",
+                                  "emailMessage/Subject": "@{concat('Add user to AD group: ', body('Owner_Get_group')?['displayName'])}",
+                                  "emailMessage/Body": "<p>Approved SharePoint access request #@{triggerBody()?['ID']}.</p><p>Add <b>@{triggerBody()?['Requester']?['Email']}</b> to on-premises AD group <b>@{body('Owner_Get_group')?['displayName']}</b> (Site Owner / Author on @{body('Get_target_site')?['SiteTitle']}). The group is synchronised from AD, so it cannot be changed from the cloud.</p>",
+                                  "emailMessage/Importance": "Normal"
+                                }
+                              },
+                              "runAfter": {}
+                            },
+                            "Owner_Mark_pending_AD": {
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "connectionName": "shared_sharepointonline",
+                                  "operationId": "PatchItem",
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                },
+                                "parameters": {
+                                  "dataset": "@parameters('GovernanceSiteUrl')",
+                                  "table": "Access Requests",
+                                  "id": "@triggerBody()?['ID']",
+                                  "item/Status/Value": "Approved - awaiting AD group change",
+                                  "item/ApprovedAccessMethod": "Site Owner / Author"
+                                }
+                              },
+                              "runAfter": {
+                                "Owner_Raise_AD_group_change": [
+                                  "Succeeded"
+                                ]
+                              }
+                            }
+                          },
+                          "else": {
+                            "actions": {
+                              "Owner_Get_user": {
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "host": {
+                                    "connectionName": "shared_webcontents",
+                                    "operationId": "InvokeHttp",
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                                  },
+                                  "parameters": {
+                                    "request/method": "GET",
+                                    "request/url": "https://graph.microsoft.com/v1.0/users/@{triggerBody()?['Requester']?['Email']}?$select=id"
+                                  }
+                                },
+                                "runAfter": {}
+                              },
+                              "Owner_Add_to_group": {
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "host": {
+                                    "connectionName": "shared_webcontents",
+                                    "operationId": "InvokeHttp",
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                                  },
+                                  "parameters": {
+                                    "request/method": "POST",
+                                    "request/url": "https://graph.microsoft.com/v1.0/groups/@{body('Get_target_site')?['OwnersGroupId']}/members/$ref",
+                                    "request/body": {
+                                      "@odata.id": "https://graph.microsoft.com/v1.0/directoryObjects/@{body('Owner_Get_user')?['id']}"
+                                    },
+                                    "request/headers": {
+                                      "Content-Type": "application/json"
+                                    }
+                                  }
+                                },
+                                "runAfter": {
+                                  "Owner_Get_user": [
+                                    "Succeeded"
+                                  ]
+                                }
+                              },
+                              "Owner_Mark_granted": {
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "host": {
+                                    "connectionName": "shared_sharepointonline",
+                                    "operationId": "PatchItem",
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                  },
+                                  "parameters": {
+                                    "dataset": "@parameters('GovernanceSiteUrl')",
+                                    "table": "Access Requests",
+                                    "id": "@triggerBody()?['ID']",
+                                    "item/Status/Value": "Granted",
+                                    "item/ApprovedAccessMethod": "Site Owner / Author"
+                                  }
+                                },
+                                "runAfter": {
+                                  "Owner_Add_to_group": [
+                                    "Succeeded"
+                                  ]
+                                }
+                              },
+                              "Owner_Notify_granted": {
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "host": {
+                                    "connectionName": "shared_office365",
+                                    "operationId": "SendEmailV2",
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                                  },
+                                  "parameters": {
+                                    "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+                                    "emailMessage/Subject": "SharePoint access granted",
+                                    "emailMessage/Body": "<p>You now have Site Owner / Author access to @{body('Get_target_site')?['SiteTitle']}: @{body('Get_target_site')?['SiteUrl']}</p><p>It can take up to an hour to apply.</p>",
+                                    "emailMessage/Importance": "Normal"
+                                  }
+                                },
+                                "runAfter": {
+                                  "Owner_Mark_granted": [
+                                    "Succeeded"
+                                  ]
+                                }
+                              }
+                            }
+                          },
+                          "runAfter": {
+                            "Owner_Get_group": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "Owner_Mark_rejected": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_sharepointonline",
+                                "operationId": "PatchItem",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                              },
+                              "parameters": {
+                                "dataset": "@parameters('GovernanceSiteUrl')",
+                                "table": "Access Requests",
+                                "id": "@triggerBody()?['ID']",
+                                "item/Status/Value": "Rejected",
+                                "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Owner_Approval_manager_and_PM')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+                              }
+                            },
+                            "runAfter": {}
+                          },
+                          "Owner_Notify_rejected": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_office365",
+                                "operationId": "SendEmailV2",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                              },
+                              "parameters": {
+                                "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+                                "emailMessage/Subject": "SharePoint access request rejected",
+                                "emailMessage/Body": "<p>Your request for access to @{body('Get_target_site')?['SiteTitle']} was rejected.</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Owner_Approval_manager_and_PM')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
+                                "emailMessage/Importance": "Normal"
+                              }
+                            },
+                            "runAfter": {
+                              "Owner_Mark_rejected": [
+                                "Succeeded"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Owner_Approval_manager_and_PM": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Owner_Block_no_P2": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_sharepointonline",
+                            "operationId": "PatchItem",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                          },
+                          "parameters": {
+                            "dataset": "@parameters('GovernanceSiteUrl')",
+                            "table": "Access Requests",
+                            "id": "@triggerBody()?['ID']",
+                            "item/Status/Value": "Blocked - Entra ID P2 required",
+                            "item/DecisionLog": "Site Owners / Authors require Entra ID P2 per the Access Method Decision Table."
+                          }
+                        },
+                        "runAfter": {}
+                      },
+                      "Owner_Notify_no_P2": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_office365",
+                            "operationId": "SendEmailV2",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                          },
+                          "parameters": {
+                            "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+                            "emailMessage/Subject": "Site Owner access blocked: Entra ID P2 required",
+                            "emailMessage/Body": "<p>The approved access model requires Site Owners and Authors to hold Entra ID P2 for ownership accountability and audit. Ask the Service Desk to assign it, then resubmit.</p>",
+                            "emailMessage/Importance": "Normal",
+                            "emailMessage/Cc": "@parameters('ProjectManagerEmail')"
+                          }
+                        },
+                        "runAfter": {
+                          "Owner_Block_no_P2": [
+                            "Succeeded"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "else": {
+                "actions": {
+                  "Owner_Block_unlicensed": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_sharepointonline",
+                        "operationId": "PatchItem",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                      },
+                      "parameters": {
+                        "dataset": "@parameters('GovernanceSiteUrl')",
+                        "table": "Access Requests",
+                        "id": "@triggerBody()?['ID']",
+                        "item/Status/Value": "Blocked - Licence required",
+                        "item/DecisionLog": "Site Owner / Author access requires a named Microsoft 365 E3 (or equivalent) licence that includes SharePoint."
+                      }
+                    },
+                    "runAfter": {}
+                  },
+                  "Owner_Notify_unlicensed": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_office365",
+                        "operationId": "SendEmailV2",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                      },
+                      "parameters": {
+                        "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+                        "emailMessage/Subject": "SharePoint access request blocked: licence required",
+                        "emailMessage/Body": "<p>Site Owner / Author access requires a named Microsoft 365 E3 (or equivalent) licence that includes SharePoint.</p><p>Your line manager can raise a licence request with the Service Desk; resubmit once it is assigned.</p>",
+                        "emailMessage/Importance": "Normal",
+                        "emailMessage/Cc": "@parameters('ProjectManagerEmail')"
+                      }
+                    },
+                    "runAfter": {
+                      "Owner_Block_unlicensed": [
+                        "Succeeded"
+                      ]
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Owner_Get_licence_details": [
+                  "Succeeded",
+                  "Failed"
+                ]
+              }
+            }
+          }
+        },
+        "Long_term_contractor": {
+          "case": "Long-term contractor",
+          "actions": {
+            "Guest_Condition_TimeBound": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "greater": [
+                      "@ticks(coalesce(triggerBody()?['AccessEndDate'], '9999-12-31'))",
+                      "@ticks(utcNow())"
+                    ]
+                  },
+                  {
+                    "lessOrEquals": [
+                      "@ticks(coalesce(triggerBody()?['AccessEndDate'], '9999-12-31'))",
+                      "@ticks(addDays(utcNow(), 365))"
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Guest_Approval_owner_and_InfoSec": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_approvals",
+                      "operationId": "StartAndWaitForAnApproval",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                    },
+                    "parameters": {
+                      "approvalType": "BasicAwaitAll",
+                      "WebhookApprovalCreationInput/title": "@{concat('Guest (contractor) access: ', triggerBody()?['GuestEmail'])}",
+                      "WebhookApprovalCreationInput/assignedTo": "@{concat(body('Get_target_site')?['PrimaryOwner']?['Email'], ';', parameters('InfoSecApproverEmail'))}",
+                      "WebhookApprovalCreationInput/details": "@{concat('Guest: ', triggerBody()?['GuestEmail'], decodeUriComponent('%0A'), 'Sponsor: ', triggerBody()?['Requester']?['Email'], decodeUriComponent('%0A'), 'Ends: ', triggerBody()?['AccessEndDate'], decodeUriComponent('%0A'), 'Site: ', body('Get_target_site')?['SiteUrl'], decodeUriComponent('%0A'), 'Justification: ', triggerBody()?['BusinessJustification'], decodeUriComponent('%0A%0A'), 'Default is read-only, MFA enforced, time-bound and reviewed.')}",
+                      "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
+                      "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+                      "WebhookApprovalCreationInput/enableNotifications": true,
+                      "WebhookApprovalCreationInput/enableReassignment": true
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Guest_Condition_Approved": {
+                  "type": "If",
+                  "expression": {
+                    "equals": [
+                      "@outputs('Guest_Approval_owner_and_InfoSec')?['body/outcome']",
+                      "Approve"
+                    ]
+                  },
+                  "actions": {
+                    "Guest_Invite": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_webcontents",
+                          "operationId": "InvokeHttp",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                        },
+                        "parameters": {
+                          "request/method": "POST",
+                          "request/url": "https://graph.microsoft.com/v1.0/invitations",
+                          "request/body": {
+                            "invitedUserEmailAddress": "@{triggerBody()?['GuestEmail']}",
+                            "inviteRedirectUrl": "@{body('Get_target_site')?['SiteUrl']}",
+                            "sendInvitationMessage": true
+                          },
+                          "request/headers": {
+                            "Content-Type": "application/json"
+                          }
+                        }
+                      },
+                      "runAfter": {}
+                    },
+                    "Guest_Add_to_guest_group": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_webcontents",
+                          "operationId": "InvokeHttp",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                        },
+                        "parameters": {
+                          "request/method": "POST",
+                          "request/url": "https://graph.microsoft.com/v1.0/groups/@{body('Get_target_site')?['GuestsGroupId']}/members/$ref",
+                          "request/body": {
+                            "@odata.id": "https://graph.microsoft.com/v1.0/directoryObjects/@{body('Guest_Invite')?['invitedUser']?['id']}"
+                          },
+                          "request/headers": {
+                            "Content-Type": "application/json"
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Guest_Invite": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Guest_Register": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PostItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('GovernanceSiteUrl')",
+                          "table": "Guest Access Register",
+                          "item/Title": "@triggerBody()?['GuestEmail']",
+                          "item/GuestUserId": "@body('Guest_Invite')?['invitedUser']?['id']",
+                          "item/GroupId": "@body('Get_target_site')?['GuestsGroupId']",
+                          "item/SiteId": "@body('Get_target_site')?['ID']",
+                          "item/Sponsor/Claims": "@triggerBody()?['Requester']?['Claims']",
+                          "item/AccessEndDate": "@triggerBody()?['AccessEndDate']",
+                          "item/AccessRequestId": "@triggerBody()?['ID']",
+                          "item/Status/Value": "Active"
+                        }
+                      },
+                      "runAfter": {
+                        "Guest_Add_to_guest_group": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Guest_Mark_granted": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PatchItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('GovernanceSiteUrl')",
+                          "table": "Access Requests",
+                          "id": "@triggerBody()?['ID']",
+                          "item/Status/Value": "Granted",
+                          "item/ApprovedAccessMethod": "Entra ID Guest (scoped, read-only)"
+                        }
+                      },
+                      "runAfter": {
+                        "Guest_Register": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Guest_Notify_sponsor": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365",
+                          "operationId": "SendEmailV2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+                          "emailMessage/Subject": "Guest access granted",
+                          "emailMessage/Body": "<p>@{triggerBody()?['GuestEmail']} has been invited to @{body('Get_target_site')?['SiteTitle']} with read-only access until @{formatDateTime(triggerBody()?['AccessEndDate'], 'dd MMM yyyy')}.</p><p>You are the sponsor and will be asked to review before it expires.</p>",
+                          "emailMessage/Importance": "Normal"
+                        }
+                      },
+                      "runAfter": {
+                        "Guest_Mark_granted": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Guest_Mark_rejected": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_sharepointonline",
+                            "operationId": "PatchItem",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                          },
+                          "parameters": {
+                            "dataset": "@parameters('GovernanceSiteUrl')",
+                            "table": "Access Requests",
+                            "id": "@triggerBody()?['ID']",
+                            "item/Status/Value": "Rejected",
+                            "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Guest_Approval_owner_and_InfoSec')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+                          }
+                        },
+                        "runAfter": {}
+                      },
+                      "Guest_Notify_rejected": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_office365",
+                            "operationId": "SendEmailV2",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                          },
+                          "parameters": {
+                            "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+                            "emailMessage/Subject": "SharePoint access request rejected",
+                            "emailMessage/Body": "<p>Your request for access to @{body('Get_target_site')?['SiteTitle']} was rejected.</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Guest_Approval_owner_and_InfoSec')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
+                            "emailMessage/Importance": "Normal"
+                          }
+                        },
+                        "runAfter": {
+                          "Guest_Mark_rejected": [
+                            "Succeeded"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Guest_Approval_owner_and_InfoSec": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Guest_Block_not_time_bound": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_sharepointonline",
+                        "operationId": "PatchItem",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                      },
+                      "parameters": {
+                        "dataset": "@parameters('GovernanceSiteUrl')",
+                        "table": "Access Requests",
+                        "id": "@triggerBody()?['ID']",
+                        "item/Status/Value": "Rejected - Not time-bound",
+                        "item/DecisionLog": "Guest access must have an end date no more than 12 months away."
+                      }
+                    },
+                    "runAfter": {}
+                  },
+                  "Guest_Notify_not_time_bound": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_office365",
+                        "operationId": "SendEmailV2",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                      },
+                      "parameters": {
+                        "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+                        "emailMessage/Subject": "Guest access request rejected: end date required",
+                        "emailMessage/Body": "<p>Contractor (guest) access must be time-bound. Resubmit with an access end date no more than 12 months from today.</p>",
+                        "emailMessage/Importance": "Normal"
+                      }
+                    },
+                    "runAfter": {
+                      "Guest_Block_not_time_bound": [
+                        "Succeeded"
+                      ]
+                    }
+                  }
+                }
+              },
+              "runAfter": {}
+            }
+          }
+        },
+        "Privileged_admin": {
+          "case": "Privileged admin",
+          "actions": {
+            "Priv_Approval_InfoSec": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_approvals",
+                  "operationId": "StartAndWaitForAnApproval",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                },
+                "parameters": {
+                  "approvalType": "Basic",
+                  "WebhookApprovalCreationInput/title": "@{concat('Privileged admin role request: ', triggerBody()?['Requester']?['Email'])}",
+                  "WebhookApprovalCreationInput/assignedTo": "@parameters('InfoSecApproverEmail')",
+                  "WebhookApprovalCreationInput/details": "@{concat('Requester: ', triggerBody()?['Requester']?['Email'], decodeUriComponent('%0A'), 'Access type: ', triggerBody()?['UserType']?['Value'], decodeUriComponent('%0A'), 'Site: ', body('Get_target_site')?['SiteUrl'], decodeUriComponent('%0A'), 'Justification: ', triggerBody()?['BusinessJustification'])}",
+                  "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
+                  "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+                  "WebhookApprovalCreationInput/enableNotifications": true,
+                  "WebhookApprovalCreationInput/enableReassignment": true
+                }
+              },
+              "runAfter": {}
+            },
+            "Priv_Condition_Approved": {
+              "type": "If",
+              "expression": {
+                "equals": [
+                  "@outputs('Priv_Approval_InfoSec')?['body/outcome']",
+                  "Approve"
+                ]
+              },
+              "actions": {
+                "Priv_Mark_approved": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "PatchItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('GovernanceSiteUrl')",
+                      "table": "Access Requests",
+                      "id": "@triggerBody()?['ID']",
+                      "item/Status/Value": "Approved - PIM eligible assignment pending",
+                      "item/ApprovedAccessMethod": "PIM-protected admin role"
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Priv_Raise_PIM_assignment": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@parameters('ITOpsOwnerEmail')",
+                      "emailMessage/Subject": "Create PIM eligible assignment",
+                      "emailMessage/Body": "<p>InfoSec approved privileged access request #@{triggerBody()?['ID']} for <b>@{triggerBody()?['Requester']?['Email']}</b>.</p><p>Create an <b>eligible</b> (not active/permanent) PIM assignment for the requested SharePoint admin role. Activation must require MFA and justification. Then set the request to Granted.</p>",
+                      "emailMessage/Importance": "Normal",
+                      "emailMessage/Cc": "@parameters('InfoSecApproverEmail')"
+                    }
+                  },
+                  "runAfter": {
+                    "Priv_Mark_approved": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Priv_Mark_rejected": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_sharepointonline",
+                        "operationId": "PatchItem",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                      },
+                      "parameters": {
+                        "dataset": "@parameters('GovernanceSiteUrl')",
+                        "table": "Access Requests",
+                        "id": "@triggerBody()?['ID']",
+                        "item/Status/Value": "Rejected",
+                        "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Priv_Approval_InfoSec')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+                      }
+                    },
+                    "runAfter": {}
+                  },
+                  "Priv_Notify_rejected": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_office365",
+                        "operationId": "SendEmailV2",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                      },
+                      "parameters": {
+                        "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+                        "emailMessage/Subject": "SharePoint access request rejected",
+                        "emailMessage/Body": "<p>Your request for access to @{body('Get_target_site')?['SiteTitle']} was rejected.</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Priv_Approval_InfoSec')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
+                        "emailMessage/Importance": "Normal"
+                      }
+                    },
+                    "runAfter": {
+                      "Priv_Mark_rejected": [
+                        "Succeeded"
+                      ]
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Priv_Approval_InfoSec": [
+                  "Succeeded"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "default": {
+        "actions": {
+          "Unknown_type": {
+            "type": "OpenApiConnection",
+            "inputs": {
+              "host": {
+                "connectionName": "shared_sharepointonline",
+                "operationId": "PatchItem",
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+              },
+              "parameters": {
+                "dataset": "@parameters('GovernanceSiteUrl')",
+                "table": "Access Requests",
+                "id": "@triggerBody()?['ID']",
+                "item/Status/Value": "Rejected - Unknown access type"
+              }
+            },
+            "runAfter": {}
+          }
+        }
+      },
+      "runAfter": {
+        "Get_target_site": [
+          "Succeeded"
+        ]
+      }
+    }
+  }
+}

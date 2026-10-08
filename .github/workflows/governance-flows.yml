@@ -1,0 +1,21 @@
+name: Governance flows
+
+on:
+  pull_request:
+    paths:
+      - "solutions/SharePointGovernance/**"
+  push:
+    branches: [main]
+    paths:
+      - "solutions/SharePointGovernance/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate flow definitions against the list schema
+        run: python solutions/SharePointGovernance/tools/validate_flows.py
