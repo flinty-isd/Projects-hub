@@ -8,6 +8,9 @@ migration strategy, the per-form guide, and the target ALM architecture.
 - [`docs/infopath-migration/`](docs/infopath-migration/README.md) — start here:
   why InfoPath is being retired, the replacement mapping, and the migration
   backlog.
+- [`docs/infopath-migration/triage.md`](docs/infopath-migration/triage.md) —
+  the real inventory of all 43 InfoPath forms, tiered by rebuild complexity,
+  with suggested sequencing for which to migrate next.
 - [`solutions/ITEquipmentRequest/`](solutions/ITEquipmentRequest/),
   [`solutions/AssetManagementDisposal/`](solutions/AssetManagementDisposal/), and
   [`solutions/HolidayRequest/`](solutions/HolidayRequest/) — fully worked

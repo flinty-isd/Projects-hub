@@ -1,0 +1,44 @@
+form,pages,main_fields,connections_receive,connections_submit,rules,conditions,actions,days_to_rebuild,has_workflow
+CCTV Access Request,4,75,5 -SharePoint; 1 – XML file; 2 – UDCX files,1 - SharePoint,44,30,72,4,Y
+Damage Report,3,54,2 -SharePoint; 1 – XML file; 3 – UDCX files,1 - SharePoint,33,26,58,4,Y
+Rail Rejection Status,4,91,5 -SharePoint; 1 – XML file; 2 – UDCX files,1 - SharePoint,84,73,209,7,Y
+FuelTek Disc Request,4,55,2 -SharePoint; 1 – XML file; 1 – UDCX files,1 - SharePoint,35,29,77,4,Y
+Gritting Log,2,47,4 -SharePoint; 1 – XML file; 2 – UDCX files,1 - SharePoint,34,18,100,5,Y
+Hospitality Booking Request,3,73,3 -SharePoint; 1 – XML file; 2 – UDCX files,1 - SharePoint,59,49,133,5,Y
+Jammed Twistlock,3,80,2 -SharePoint; 1 – XML file; 2 – UDCX files,1 - SharePoint,58,44,155,5,Y
+LTP Sales Invoice Request,4,98,5 -SharePoint; 1 – XML file; 1 – UDCX files,1 - SharePoint,78,64,221,8,Y
+Maximo Access Request,5,144,2 -SharePoint; 1 – XML file; 3 – UDCX files,1 - SharePoint,159,133,491,10,Y
+Mis-Declared Empties,3,31,2 -SharePoint; 1 – XML file; 3 – UDCX files,1 - SharePoint,25,12,45,4,Y
+Mobile Device Hardware,3,104,4 -SharePoint; 1 – XML file; 3 – UDCX files,1 - SharePoint,78,60,320,6,Y
+Mobile Device SIM Only,3,121,3 -SharePoint; 1 – XML file; 2 – UDCX files,1 - SharePoint,107,87,575,10,Y
+Proof of Learning,6,402,6 -SharePoint; 2 – XML file; 1 – UDCX files,1 - SharePoint,213,186,512,10,Y
+Supplier Contract Approval,6,123,2 -SharePoint; 1 – XML file; 3 – UDCX files,1 - SharePoint,146,120,428,9,Y
+Visitor Pass Request,3,84,6 -SharePoint; 1 – XML file; 3 – UDCX files,1 - SharePoint,50,35,87,4,Y
+Optical Reimbursement Request,3,46,1 -SharePoint; 1 – XML file; 3 – UDCX files,1 - SharePoint,46,34,133,5,Y
+Return to Work Form,2,54,5 – UDCX files,1 - SharePoint,43,29,91,5,Y
+Tender Submission Form for eTender 2017,6,146,2 -SharePoint; 1 – XML file; 3 – UDCX files,1 - SharePoint,77,63,196,6,Y
+Asset Disposal Request,8,202,2 -SharePoint; 1 – XML file; 2 – UDCX files,1 - SharePoint,314,253,882,12,Y
+Capital Expenditure 2025,4,194,3 -SharePoint; 1 – XML file; 2 – UDCX files,1 - SharePoint,146,128,549,10,Y
+Claims Referral,5,87,2 -SharePoint; 1 – XML file; 2 – UDCX files,1 - SharePoint,61,49,121,7,Y
+Customer Account Request,6,141,1 – XML file; 3 – UDCX files,1 - SharePoint,129,106,193,8,Y
+Finance Access and Data Request,2,116,1 -SharePoint; 1 – XML file; 3 – UDCX files,1 - SharePoint,75,69,194,8,
+Gift and Hospitality Form,5,93,2 – XML file; 2 – UDCX files,1 - SharePoint,77,63,274,9,
+Harwich Sales Invoice Request,4,98,5 -SharePoint; 1 – XML file; 1 – UDCX files,1 - SharePoint,78,64,136,6,
+HP Europe Invoice Authorisation,9,68,2 -SharePoint; 1 – XML file; 2– UDCX files,1 - SharePoint,48,26,71,5,
+Payroll Payment Adjustment Request,6,62,2 -SharePoint; 1 – XML file; 3 – UDCX files,1 - SharePoint,67,51,184,8,
+Pre Invoice Waiver,5,66,2 -SharePoint; 1 – XML file; 2 – UDCX files,1 - SharePoint,97,79,116,5,
+Professional Subscriptions Reimbursement Request,3,60,2 -SharePoint; 1 – XML file; 4 – UDCX files,1 - SharePoint,42,31,176,8,
+Approval for Ad hoc Supplier Purchase,3,66,1 – XML file; 3 – UDCX files,1 - SharePoint,42,34,136,5,
+Assignment Change Form,5,228,3 -SharePoint; 1 – XML file; 18 – UDCX files,1 - SharePoint,261,226,721,10,
+Contract Change,4,61,2 -SharePoint; 1 – XML file; 1 – UDCX files,1 - SharePoint,64,54,203,8,
+Employee Leaver Form,10,115,1 – XML file; 6 – UDCX files,1 - SharePoint,127,102,281,8,
+Employee Part Shift Sickness,,,0-SharePoint; 0 – XML file; 0 – UDCX files,1 - SharePoint,,,,,
+Employee Starter Form,9,104,1 -SharePoint; 1 – XML file; 2 – UDCX files,1 - SharePoint,76,54,173,6,
+Haulier Incident Tracker,7,81,1 – XML file; 4 – UDCX files,1 - SharePoint,56,41,235,7,Y
+Holiday Request,3,38,1 – XML file; 3 – UDCX files,1 - SharePoint,29,20,63,4,
+Issue of Leave Notification,,,0 -SharePoint; 0 – XML file; 0 – UDCX files,1 - SharePoint,,,,,
+New Employee IDACs Request,5,68,2 -SharePoint; 1 – XML file; 5 – UDCX files,1 - SharePoint,54,42,92,4,
+Stock Additions,7,170,5 -SharePoint; 1 – XML file; 2 – UDCX files,1 - SharePoint,234,213,754,12,
+Supplier Additions,4,236,2 -SharePoint; 1 – XML file; 2 – UDCX files,1 - SharePoint,252,191,659,11,Y
+Supplier Amendment,4,74,1 – XML file; 3 – UDCX files,1 - SharePoint,54,45,46,4,Y
+Vessel Condition Report,3,40,1 -SharePoint; 5 – UDCX files,1 - SharePoint,19,7,37,4,N

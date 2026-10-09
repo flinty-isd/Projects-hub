@@ -1,0 +1,42 @@
+form,workflow_name,variables,steps,conditions,actions,start,hours_to_rebuild
+CCTV Access Request,CCTV Request - Notifications,3,3,1,9,A/M,5
+CCTV Access Request,CCTV Request - Permissions,0,1,0,1,A/M,2
+Damage Report,Damage Report,2,3,10,18,A/M,7.5
+Rail Rejection Status,Rail Reject Status Notifications 2010,3,4,3,7,A/M,5
+FuelTek Disc Request,Fuel Disc Permissions,0,1,0,1,M,3
+FuelTek Disc Request,Fuel Disc Request Form Workflow,1,3,4,4,A/M,4
+Gritting Log,Gritting Log Notification Workflow 2010,1,3,2,3,A/M,2
+Hospitality Booking Request,Hospitality Booking Request Permissions,0,1,0,1,A/M,3
+Hospitality Booking Request,Hospitality Booking Request Workflow,2,2,10,12,A/M,7.5
+Jammed Twistlock,Jammed Twistlock Notification,1,4,3,4,A/M,5
+LTP Sales Invoice Request,LTP Sales Invoice Request Notification 2010,4,3,2,6,A/M,4
+Maximo Access Request,Maximo Access Request Workflow,1,2,3,11,A/M,4
+Maximo Access Request,Maximo Access Request Permissions,0,1,0,1,A/M,3
+Mis-Declared Empties,MisDeclared Empties Notification 2013,1,1,0,6,A/M,4
+Mobile Device Hardware,Mobile Hardware Notification,8,3,0,8,A/M,5
+Mobile Device Hardware,Mobile Hardware Permissions,0,1,0,1,A/M,3
+Mobile Device SIM Only,Mobile SIM Notification,7,3,0,8,A/M,5
+Mobile Device SIM Only,Mobile SIM Permissions,0,1,0,1,A/M,2
+Proof of Learning,Proof of Learning,1,4,2,4,A/M,4
+Supplier Contract Approval,Supplier Contract Approval Notification 2013,4,3,1,9,A/M,4
+Supplier Contract Approval,Supplier Contract Approval Permissions 2010,0,1,0,1,A/M,4
+Visitor Pass Request,Visitor Notifications and Permissions,4,6,5,11,A/M,6
+Visitor Pass Request,Visitor Pass - Calendar Entry,2,4,5,9,A/M,6
+Optical Reimbursement Request,Optician Reimbursement Request Workflow,2,3,4,11,A/M,6
+Optical Reimbursement Request,Optician Reimbursement Request - Remove all permissions 2010,0,1,0,1,M,2
+Optical Reimbursement Request,Optician Reimbursement Request Permissions,0,1,0,1,A/M,2
+Return to Work Form,Return to Work Permissions 2010,0,1,0,1,A/M,3
+Tender Submission Form for eTender 2017,Tender Submission Permissions,0,1,0,1,A/M,3
+Tender Submission Form for eTender 2017,Tender Submission Owners,0,1,0,1,A/M,3
+Tender Submission Form for eTender 2017,Tender Submission Form for eTender 2017 Workflow,2,3,2,4,A/M,5
+Asset Disposal Request,Asset Disposal Request,7,32,32,45,A/M,30
+Asset Disposal Request,Asset Disposal Request Permissions 2010,0,1,0,1,A/M,3
+Capital Expenditure 2025,Capital Expenditure 2025 Notifications and Permissions,1,3,2,3,A/M,3
+Capital Expenditure 2025,Capital Expenditure 2025 Set Spending Approval No,1,1,1,2,A/M,4
+Claims Referral,tClaims Referral Workflow Notification 2010,1,2,1,3,A/M,4
+Customer Account Request,Customer Account Request Permissions,0,1,0,1,A/M,3
+Customer Account Request,Customer Account Request v3,3,3,2,5,A/M,5
+Haulier Incident Tracker,Haulier Incident Tracker Permissions,0,1,0,1,A/M,2
+Haulier Incident Tracker,Haulier Incident Tracker Workflow,1,2,0,2,A/M,3
+Supplier Additions,Supplier Additions Notification,2,15,14,16,A/M,15
+Supplier Amendment,Supplier Amendment Notification,1,2,,,A/M,1

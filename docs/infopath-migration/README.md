@@ -40,15 +40,32 @@ see [`architecture.md`](./architecture.md#alm-pipeline) and
 
 ## Migration backlog
 
-Track each legacy form as it moves through the pipeline. Add a row per form as they
-are identified (fill in once real InfoPath forms are inventoried):
+A full inventory of the organization's 43 live InfoPath forms has been received
+(`form-inventory.csv`, `workflow-inventory.csv` — parsed from
+`InfoPath_Form_Detailed_Summary_2.xlsx`, totals cross-checked against the
+source spreadsheet's own TOTALS row). This replaces the placeholder backlog —
+see [`triage.md`](./triage.md) for the full list, complexity metrics, and a
+priority tiering by rebuild effort.
 
-| Form name | Current host | Status | Solution folder |
-|-----------|--------------|--------|------------------|
-| IT Equipment Request | SharePoint on-prem list + InfoPath | ✅ Migrated (example) | `solutions/ITEquipmentRequest` |
-| Asset Management & Disposal | SharePoint on-prem list + InfoPath | ✅ Migrated (example) | `solutions/AssetManagementDisposal` |
-| Holiday Request | SharePoint on-prem list + InfoPath | ✅ Migrated (example) | `solutions/HolidayRequest` |
-| _(add next form here)_ | | 🔲 Not started | |
+**Totals across all 43 forms:** 188 pages, 4,296 fields, 3,771 rules, 3,040
+conditions, 10,199 actions, 280 estimated rebuild-days for the forms
+themselves, plus 41 associated SharePoint workflows totalling 195 estimated
+rebuild-hours.
 
-To add a new form, copy the `solutions/ITEquipmentRequest` folder structure and
-follow `migration-guide.md`.
+### Status of forms already prototyped in this repo
+
+| Form name | In real inventory? | Status | Solution folder |
+|-----------|---------------------|--------|------------------|
+| Holiday Request | ✅ yes — 3 pages, 38 fields, 29 rules, 63 actions, **no workflow listed** | ⚠️ Prototype built *before* the real inventory arrived — simplified (~10 fields vs. 38 real) and adds an approval flow the real form doesn't have. Needs revisiting against the real field list. | `solutions/HolidayRequest` |
+| Asset Disposal Request | ✅ yes — 8 pages, 202 fields, 314 rules, 882 actions, 1 workflow (**30 hours** to rebuild — the single most complex workflow in the inventory) | ⚠️ Prototype built as "Asset Management & Disposal" *before* the real inventory arrived — far simpler than the real form (202 fields vs. ~10 modeled). This is one of the hardest forms in the whole set; treat the prototype as a starting pattern only. | `solutions/AssetManagementDisposal` |
+| IT Equipment Request | ❌ not in the real inventory | Generic example built before any real form list was available. Closest real analogs are `Mobile Device Hardware`, `Mobile Device SIM Only`, and `New Employee IDACs Request`. | `solutions/ITEquipmentRequest` |
+
+To migrate a new form from the real inventory: copy the
+`solutions/ITEquipmentRequest` folder structure and follow
+`migration-guide.md`, using the row in `form-inventory.csv` /
+`workflow-inventory.csv` for that form to size the work — but note the CSV
+only has field/rule *counts*, not the actual field names, types, or rule
+logic. **The next concrete step for any given form is extracting its real
+field list and rules from the `.xsn` template** (or a walkthrough of the live
+form), since the summary alone isn't enough to rebuild it faithfully.
+
