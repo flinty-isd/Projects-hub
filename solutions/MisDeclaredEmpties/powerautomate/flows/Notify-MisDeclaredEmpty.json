@@ -1,0 +1,135 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Notify on Mis-Declared Empty container",
+  "description": "Reconstruction of the InfoPath-era 'MisDeclared Empties Notification 2013' workflow (1 variable, 0 conditions, 6 actions per the form inventory — a flat notification fan-out, no approval). Triggers when Power Apps creates a new item in 'Mis-Declared Empties' and alerts Terminal Operations, Customs, and the shipping line/agent.",
+  "triggers": {
+    "When_a_mis-declared_empty_is_reported": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnNewItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+          "table": "Mis-Declared Empties"
+        }
+      },
+      "splitOn": "@triggerOutputs()?['body/value']"
+    }
+  },
+  "actions": {
+    "Initialize_TerminalOpsEmail": {
+      "type": "InitializeVariable",
+      "runAfter": {},
+      "inputs": {
+        "variables": [
+          {
+            "name": "TerminalOpsEmail",
+            "type": "string",
+            "value": "terminalops@{tenant}.onmicrosoft.com"
+          }
+        ]
+      },
+      "$comment": "Placeholder — replace with the real Terminal Operations distribution list."
+    },
+    "Send_email_TerminalOps": {
+      "type": "OpenApiConnection",
+      "runAfter": {
+        "Initialize_TerminalOpsEmail": ["Succeeded"]
+      },
+      "inputs": {
+        "host": {
+          "connectionName": "shared_office365",
+          "operationId": "SendEmailV2",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+        },
+        "parameters": {
+          "emailMessage/To": "@variables('TerminalOpsEmail')",
+          "emailMessage/Subject": "@{concat('Mis-declared empty: container ', triggerBody()?['ContainerNumber'])}",
+          "emailMessage/Body": "@{concat('Container ', triggerBody()?['ContainerNumber'], ' was declared empty but found: ', triggerBody()?['ActualContents'], '. Location: ', triggerBody()?['Location'])}"
+        }
+      }
+    },
+    "Send_email_Customs": {
+      "type": "OpenApiConnection",
+      "runAfter": {
+        "Initialize_TerminalOpsEmail": ["Succeeded"]
+      },
+      "inputs": {
+        "host": {
+          "connectionName": "shared_office365",
+          "operationId": "SendEmailV2",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+        },
+        "parameters": {
+          "emailMessage/To": "customs@{tenant}.onmicrosoft.com",
+          "emailMessage/Subject": "@{concat('Mis-declared empty for customs review: container ', triggerBody()?['ContainerNumber'])}",
+          "emailMessage/Body": "@{concat('Container ', triggerBody()?['ContainerNumber'], ' on vessel ', triggerBody()?['Vessel'], ' voyage ', triggerBody()?['Voyage'], ' requires customs review. Finding: ', triggerBody()?['ActualContents'])}"
+        }
+      }
+    },
+    "Send_email_ShippingLineAgent": {
+      "type": "OpenApiConnection",
+      "runAfter": {
+        "Initialize_TerminalOpsEmail": ["Succeeded"]
+      },
+      "inputs": {
+        "host": {
+          "connectionName": "shared_office365",
+          "operationId": "SendEmailV2",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+        },
+        "parameters": {
+          "emailMessage/To": "@triggerBody()?['ShippingLine']",
+          "emailMessage/Subject": "@{concat('Mis-declared empty: container ', triggerBody()?['ContainerNumber'])}",
+          "emailMessage/Body": "@{concat('Your container ', triggerBody()?['ContainerNumber'], ' was declared empty but found to contain: ', triggerBody()?['ActualContents'], '. Weight discrepancy: ', triggerBody()?['WeightDiscrepancyKg'], 'kg.')}"
+        }
+      },
+      "$comment": "Assumes ShippingLine stores a contactable email/alias; in practice this likely needs a lookup to a Shipping Lines contacts list."
+    },
+    "Update_item_UnderInvestigation": {
+      "type": "OpenApiConnection",
+      "runAfter": {
+        "Send_email_TerminalOps": ["Succeeded"],
+        "Send_email_Customs": ["Succeeded"],
+        "Send_email_ShippingLineAgent": ["Succeeded"]
+      },
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "PatchItem",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+          "table": "Mis-Declared Empties",
+          "id": "@triggerBody()?['ID']",
+          "item/Status": "Under Investigation"
+        }
+      }
+    },
+    "Post_summary_to_Teams": {
+      "type": "OpenApiConnection",
+      "runAfter": {
+        "Update_item_UnderInvestigation": ["Succeeded"]
+      },
+      "inputs": {
+        "host": {
+          "connectionName": "shared_teams",
+          "operationId": "PostMessageToConversation",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+        },
+        "parameters": {
+          "poster": "Flow bot",
+          "location": "Channel",
+          "body/recipient/channelId": "{terminal-ops-channel-id}",
+          "body/messageBody": "@{concat('Mis-declared empty logged: container ', triggerBody()?['ContainerNumber'], ' at ', triggerBody()?['Location'])}"
+        }
+      },
+      "$comment": "Replace {terminal-ops-channel-id} with the real Teams channel ID, or remove this action if no Teams channel is used for this today."
+    }
+  }
+}

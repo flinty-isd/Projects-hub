@@ -1,0 +1,30 @@
+{
+  "FormatVersion": "2.3",
+  "Properties": {
+    "Name": "Vessel Condition Report",
+    "Description": "Record a vessel's condition on arrival/departure, with a repeating defects table. No approval workflow — matches the real InfoPath form, which had none. Field list is inferred — see ../README.md.",
+    "AppPreviewFlagsMap": {
+      "usePowerFxDirectFormulaBar": true
+    }
+  },
+  "DataSources": [
+    {
+      "Name": "'Vessel Condition Reports'",
+      "Type": "SharePoint",
+      "DatasetName": "https://{tenant}.sharepoint.com/sites/{site}",
+      "TableName": "Vessel Condition Reports",
+      "Schema": "../../sharepoint/list-schema.json"
+    },
+    {
+      "Name": "'Vessel Condition Report Defects'",
+      "Type": "SharePoint",
+      "DatasetName": "https://{tenant}.sharepoint.com/sites/{site}",
+      "TableName": "Vessel Condition Report Defects",
+      "Schema": "../../sharepoint/list-schema.json"
+    }
+  ],
+  "Screens": [
+    "ReportForm"
+  ],
+  "StartScreen": "ReportForm"
+}

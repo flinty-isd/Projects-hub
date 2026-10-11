@@ -1,0 +1,23 @@
+{
+  "FormatVersion": "2.3",
+  "Properties": {
+    "Name": "Mis-Declared Empties",
+    "Description": "Report a container declared as empty that was found to contain cargo/residue or have a weight discrepancy. Field list is inferred — see ../README.md.",
+    "AppPreviewFlagsMap": {
+      "usePowerFxDirectFormulaBar": true
+    }
+  },
+  "DataSources": [
+    {
+      "Name": "'Mis-Declared Empties'",
+      "Type": "SharePoint",
+      "DatasetName": "https://{tenant}.sharepoint.com/sites/{site}",
+      "TableName": "Mis-Declared Empties",
+      "Schema": "../../sharepoint/list-schema.json"
+    }
+  ],
+  "Screens": [
+    "ReportForm"
+  ],
+  "StartScreen": "ReportForm"
+}

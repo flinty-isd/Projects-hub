@@ -1,0 +1,48 @@
+{
+  "$comment": "INFERRED schema — the real InfoPath form has 40 fields; this models 22 header fields plus a repeating defects child list as a best-effort reconstruction from the form name and domain context (port vessel inspections), pending the real .xsn or a walkthrough. See ../README.md.",
+  "lists": [
+    {
+      "listTitle": "Vessel Condition Reports",
+      "listDescription": "Inspection report of a vessel's condition on arrival/departure.",
+      "contentType": "Item",
+      "fields": [
+        {"internalName": "VesselName", "displayName": "Vessel Name", "type": "Text", "required": true},
+        {"internalName": "IMONumber", "displayName": "IMO Number", "type": "Text", "required": false},
+        {"internalName": "Voyage", "displayName": "Voyage", "type": "Text", "required": false},
+        {"internalName": "ArrivalDate", "displayName": "Arrival Date", "type": "DateTime", "displayFormat": "DateAndTime", "required": false},
+        {"internalName": "DepartureDate", "displayName": "Departure Date", "type": "DateTime", "displayFormat": "DateAndTime", "required": false},
+        {"internalName": "Berth", "displayName": "Berth", "type": "Text", "required": false},
+        {"internalName": "MasterName", "displayName": "Master's Name", "type": "Text", "required": false},
+        {"internalName": "AgentName", "displayName": "Agent", "type": "Text", "required": false},
+        {"internalName": "InspectorName", "displayName": "Inspector", "type": "Person", "required": true},
+        {"internalName": "InspectionDate", "displayName": "Inspection Date", "type": "DateTime", "displayFormat": "DateAndTime", "required": true},
+        {"internalName": "HullCondition", "displayName": "Hull Condition", "type": "Choice", "choices": ["Good", "Fair", "Poor", "Damaged"], "required": true},
+        {"internalName": "DeckCondition", "displayName": "Deck Condition", "type": "Choice", "choices": ["Good", "Fair", "Poor", "Damaged"], "required": true},
+        {"internalName": "MooringEquipmentCondition", "displayName": "Mooring Equipment Condition", "type": "Choice", "choices": ["Good", "Fair", "Poor", "Damaged"], "required": false},
+        {"internalName": "LifesavingEquipmentCondition", "displayName": "Lifesaving Equipment Condition", "type": "Choice", "choices": ["Good", "Fair", "Poor", "Damaged"], "required": false},
+        {"internalName": "NavigationEquipmentCondition", "displayName": "Navigation Equipment Condition", "type": "Choice", "choices": ["Good", "Fair", "Poor", "Damaged"], "required": false},
+        {"internalName": "OverallConditionRating", "displayName": "Overall Condition Rating", "type": "Choice", "choices": ["Satisfactory", "Minor Issues", "Major Issues", "Unsatisfactory"], "required": true},
+        {"internalName": "DefectsFound", "displayName": "Defects Found", "type": "Boolean", "default": false, "required": false, "notes": "Drives whether rows exist in the Vessel Condition Report Defects child list."},
+        {"internalName": "FollowUpRequired", "displayName": "Follow-Up Required", "type": "Boolean", "default": false, "required": false},
+        {"internalName": "FollowUpNotes", "displayName": "Follow-Up Notes", "type": "Note", "richText": false, "required": false},
+        {"internalName": "GeneralComments", "displayName": "General Comments", "type": "Note", "richText": false, "required": false},
+        {"internalName": "Status", "displayName": "Status", "type": "Choice", "choices": ["Draft", "Submitted"], "default": "Draft", "required": true}
+      ]
+    },
+    {
+      "listTitle": "Vessel Condition Report Defects",
+      "listDescription": "Repeating detail: individual defects noted during a vessel inspection. Lookup back to Vessel Condition Reports — InfoPath's repeating table for this form becomes a child list, per the migration guide.",
+      "contentType": "Item",
+      "fields": [
+        {"internalName": "Report", "displayName": "Report", "type": "Lookup", "lookupList": "Vessel Condition Reports", "lookupField": "VesselName", "required": true},
+        {"internalName": "DefectLocation", "displayName": "Location on Vessel", "type": "Text", "required": true},
+        {"internalName": "DefectDescription", "displayName": "Description", "type": "Note", "richText": false, "required": true},
+        {"internalName": "Severity", "displayName": "Severity", "type": "Choice", "choices": ["Minor", "Major", "Critical"], "required": true}
+      ]
+    }
+  ],
+  "notes": [
+    "22 header fields + 4 defect-row fields modeled vs. 40 total in the real form — likely missing fields include additional equipment categories, photo/attachment metadata, or further repeating sections. Confirm against the real .xsn.",
+    "Photo evidence should use SharePoint's built-in list-item Attachments rather than a custom field."
+  ]
+}

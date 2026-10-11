@@ -1,0 +1,30 @@
+{
+  "FormatVersion": "2.3",
+  "Properties": {
+    "Name": "Gritting Log",
+    "Description": "Log a gritting (salting) round across site areas, with weather conditions and quantity used. Field list is inferred — see ../README.md.",
+    "AppPreviewFlagsMap": {
+      "usePowerFxDirectFormulaBar": true
+    }
+  },
+  "DataSources": [
+    {
+      "Name": "'Gritting Log'",
+      "Type": "SharePoint",
+      "DatasetName": "https://{tenant}.sharepoint.com/sites/{site}",
+      "TableName": "Gritting Log",
+      "Schema": "../../sharepoint/list-schema.json"
+    },
+    {
+      "Name": "'Gritting Log Areas'",
+      "Type": "SharePoint",
+      "DatasetName": "https://{tenant}.sharepoint.com/sites/{site}",
+      "TableName": "Gritting Log Areas",
+      "Schema": "../../sharepoint/list-schema.json"
+    }
+  ],
+  "Screens": [
+    "LogEntryForm"
+  ],
+  "StartScreen": "LogEntryForm"
+}

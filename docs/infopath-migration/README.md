@@ -28,6 +28,13 @@ replace remaining InfoPath forms with supported Microsoft 365 tooling:
   example covering a balance-tracked approval (leave request checked against
   a remaining-entitlement calculation before it's routed to a manager, with
   the approved days booked to a shared calendar).
+- [`../../solutions/MisDeclaredEmpties`](../../solutions/MisDeclaredEmpties),
+  [`../../solutions/VesselConditionReport`](../../solutions/VesselConditionReport),
+  [`../../solutions/GrittingLog`](../../solutions/GrittingLog) — the three
+  smallest Tier 1 forms from the real inventory, chosen to validate the
+  migration pattern (and, for Vessel Condition Report, the repeating-table
+  pattern) before tackling anything larger. All three are inferred field
+  lists pending the real `.xsn` — see each solution's README.
 
 ## Why source-control the solution?
 
@@ -59,6 +66,9 @@ rebuild-hours.
 | Holiday Request | ✅ yes — 3 pages, 38 fields, 29 rules, 63 actions, **no workflow listed** | ⚠️ Prototype built *before* the real inventory arrived — simplified (~10 fields vs. 38 real) and adds an approval flow the real form doesn't have. Needs revisiting against the real field list. | `solutions/HolidayRequest` |
 | Asset Disposal Request | ✅ yes — 8 pages, 202 fields, 314 rules, 882 actions, 1 workflow (**30 hours** to rebuild — the single most complex workflow in the inventory) | ⚠️ Prototype built as "Asset Management & Disposal" *before* the real inventory arrived — far simpler than the real form (202 fields vs. ~10 modeled). This is one of the hardest forms in the whole set; treat the prototype as a starting pattern only. | `solutions/AssetManagementDisposal` |
 | IT Equipment Request | ❌ not in the real inventory | Generic example built before any real form list was available. Closest real analogs are `Mobile Device Hardware`, `Mobile Device SIM Only`, and `New Employee IDACs Request`. | `solutions/ITEquipmentRequest` |
+| Mis-Declared Empties | ✅ yes — Tier 1, 3 pages, 31 fields, 1 notification workflow | ⚠️ Field list inferred from the form name/domain (not the real `.xsn`) — 17 of 31 fields modeled. First of the "prove the pattern" batch. | `solutions/MisDeclaredEmpties` |
+| Vessel Condition Report | ✅ yes — Tier 1, 3 pages, 40 fields, **no workflow** | ⚠️ Field list inferred — 22 header + repeating defects child list, 26 of 40 fields modeled. Validates the repeating-table pattern with no workflow attached. | `solutions/VesselConditionReport` |
+| Gritting Log | ✅ yes — Tier 1, 2 pages, 47 fields, 1 notification workflow | ⚠️ Field list inferred — 9 header + repeating areas child list, 14 of 47 fields modeled. Validates a conditional (not blanket) notification flow. | `solutions/GrittingLog` |
 
 To migrate a new form from the real inventory: copy the
 `solutions/ITEquipmentRequest` folder structure and follow

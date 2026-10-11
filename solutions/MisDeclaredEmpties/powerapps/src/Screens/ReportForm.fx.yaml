@@ -1,0 +1,90 @@
+# Canvas app source (pac canvas pack format). Single-screen exception report.
+Screens:
+  ReportForm:
+    Properties:
+      OnVisible: |
+        =ResetForm(FormReport)
+    Children:
+      - TitleLabel:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Mis-Declared Empties Report"
+            Size: =20
+            FontWeight: =FontWeight.Bold
+            X: =32
+            Y: =24
+            Width: =Parent.Width - 64
+
+      - FormReport:
+          Control: Form@2.5.1
+          Properties:
+            DataSource: ='Mis-Declared Empties'
+            DefaultMode: =FormMode.New
+            Item: =Blank()
+            X: =32
+            Y: =72
+            Width: =Parent.Width - 64
+            Height: =Parent.Height - 192
+            OnSuccess: |
+              =Notify("Report submitted. Relevant teams have been notified.", NotificationType.Success);
+              ResetForm(FormReport)
+          Children:
+            - ContainerNumberCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="ContainerNumber"
+            - ShippingLineCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="ShippingLine"
+            - VesselCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="Vessel"
+            - VoyageCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="Voyage"
+            - ActualContentsCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="ActualContents"
+            - DiscoveredByCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="DiscoveredBy"
+            - DateDiscoveredCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="DateDiscovered"
+            - LocationCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="Location"
+            - DeclaredWeightKgCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="DeclaredWeightKg"
+            - ActualWeightKgCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="ActualWeightKg"
+            - ActionTakenCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="ActionTaken"
+            - CommentsCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="Comments"
+
+      - SubmitButton:
+          Control: Button@2.5.1
+          Properties:
+            Text: ="Submit Report"
+            X: =32
+            Y: =Parent.Height - 88
+            Width: =160
+            Height: =48
+            OnSelect: |
+              =SubmitForm(FormReport)

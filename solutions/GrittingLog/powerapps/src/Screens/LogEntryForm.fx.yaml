@@ -1,0 +1,199 @@
+# Canvas app source (pac canvas pack format). Gritting round log entry with
+# a repeating areas-covered table (InfoPath's repeating section).
+Screens:
+  LogEntryForm:
+    Properties:
+      OnVisible: |
+        =ResetForm(FormLog);
+        Clear(colAreas)
+    Children:
+      - TitleLabel:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Gritting Log"
+            Size: =20
+            FontWeight: =FontWeight.Bold
+            X: =32
+            Y: =24
+            Width: =Parent.Width - 64
+
+      - FormLog:
+          Control: Form@2.5.1
+          Properties:
+            DataSource: ='Gritting Log'
+            DefaultMode: =FormMode.New
+            Item: =Blank()
+            X: =32
+            Y: =72
+            Width: =Parent.Width - 64
+            Height: =220
+          Children:
+            - LogDateCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="LogDate"
+            - LogTimeCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="LogTime"
+            - SiteCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="Site"
+            - WeatherConditionsCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="WeatherConditions"
+            - TemperatureCelsiusCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="TemperatureCelsius"
+            - GritTypeCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="GritType"
+            - LoggedByCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="LoggedBy"
+            - CommentsCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="Comments"
+
+      - AreasLabel:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Areas Gritted"
+            FontWeight: =FontWeight.Semibold
+            X: =32
+            Y: =304
+            Width: =300
+
+      - AreaNameInput:
+          Control: TextInput@2.5.1
+          Properties:
+            HintText: ="Area name"
+            X: =32
+            Y: =336
+            Width: =220
+
+      - AreaSafetyCriticalCheckbox:
+          Control: Checkbox@2.5.1
+          Properties:
+            Text: ="Safety critical"
+            X: =264
+            Y: =336
+            Width: =160
+
+      - AreaQuantityInput:
+          Control: TextInput@2.5.1
+          Properties:
+            Format: =TextFormat.Number
+            HintText: ="Quantity (kg)"
+            X: =436
+            Y: =336
+            Width: =140
+
+      - AreaCompletedCheckbox:
+          Control: Checkbox@2.5.1
+          Properties:
+            Text: ="Completed"
+            Default: =true
+            X: =588
+            Y: =336
+            Width: =140
+
+      - AddAreaButton:
+          Control: Button@2.5.1
+          Properties:
+            Text: ="Add Area"
+            X: =740
+            Y: =336
+            Width: =120
+            Height: =36
+            OnSelect: |
+              =Collect(
+                  colAreas,
+                  {
+                      AreaName: AreaNameInput.Text,
+                      SafetyCritical: AreaSafetyCriticalCheckbox.Value,
+                      QuantityUsedKg: Value(AreaQuantityInput.Text),
+                      Completed: AreaCompletedCheckbox.Value
+                  }
+              );
+              Reset(AreaNameInput);
+              Reset(AreaQuantityInput)
+
+      - AreasGallery:
+          Control: Gallery@2.5.1
+          Properties:
+            Layout: =GalleryLayout.Vertical
+            Items: =colAreas
+            X: =32
+            Y: =384
+            Width: =Parent.Width - 64
+            Height: =Parent.Height - 480
+          Children:
+            - AreaNameLabel:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.AreaName
+                  FontWeight: =FontWeight.Semibold
+            - AreaStatusLabel:
+                Control: Label@2.5.1
+                Properties:
+                  Text: |
+                    =If(ThisItem.Completed, "Completed", "Not completed")
+                  Color: |
+                    =If(ThisItem.Completed, Color.Green, Color.Red)
+            - AreaSafetyCriticalLabel:
+                Control: Label@2.5.1
+                Properties:
+                  Text: |
+                    =If(ThisItem.SafetyCritical, "Safety critical", "")
+
+      - SubmitButton:
+          Control: Button@2.5.1
+          Properties:
+            Text: ="Submit Log"
+            X: =32
+            Y: =Parent.Height - 88
+            Width: =160
+            Height: =48
+            OnSelect: |
+              =Set(
+                  varNewLog,
+                  Patch(
+                      'Gritting Log',
+                      Defaults('Gritting Log'),
+                      {
+                          LogDate: LogDateCard.Value,
+                          LogTime: LogTimeCard.Value,
+                          Site: SiteCard.Value,
+                          WeatherConditions: WeatherConditionsCard.Value,
+                          TemperatureCelsius: TemperatureCelsiusCard.Value,
+                          GritType: GritTypeCard.Value,
+                          LoggedBy: LoggedByCard.Value,
+                          Comments: CommentsCard.Value,
+                          AllAreasComplete: CountRows(Filter(colAreas, !Completed)) = 0
+                      }
+                  )
+              );
+              ForAll(
+                  colAreas,
+                  Patch(
+                      'Gritting Log Areas',
+                      Defaults('Gritting Log Areas'),
+                      {
+                          Log: varNewLog,
+                          AreaName: AreaName,
+                          SafetyCritical: SafetyCritical,
+                          QuantityUsedKg: QuantityUsedKg,
+                          Completed: Completed
+                      }
+                  )
+              );
+              Notify("Gritting log submitted.", NotificationType.Success);
+              ResetForm(FormLog);
+              Clear(colAreas)

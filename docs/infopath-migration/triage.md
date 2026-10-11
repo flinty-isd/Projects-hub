@@ -21,18 +21,23 @@ overall).
 
 ## Tier 1 – Quick wins (≤5 days) — 17 forms
 
+Status: `Mis-Declared Empties`, `Vessel Condition Report`, and `Gritting Log`
+have a prototype in `solutions/` (field lists inferred, pending the real
+`.xsn` — see each solution's README). Everything else in this tier is not
+started.
+
 | Form | Days to rebuild | Pages | Fields | Rules | Conditions | Actions | Workflows | Workflow hours |
 |---|---|---|---|---|---|---|---|---|
 | CCTV Access Request | 4 | 4 | 75 | 44 | 30 | 72 | 2 | 7.0 |
 | Damage Report | 4 | 3 | 54 | 33 | 26 | 58 | 1 | 7.5 |
 | FuelTek Disc Request | 4 | 4 | 55 | 35 | 29 | 77 | 2 | 7.0 |
-| Mis-Declared Empties | 4 | 3 | 31 | 25 | 12 | 45 | 1 | 4.0 |
+| Mis-Declared Empties ✅ prototype | 4 | 3 | 31 | 25 | 12 | 45 | 1 | 4.0 |
 | Visitor Pass Request | 4 | 3 | 84 | 50 | 35 | 87 | 2 | 12.0 |
 | Holiday Request | 4 | 3 | 38 | 29 | 20 | 63 | — | — |
 | New Employee IDACs Request | 4 | 5 | 68 | 54 | 42 | 92 | — | — |
 | Supplier Amendment | 4 | 4 | 74 | 54 | 45 | 46 | 1 | 1.0 |
-| Vessel Condition Report | 4 | 3 | 40 | 19 | 7 | 37 | — | — |
-| Gritting Log | 5 | 2 | 47 | 34 | 18 | 100 | 1 | 2.0 |
+| Vessel Condition Report ✅ prototype | 4 | 3 | 40 | 19 | 7 | 37 | — | — |
+| Gritting Log ✅ prototype | 5 | 2 | 47 | 34 | 18 | 100 | 1 | 2.0 |
 | Hospitality Booking Request | 5 | 3 | 73 | 59 | 49 | 133 | 2 | 10.5 |
 | Jammed Twistlock | 5 | 3 | 80 | 58 | 44 | 155 | 1 | 5.0 |
 | Optical Reimbursement Request | 5 | 3 | 46 | 46 | 34 | 133 | 3 | 10.0 |
@@ -84,10 +89,13 @@ overall).
 
 ## Suggested sequencing
 
-1. **Start with Tier 1, lowest field/rule count first** (Mis-Declared Empties,
-   Vessel Condition Report, Gritting Log) to validate the migration pattern
-   and CI pipeline end-to-end on genuinely small forms before tackling
-   anything with a workflow.
+1. ✅ **Start with Tier 1, lowest field/rule count first** (Mis-Declared
+   Empties, Vessel Condition Report, Gritting Log) to validate the migration
+   pattern and CI pipeline end-to-end on genuinely small forms before
+   tackling anything with a workflow. Prototypes are in `solutions/` — field
+   lists are inferred from the form names/domain context pending the real
+   `.xsn` templates, so confirm those before treating any of the three as
+   finished.
 2. **Then Tier 1 forms with workflows** (CCTV Access Request, FuelTek Disc
    Request, Visitor Pass Request, Hospitality Booking Request, Optical
    Reimbursement Request) to validate the Power Automate approval pattern on

@@ -1,0 +1,106 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Alert on incomplete safety-critical gritting",
+  "description": "Reconstruction of the InfoPath-era 'Gritting Log Notification Workflow 2010' (1 variable, 2 conditions, 3 actions per the form inventory). Triggers when an area row is added to 'Gritting Log Areas'; alerts the duty manager only when a safety-critical area was left ungritted, and flags the parent log as incomplete.",
+  "triggers": {
+    "When_a_gritting_area_is_logged": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnNewItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+          "table": "Gritting Log Areas"
+        }
+      },
+      "splitOn": "@triggerOutputs()?['body/value']"
+    }
+  },
+  "actions": {
+    "Initialize_DutyManagerEmail": {
+      "type": "InitializeVariable",
+      "runAfter": {},
+      "inputs": {
+        "variables": [
+          {
+            "name": "DutyManagerEmail",
+            "type": "string",
+            "value": "dutymanager@{tenant}.onmicrosoft.com"
+          }
+        ]
+      },
+      "$comment": "Placeholder — replace with the real duty manager mailbox/group, or look it up per site."
+    },
+    "Condition_SafetyCritical": {
+      "type": "If",
+      "runAfter": {
+        "Initialize_DutyManagerEmail": ["Succeeded"]
+      },
+      "expression": {
+        "equals": [
+          "@triggerBody()?['SafetyCritical']",
+          true
+        ]
+      },
+      "actions": {
+        "Condition_NotCompleted": {
+          "type": "If",
+          "runAfter": {},
+          "expression": {
+            "equals": [
+              "@triggerBody()?['Completed']",
+              false
+            ]
+          },
+          "actions": {
+            "Send_email_DutyManager": {
+              "type": "OpenApiConnection",
+              "runAfter": {},
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@variables('DutyManagerEmail')",
+                  "emailMessage/Subject": "@{concat('Safety-critical area not gritted: ', triggerBody()?['AreaName'])}",
+                  "emailMessage/Body": "@{concat('Area ', triggerBody()?['AreaName'], ' is marked safety-critical but was not completed in the latest gritting round.')}"
+                }
+              }
+            },
+            "Update_parent_log_incomplete": {
+              "type": "OpenApiConnection",
+              "runAfter": {
+                "Send_email_DutyManager": ["Succeeded"]
+              },
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PatchItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "https://{tenant}.sharepoint.com/sites/{site}",
+                  "table": "Gritting Log",
+                  "id": "@triggerBody()?['Log']?['Value']",
+                  "item/AllAreasComplete": false
+                }
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          }
+        }
+      },
+      "else": {
+        "actions": {}
+      }
+    }
+  }
+}

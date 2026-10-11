@@ -1,0 +1,208 @@
+# Canvas app source (pac canvas pack format). Vessel inspection report with
+# a repeating defects table (InfoPath's repeating section). Defects are
+# held in a local collection while editing, then written to the
+# 'Vessel Condition Report Defects' child list when the report is submitted.
+# NOTE: no approval/notification flow — the real form has none; see ../../README.md.
+Screens:
+  ReportForm:
+    Properties:
+      OnVisible: |
+        =ResetForm(FormReport);
+        Clear(colDefects)
+    Children:
+      - TitleLabel:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Vessel Condition Report"
+            Size: =20
+            FontWeight: =FontWeight.Bold
+            X: =32
+            Y: =24
+            Width: =Parent.Width - 64
+
+      - FormReport:
+          Control: Form@2.5.1
+          Properties:
+            DataSource: ='Vessel Condition Reports'
+            DefaultMode: =FormMode.New
+            Item: =Blank()
+            X: =32
+            Y: =72
+            Width: =Parent.Width - 64
+            Height: =300
+          Children:
+            - VesselNameCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="VesselName"
+            - IMONumberCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="IMONumber"
+            - VoyageCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="Voyage"
+            - BerthCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="Berth"
+            - InspectorNameCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="InspectorName"
+            - InspectionDateCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="InspectionDate"
+            - HullConditionCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="HullCondition"
+            - DeckConditionCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="DeckCondition"
+            - MooringEquipmentConditionCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="MooringEquipmentCondition"
+            - LifesavingEquipmentConditionCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="LifesavingEquipmentCondition"
+            - OverallConditionRatingCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="OverallConditionRating"
+            - GeneralCommentsCard:
+                Control: CardViewer@2.5.1
+                Properties:
+                  DataField: ="GeneralComments"
+
+      - DefectsLabel:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Defects"
+            FontWeight: =FontWeight.Semibold
+            X: =32
+            Y: =380
+            Width: =300
+
+      - DefectLocationInput:
+          Control: TextInput@2.5.1
+          Properties:
+            HintText: ="Location on vessel"
+            X: =32
+            Y: =412
+            Width: =200
+
+      - DefectDescriptionInput:
+          Control: TextInput@2.5.1
+          Properties:
+            HintText: ="Description"
+            X: =240
+            Y: =412
+            Width: =300
+
+      - DefectSeverityDropdown:
+          Control: Dropdown@2.5.1
+          Properties:
+            Items: =["Minor", "Major", "Critical"]
+            Default: ="Minor"
+            X: =548
+            Y: =412
+            Width: =140
+
+      - AddDefectButton:
+          Control: Button@2.5.1
+          Properties:
+            Text: ="Add Defect"
+            X: =696
+            Y: =412
+            Width: =120
+            Height: =36
+            OnSelect: |
+              =Collect(
+                  colDefects,
+                  {
+                      DefectLocation: DefectLocationInput.Text,
+                      DefectDescription: DefectDescriptionInput.Text,
+                      Severity: DefectSeverityDropdown.Selected.Value
+                  }
+              );
+              Reset(DefectLocationInput);
+              Reset(DefectDescriptionInput)
+
+      - DefectsGallery:
+          Control: Gallery@2.5.1
+          Properties:
+            Layout: =GalleryLayout.Vertical
+            Items: =colDefects
+            X: =32
+            Y: =460
+            Width: =Parent.Width - 64
+            Height: =Parent.Height - 560
+          Children:
+            - DefectLocationLabel:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.DefectLocation
+                  FontWeight: =FontWeight.Semibold
+            - DefectDescriptionLabel:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.DefectDescription
+            - DefectSeverityLabel:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.Severity
+
+      - SubmitButton:
+          Control: Button@2.5.1
+          Properties:
+            Text: ="Submit Report"
+            X: =32
+            Y: =Parent.Height - 88
+            Width: =160
+            Height: =48
+            OnSelect: |
+              =Set(
+                  varNewReport,
+                  Patch(
+                      'Vessel Condition Reports',
+                      Defaults('Vessel Condition Reports'),
+                      {
+                          VesselName: VesselNameCard.Value,
+                          IMONumber: IMONumberCard.Value,
+                          Voyage: VoyageCard.Value,
+                          Berth: BerthCard.Value,
+                          InspectorName: InspectorNameCard.Value,
+                          InspectionDate: InspectionDateCard.Value,
+                          HullCondition: HullConditionCard.Value,
+                          DeckCondition: DeckConditionCard.Value,
+                          MooringEquipmentCondition: MooringEquipmentConditionCard.Value,
+                          LifesavingEquipmentCondition: LifesavingEquipmentConditionCard.Value,
+                          OverallConditionRating: OverallConditionRatingCard.Value,
+                          GeneralComments: GeneralCommentsCard.Value,
+                          DefectsFound: CountRows(colDefects) > 0,
+                          Status: "Submitted"
+                      }
+                  )
+              );
+              ForAll(
+                  colDefects,
+                  Patch(
+                      'Vessel Condition Report Defects',
+                      Defaults('Vessel Condition Report Defects'),
+                      {
+                          Report: varNewReport,
+                          DefectLocation: DefectLocation,
+                          DefectDescription: DefectDescription,
+                          Severity: Severity
+                      }
+                  )
+              );
+              Notify("Report submitted.", NotificationType.Success);
+              ResetForm(FormReport);
+              Clear(colDefects)

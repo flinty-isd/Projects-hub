@@ -1,0 +1,37 @@
+{
+  "$comment": "INFERRED schema — the real InfoPath form has 47 fields; this models 9 header fields plus a repeating areas-gritted child list as a best-effort reconstruction from the form name and domain context (site winter maintenance), pending the real .xsn or a walkthrough. See ../README.md.",
+  "lists": [
+    {
+      "listTitle": "Gritting Log",
+      "listDescription": "Header record for a gritting (salting) round: date, weather, and who carried it out.",
+      "contentType": "Item",
+      "fields": [
+        {"internalName": "LogDate", "displayName": "Date", "type": "DateTime", "displayFormat": "DateOnly", "required": true},
+        {"internalName": "LogTime", "displayName": "Time", "type": "Text", "required": true, "notes": "Plain text time-of-day (e.g. '06:30') rather than a full DateTime, matching how shift logs are typically recorded."},
+        {"internalName": "Site", "displayName": "Site", "type": "Text", "required": true},
+        {"internalName": "WeatherConditions", "displayName": "Weather Conditions", "type": "Choice", "choices": ["Clear", "Frost", "Snow", "Ice", "Rain then Freeze"], "required": true},
+        {"internalName": "TemperatureCelsius", "displayName": "Temperature (°C)", "type": "Number", "required": false},
+        {"internalName": "GritType", "displayName": "Grit Type", "type": "Choice", "choices": ["Rock Salt", "White De-icing Salt", "Grit/Salt Mix"], "required": true},
+        {"internalName": "LoggedBy", "displayName": "Logged By", "type": "Person", "required": true},
+        {"internalName": "AllAreasComplete", "displayName": "All Areas Complete", "type": "Boolean", "default": true, "required": false, "notes": "Set by the app/flow from the areas-gritted child list, not typed in directly."},
+        {"internalName": "Comments", "displayName": "Comments", "type": "Note", "richText": false, "required": false}
+      ]
+    },
+    {
+      "listTitle": "Gritting Log Areas",
+      "listDescription": "Repeating detail: each site area covered (or missed) during a gritting round. Lookup back to Gritting Log — InfoPath's repeating table for this form becomes a child list, per the migration guide.",
+      "contentType": "Item",
+      "fields": [
+        {"internalName": "Log", "displayName": "Log", "type": "Lookup", "lookupList": "Gritting Log", "lookupField": "Site", "required": true},
+        {"internalName": "AreaName", "displayName": "Area", "type": "Text", "required": true},
+        {"internalName": "SafetyCritical", "displayName": "Safety Critical", "type": "Boolean", "default": false, "required": false, "notes": "e.g. pedestrian walkways, steps, loading bays — drives the flow's alert if left incomplete."},
+        {"internalName": "QuantityUsedKg", "displayName": "Quantity Used (kg)", "type": "Number", "required": false},
+        {"internalName": "Completed", "displayName": "Completed", "type": "Boolean", "default": false, "required": true}
+      ]
+    }
+  ],
+  "notes": [
+    "9 header fields + 5 area-row fields modeled vs. 47 total in the real form — likely missing fields include equipment used, named operators per area, or additional site/zone breakdowns. Confirm against the real .xsn.",
+    "AllAreasComplete on Gritting Log is written by the Power Automate flow (see ../powerautomate/flows/Notify-IncompleteGritting.json) based on the Gritting Log Areas rows, not typed in by the person logging."
+  ]
+}

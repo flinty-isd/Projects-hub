@@ -1,0 +1,29 @@
+{
+  "$comment": "INFERRED schema — the real InfoPath form has 31 fields; this models 17 as a best-effort reconstruction from the form name and domain context (container terminal operations), pending the real .xsn or a walkthrough. See ../README.md.",
+  "listTitle": "Mis-Declared Empties",
+  "listDescription": "Exception reports for containers declared as empty that are found on inspection to contain cargo/residue or to have a weight discrepancy.",
+  "contentType": "Item",
+  "fields": [
+    {"internalName": "ContainerNumber", "displayName": "Container Number", "type": "Text", "required": true},
+    {"internalName": "ShippingLine", "displayName": "Shipping Line", "type": "Text", "required": true},
+    {"internalName": "Vessel", "displayName": "Vessel", "type": "Text", "required": false},
+    {"internalName": "Voyage", "displayName": "Voyage", "type": "Text", "required": false},
+    {"internalName": "DeclaredAs", "displayName": "Declared As", "type": "Choice", "choices": ["Empty"], "default": "Empty", "required": true},
+    {"internalName": "ActualContents", "displayName": "Actual Contents / Finding", "type": "Note", "richText": false, "required": true},
+    {"internalName": "DiscoveredBy", "displayName": "Discovered By", "type": "Person", "required": true},
+    {"internalName": "DateDiscovered", "displayName": "Date Discovered", "type": "DateTime", "displayFormat": "DateAndTime", "required": true},
+    {"internalName": "Location", "displayName": "Location", "type": "Choice", "choices": ["Yard", "Berth", "Gate", "Rail Terminal"], "required": true},
+    {"internalName": "DeclaredWeightKg", "displayName": "Declared Weight (kg)", "type": "Number", "required": false},
+    {"internalName": "ActualWeightKg", "displayName": "Actual Weight (kg)", "type": "Number", "required": false},
+    {"internalName": "WeightDiscrepancyKg", "displayName": "Weight Discrepancy (kg)", "type": "Number", "calculated": true, "formula": "=[ActualWeightKg]-[DeclaredWeightKg]"},
+    {"internalName": "CustomerNotified", "displayName": "Customer Notified", "type": "Boolean", "default": false, "required": false},
+    {"internalName": "AgentNotified", "displayName": "Agent Notified", "type": "Boolean", "default": false, "required": false},
+    {"internalName": "ActionTaken", "displayName": "Action Taken", "type": "Choice", "choices": ["Container Held", "Container Released", "Inspected Further", "Reported to Customs"], "required": true},
+    {"internalName": "Status", "displayName": "Status", "type": "Choice", "choices": ["Open", "Under Investigation", "Closed"], "default": "Open", "required": true},
+    {"internalName": "Comments", "displayName": "Comments", "type": "Note", "richText": false, "required": false}
+  ],
+  "notes": [
+    "17 fields modeled vs. 31 in the real form — likely missing fields include customs reference numbers, photo/attachment metadata, additional contact fields, or a repeating table of multiple discrepancies per container. Confirm against the real .xsn.",
+    "Photo evidence should use SharePoint's built-in list-item Attachments rather than a custom field."
+  ]
+}

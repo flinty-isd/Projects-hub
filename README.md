@@ -12,10 +12,13 @@ migration strategy, the per-form guide, and the target ALM architecture.
   the real inventory of all 43 InfoPath forms, tiered by rebuild complexity,
   with suggested sequencing for which to migrate next.
 - [`solutions/ITEquipmentRequest/`](solutions/ITEquipmentRequest/),
-  [`solutions/AssetManagementDisposal/`](solutions/AssetManagementDisposal/), and
-  [`solutions/HolidayRequest/`](solutions/HolidayRequest/) — fully worked
-  example migrations (SharePoint list schema, Power Apps canvas source,
-  Power Automate flow) to copy for the next form.
+  [`solutions/AssetManagementDisposal/`](solutions/AssetManagementDisposal/),
+  [`solutions/HolidayRequest/`](solutions/HolidayRequest/),
+  [`solutions/MisDeclaredEmpties/`](solutions/MisDeclaredEmpties/),
+  [`solutions/VesselConditionReport/`](solutions/VesselConditionReport/), and
+  [`solutions/GrittingLog/`](solutions/GrittingLog/) — worked example
+  migrations (SharePoint list schema, Power Apps canvas source, Power
+  Automate flow where one exists) to copy for the next form.
 - [`.github/workflows/power-platform-ci.yml`](.github/workflows/power-platform-ci.yml) —
   CI/CD pipeline that packs and deploys solutions from source.
 
