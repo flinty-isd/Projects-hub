@@ -1,0 +1,495 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Recertify site and privileged access",
+  "description": "Runs on the 1st of each month. For each active site whose 90-day review is due, it flags orphaned sites whose primary owner is disabled. Otherwise it lists everyone in the Owners and Members groups and asks the owner to recertify, logs the outcome, sends any removals to the Service Desk and schedules the next review. In January, April, July and October it also asks InfoSec to review SharePoint Administrator role assignments, where only PIM-eligible assignments are expected.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    },
+    "shared_approvals": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+    },
+    "shared_webcontents": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "GovernanceSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{governance-site}"
+    },
+    "TenantRootUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com"
+    },
+    "ProjectManagerEmail": {
+      "type": "String",
+      "defaultValue": "{it-project-manager}@{domain}"
+    },
+    "InfoSecApproverEmail": {
+      "type": "String",
+      "defaultValue": "{security-and-architecture}@{domain}"
+    },
+    "SponsorEmail": {
+      "type": "String",
+      "defaultValue": "{project-sponsor}@{domain}"
+    },
+    "PortfolioManagerEmail": {
+      "type": "String",
+      "defaultValue": "{it-portfolio-manager}@{domain}"
+    },
+    "ITOpsOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{it-operations-owner}@{domain}"
+    },
+    "BusinessAnalystEmail": {
+      "type": "String",
+      "defaultValue": "{business-analyst}@{domain}"
+    },
+    "ServiceDeskEmail": {
+      "type": "String",
+      "defaultValue": "{service-desk}@{domain}"
+    },
+    "ReviewIntervalDays": {
+      "type": "Int",
+      "defaultValue": 90
+    }
+  },
+  "triggers": {
+    "Monthly_on_the_1st": {
+      "type": "Recurrence",
+      "recurrence": {
+        "frequency": "Month",
+        "interval": 1,
+        "timeZone": "GMT Standard Time",
+        "startTime": "2026-11-01T07:00:00Z",
+        "schedule": {
+          "hours": [
+            7
+          ],
+          "minutes": [
+            0
+          ]
+        }
+      }
+    }
+  },
+  "actions": {
+    "Get_sites_due": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('GovernanceSiteUrl')",
+          "table": "Site Register",
+          "$filter": "@{concat('Status eq ''Active'' and NextAccessReview le ''', utcNow('yyyy-MM-dd'), '''')}"
+        }
+      },
+      "runAfter": {}
+    },
+    "For_each_site_due": {
+      "type": "Foreach",
+      "foreach": "@outputs('Get_sites_due')?['body/value']",
+      "runtimeConfiguration": {
+        "concurrency": {
+          "repetitions": 20
+        }
+      },
+      "actions": {
+        "Get_primary_owner_status": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_webcontents",
+              "operationId": "InvokeHttp",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+            },
+            "parameters": {
+              "request/method": "GET",
+              "request/url": "https://graph.microsoft.com/v1.0/users/@{items('For_each_site_due')?['PrimaryOwner']?['Email']}?$select=accountEnabled"
+            }
+          },
+          "runAfter": {}
+        },
+        "Condition_OwnerActive": {
+          "type": "If",
+          "expression": {
+            "equals": [
+              "@body('Get_primary_owner_status')?['accountEnabled']",
+              true
+            ]
+          },
+          "actions": {
+            "Get_owners": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_webcontents",
+                  "operationId": "InvokeHttp",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                },
+                "parameters": {
+                  "request/method": "GET",
+                  "request/url": "https://graph.microsoft.com/v1.0/groups/@{items('For_each_site_due')?['OwnersGroupId']}/transitiveMembers?$select=displayName,mail,userType"
+                }
+              },
+              "runAfter": {}
+            },
+            "Get_members": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_webcontents",
+                  "operationId": "InvokeHttp",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                },
+                "parameters": {
+                  "request/method": "GET",
+                  "request/url": "https://graph.microsoft.com/v1.0/groups/@{items('For_each_site_due')?['MembersGroupId']}/transitiveMembers?$select=displayName,mail,userType"
+                }
+              },
+              "runAfter": {
+                "Get_owners": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Select_access": {
+              "type": "Select",
+              "inputs": {
+                "from": "@union(body('Get_owners')?['value'], body('Get_members')?['value'])",
+                "select": {
+                  "Name": "@item()?['displayName']",
+                  "Email": "@item()?['mail']",
+                  "Type": "@item()?['userType']"
+                }
+              },
+              "runAfter": {
+                "Get_members": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Members_table": {
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Select_access')",
+                "format": "HTML"
+              },
+              "runAfter": {
+                "Select_access": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Notify_owner_list": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@{items('For_each_site_due')?['PrimaryOwner']?['Email']}",
+                  "emailMessage/Subject": "@{concat('Access review due: ', items('For_each_site_due')?['SiteTitle'])}",
+                  "emailMessage/Body": "<p>Please review who can access <b>@{items('For_each_site_due')?['SiteTitle']}</b> (@{items('For_each_site_due')?['SiteUrl']}) and respond to the approval in Teams/Outlook.</p>@{body('Members_table')}",
+                  "emailMessage/Importance": "Normal"
+                }
+              },
+              "runAfter": {
+                "Members_table": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Approval_recertify": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_approvals",
+                  "operationId": "StartAndWaitForAnApproval",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                },
+                "parameters": {
+                  "approvalType": "Basic",
+                  "WebhookApprovalCreationInput/title": "@{concat('Recertify access: ', items('For_each_site_due')?['SiteTitle'])}",
+                  "WebhookApprovalCreationInput/assignedTo": "@{items('For_each_site_due')?['PrimaryOwner']?['Email']}",
+                  "WebhookApprovalCreationInput/details": "@{concat('Approve if every owner and member listed in the email still needs access. Reject and list who should be removed in the comments.', decodeUriComponent('%0A%0A'), string(length(body('Select_access'))), ' people/groups have access.')}",
+                  "WebhookApprovalCreationInput/itemLink": "@{items('For_each_site_due')?['SiteUrl']}",
+                  "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+                  "WebhookApprovalCreationInput/enableNotifications": true,
+                  "WebhookApprovalCreationInput/enableReassignment": true
+                }
+              },
+              "runAfter": {
+                "Notify_owner_list": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Log_review": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PostItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('GovernanceSiteUrl')",
+                  "table": "Access Review Log",
+                  "item/Title": "@{concat(items('For_each_site_due')?['SiteTitle'], ' - ', utcNow('yyyy-MM-dd'))}",
+                  "item/SiteId": "@items('For_each_site_due')?['ID']",
+                  "item/Outcome/Value": "@outputs('Approval_recertify')?['body/outcome']",
+                  "item/Reviewer": "@{outputs('Approval_recertify')?['body/responses'][0]['responder']['email']}",
+                  "item/Comments": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_recertify')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}",
+                  "item/AccessCount": "@length(body('Select_access'))"
+                }
+              },
+              "runAfter": {
+                "Approval_recertify": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Schedule_next_review": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PatchItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('GovernanceSiteUrl')",
+                  "table": "Site Register",
+                  "id": "@items('For_each_site_due')?['ID']",
+                  "item/LastAccessReview": "@utcNow()",
+                  "item/NextAccessReview": "@addDays(utcNow(), parameters('ReviewIntervalDays'))"
+                }
+              },
+              "runAfter": {
+                "Log_review": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Condition_Changes_needed": {
+              "type": "If",
+              "expression": {
+                "not": {
+                  "equals": [
+                    "@outputs('Approval_recertify')?['body/outcome']",
+                    "Approve"
+                  ]
+                }
+              },
+              "actions": {
+                "Raise_removals": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@parameters('ServiceDeskEmail')",
+                      "emailMessage/Subject": "@{concat('Access removals requested: ', items('For_each_site_due')?['SiteTitle'])}",
+                      "emailMessage/Body": "<p>The owner of @{items('For_each_site_due')?['SiteUrl']} asked for these changes during access review:</p><p>@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_recertify')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p><p>Make the changes in the site's security groups (AD for synchronised groups) and close the ticket.</p>",
+                      "emailMessage/Importance": "Normal"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "runAfter": {
+                "Schedule_next_review": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Flag_orphaned": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_sharepointonline",
+                    "operationId": "PatchItem",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                  },
+                  "parameters": {
+                    "dataset": "@parameters('GovernanceSiteUrl')",
+                    "table": "Site Register",
+                    "id": "@items('For_each_site_due')?['ID']",
+                    "item/Status/Value": "Orphaned - owner inactive"
+                  }
+                },
+                "runAfter": {}
+              },
+              "Notify_orphaned": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_office365",
+                    "operationId": "SendEmailV2",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                  },
+                  "parameters": {
+                    "emailMessage/To": "@{concat(parameters('ProjectManagerEmail'), ';', parameters('ITOpsOwnerEmail'))}",
+                    "emailMessage/Subject": "@{concat('Orphaned site - owner account disabled: ', items('For_each_site_due')?['SiteTitle'])}",
+                    "emailMessage/Body": "<p>The primary owner of @{items('For_each_site_due')?['SiteUrl']} is no longer active. Promote the secondary owner (@{items('For_each_site_due')?['SecondaryOwner']?['Email']}) or nominate a new accountable owner, then set the register status back to Active.</p>",
+                    "emailMessage/Importance": "Normal"
+                  }
+                },
+                "runAfter": {
+                  "Flag_orphaned": [
+                    "Succeeded"
+                  ]
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Get_primary_owner_status": [
+              "Succeeded",
+              "Failed"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Get_sites_due": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Is_quarter_month": {
+      "type": "Compose",
+      "runAfter": {
+        "For_each_site_due": [
+          "Succeeded",
+          "Failed"
+        ]
+      },
+      "inputs": "@equals(mod(int(utcNow('MM')), 3), 1)"
+    },
+    "Condition_Quarterly_privileged_review": {
+      "type": "If",
+      "expression": {
+        "equals": [
+          "@outputs('Is_quarter_month')",
+          true
+        ]
+      },
+      "actions": {
+        "Get_SharePoint_admin_assignments": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_webcontents",
+              "operationId": "InvokeHttp",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+            },
+            "parameters": {
+              "request/method": "GET",
+              "request/url": "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentScheduleInstances?$filter=roleDefinitionId eq 'f28a1f50-f6e7-4571-818b-6a12f2af6b6c'&$expand=principal"
+            }
+          },
+          "runAfter": {}
+        },
+        "Get_SharePoint_admin_eligibility": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_webcontents",
+              "operationId": "InvokeHttp",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+            },
+            "parameters": {
+              "request/method": "GET",
+              "request/url": "https://graph.microsoft.com/v1.0/roleManagement/directory/roleEligibilityScheduleInstances?$filter=roleDefinitionId eq 'f28a1f50-f6e7-4571-818b-6a12f2af6b6c'&$expand=principal"
+            }
+          },
+          "runAfter": {
+            "Get_SharePoint_admin_assignments": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Approval_InfoSec_privileged": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_approvals",
+              "operationId": "StartAndWaitForAnApproval",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+            },
+            "parameters": {
+              "approvalType": "Basic",
+              "WebhookApprovalCreationInput/title": "Quarterly review: SharePoint Administrator role",
+              "WebhookApprovalCreationInput/assignedTo": "@parameters('InfoSecApproverEmail')",
+              "WebhookApprovalCreationInput/details": "@{concat('Active assignments: ', string(length(body('Get_SharePoint_admin_assignments')?['value'])), decodeUriComponent('%0A'), 'Eligible (PIM) assignments: ', string(length(body('Get_SharePoint_admin_eligibility')?['value'])), decodeUriComponent('%0A%0A'), 'Active (permanent) assignments should be zero; all admin access should be PIM-eligible. Approve to confirm, or reject and list the changes.')}",
+              "WebhookApprovalCreationInput/itemLink": "https://entra.microsoft.com/#view/Microsoft_Azure_PIMCommon/ResourceMenuBlade/~/members/resourceId//resourceType/tenant/provider/aadroles",
+              "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+              "WebhookApprovalCreationInput/enableNotifications": true,
+              "WebhookApprovalCreationInput/enableReassignment": true
+            }
+          },
+          "runAfter": {
+            "Get_SharePoint_admin_eligibility": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Log_privileged_review": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "PostItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('GovernanceSiteUrl')",
+              "table": "Access Review Log",
+              "item/Title": "@{concat('SharePoint Administrator role - ', utcNow('yyyy-MM-dd'))}",
+              "item/Outcome/Value": "@outputs('Approval_InfoSec_privileged')?['body/outcome']",
+              "item/Reviewer": "@{outputs('Approval_InfoSec_privileged')?['body/responses'][0]['responder']['email']}",
+              "item/Comments": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_InfoSec_privileged')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+            }
+          },
+          "runAfter": {
+            "Approval_InfoSec_privileged": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Is_quarter_month": [
+          "Succeeded"
+        ]
+      }
+    }
+  }
+}

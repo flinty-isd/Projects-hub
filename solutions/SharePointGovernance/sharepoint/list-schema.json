@@ -1,0 +1,978 @@
+{
+  "$comment": "Data schema for the SharePoint governance flows, all on one governance site. Apply with PnP.PowerShell (New-PnPList / Add-PnPField) or the Graph API. This file is the source of truth reviewed in PRs; tools/validate_flows.py checks every column the flows use against it.",
+  "lists": [
+    {
+      "listTitle": "Site Register",
+      "listDescription": "One row per SharePoint Online site in scope (up to 230). Source of truth for owners, security groups, sharing and the 90-day access review schedule. Rows are added by flow 03; migrated sites created outside it are bulk-loaded from the Migration Planner.",
+      "fields": [
+        {
+          "internalName": "SiteTitle",
+          "displayName": "Site title",
+          "type": "Text",
+          "required": true
+        },
+        {
+          "internalName": "SiteUrl",
+          "displayName": "Site URL",
+          "type": "Text",
+          "required": true
+        },
+        {
+          "internalName": "Department",
+          "displayName": "Department",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "Wave",
+          "displayName": "Wave",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "PrimaryOwner",
+          "displayName": "Primary owner",
+          "type": "Person",
+          "required": true,
+          "notes": "Accountable owner. Must be a named, enabled, internal user."
+        },
+        {
+          "internalName": "SecondaryOwner",
+          "displayName": "Secondary owner",
+          "type": "Person",
+          "required": true,
+          "notes": "Must differ from the primary owner."
+        },
+        {
+          "internalName": "OwnersGroupId",
+          "displayName": "Owners group (Entra object ID)",
+          "type": "Text",
+          "required": true
+        },
+        {
+          "internalName": "MembersGroupId",
+          "displayName": "Members group (Entra object ID)",
+          "type": "Text",
+          "required": true
+        },
+        {
+          "internalName": "VisitorsGroupId",
+          "displayName": "Visitors group (Entra object ID)",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "GuestsGroupId",
+          "displayName": "Guests group (Entra object ID)",
+          "type": "Text",
+          "required": false,
+          "notes": "Cloud-only security group for scoped contractor guests. Required before any guest request for this site can be granted."
+        },
+        {
+          "internalName": "SharingCapability",
+          "displayName": "External sharing",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Disabled",
+            "ExistingExternalUserSharingOnly"
+          ],
+          "default": "Disabled"
+        },
+        {
+          "internalName": "Sensitivity",
+          "displayName": "Sensitivity",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "General",
+            "Confidential",
+            "Highly Confidential"
+          ],
+          "default": "General"
+        },
+        {
+          "internalName": "Status",
+          "displayName": "Status",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Active",
+            "Orphaned - owner inactive",
+            "Read-only",
+            "Archived"
+          ],
+          "default": "Active"
+        },
+        {
+          "internalName": "LastAccessReview",
+          "displayName": "Last access review",
+          "type": "DateTime",
+          "required": false
+        },
+        {
+          "internalName": "NextAccessReview",
+          "displayName": "Next access review",
+          "type": "DateTime",
+          "required": true
+        }
+      ]
+    },
+    {
+      "listTitle": "Site Requests",
+      "listDescription": "Requests for new SharePoint Online sites. Processed by flow 03.",
+      "fields": [
+        {
+          "internalName": "SiteAlias",
+          "displayName": "URL alias",
+          "type": "Text",
+          "required": true,
+          "notes": "Becomes /sites/<alias>. Letters, numbers and hyphens only."
+        },
+        {
+          "internalName": "Purpose",
+          "displayName": "Purpose",
+          "type": "Note",
+          "required": true
+        },
+        {
+          "internalName": "Department",
+          "displayName": "Department",
+          "type": "Text",
+          "required": true
+        },
+        {
+          "internalName": "Wave",
+          "displayName": "Wave",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "Requester",
+          "displayName": "Requester",
+          "type": "Person",
+          "required": true
+        },
+        {
+          "internalName": "PrimaryOwner",
+          "displayName": "Primary owner",
+          "type": "Person",
+          "required": true
+        },
+        {
+          "internalName": "SecondaryOwner",
+          "displayName": "Secondary owner",
+          "type": "Person",
+          "required": true
+        },
+        {
+          "internalName": "OwnersGroupId",
+          "displayName": "Owners group (Entra object ID)",
+          "type": "Text",
+          "required": true
+        },
+        {
+          "internalName": "MembersGroupId",
+          "displayName": "Members group (Entra object ID)",
+          "type": "Text",
+          "required": true
+        },
+        {
+          "internalName": "VisitorsGroupId",
+          "displayName": "Visitors group (Entra object ID)",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "GuestsGroupId",
+          "displayName": "Guests group (Entra object ID)",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "ExternalSharingRequired",
+          "displayName": "External sharing required",
+          "type": "Boolean",
+          "required": false,
+          "default": false,
+          "notes": "Yes routes the request to InfoSec as well as the PM."
+        },
+        {
+          "internalName": "Sensitivity",
+          "displayName": "Sensitivity",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "General",
+            "Confidential",
+            "Highly Confidential"
+          ],
+          "default": "General"
+        },
+        {
+          "internalName": "Status",
+          "displayName": "Status",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Submitted",
+            "Provisioned",
+            "Provisioning failed",
+            "Rejected",
+            "Returned - Ownership invalid"
+          ],
+          "default": "Submitted"
+        },
+        {
+          "internalName": "SiteUrl",
+          "displayName": "Provisioned URL",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "DecisionLog",
+          "displayName": "Decision log",
+          "type": "Note",
+          "required": false
+        }
+      ]
+    },
+    {
+      "listTitle": "Access Requests",
+      "listDescription": "Requests for access to a SharePoint Online site. Processed by flow 01 against the PID v3.1 Access Method Decision Table.",
+      "fields": [
+        {
+          "internalName": "Requester",
+          "displayName": "Requester",
+          "type": "Person",
+          "required": true,
+          "notes": "The person who needs access, or the sponsor for a contractor."
+        },
+        {
+          "internalName": "UserType",
+          "displayName": "User type / scenario",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Employee - view only",
+            "Employee - edit / collaborate",
+            "Site Owner / Author",
+            "Long-term contractor",
+            "Screen / kiosk / display",
+            "Privileged admin",
+            "Service / shared account"
+          ],
+          "notes": "Rows of the Access Method Decision Table. 'Service / shared account' exists so the request is rejected and recorded, not silently dropped."
+        },
+        {
+          "internalName": "TargetSite",
+          "displayName": "Site",
+          "type": "Lookup",
+          "required": true,
+          "lookupList": "Site Register",
+          "lookupField": "SiteTitle"
+        },
+        {
+          "internalName": "BusinessJustification",
+          "displayName": "Business justification",
+          "type": "Note",
+          "required": true
+        },
+        {
+          "internalName": "LineManager",
+          "displayName": "Line manager",
+          "type": "Person",
+          "required": false,
+          "notes": "Required for Site Owner / Author requests."
+        },
+        {
+          "internalName": "GuestEmail",
+          "displayName": "Guest email",
+          "type": "Text",
+          "required": false,
+          "notes": "Long-term contractor only."
+        },
+        {
+          "internalName": "AccessEndDate",
+          "displayName": "Access end date",
+          "type": "DateTime",
+          "required": false,
+          "notes": "Long-term contractor only. Must be within 12 months."
+        },
+        {
+          "internalName": "Status",
+          "displayName": "Status",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Submitted",
+            "Granted",
+            "Approved - awaiting AD group change",
+            "Approved - PIM eligible assignment pending",
+            "Blocked - Licence required",
+            "Blocked - Entra ID P2 required",
+            "Closed - Use Employee App",
+            "Closed - Use published display page",
+            "Rejected",
+            "Rejected - Not time-bound",
+            "Rejected - Prohibited",
+            "Rejected - Unknown access type"
+          ],
+          "default": "Submitted"
+        },
+        {
+          "internalName": "ApprovedAccessMethod",
+          "displayName": "Approved access method",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "DecisionLog",
+          "displayName": "Decision log",
+          "type": "Note",
+          "required": false
+        }
+      ]
+    },
+    {
+      "listTitle": "Guest Access Register",
+      "listDescription": "Active and expired contractor guest grants. Written by flow 01; expired by flow 02.",
+      "fields": [
+        {
+          "internalName": "GuestUserId",
+          "displayName": "Guest user (Entra object ID)",
+          "type": "Text",
+          "required": true
+        },
+        {
+          "internalName": "GroupId",
+          "displayName": "Guest group (Entra object ID)",
+          "type": "Text",
+          "required": true
+        },
+        {
+          "internalName": "SiteId",
+          "displayName": "Site Register ID",
+          "type": "Number",
+          "required": true
+        },
+        {
+          "internalName": "Sponsor",
+          "displayName": "Sponsor",
+          "type": "Person",
+          "required": true
+        },
+        {
+          "internalName": "AccessEndDate",
+          "displayName": "Access end date",
+          "type": "DateTime",
+          "required": true
+        },
+        {
+          "internalName": "AccessRequestId",
+          "displayName": "Access request ID",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "internalName": "Status",
+          "displayName": "Status",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Active",
+            "Expired - access removed",
+            "Revoked"
+          ],
+          "default": "Active"
+        },
+        {
+          "internalName": "ReminderSent",
+          "displayName": "Expiry reminder sent",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "RemovedOn",
+          "displayName": "Removed on",
+          "type": "DateTime",
+          "required": false
+        }
+      ]
+    },
+    {
+      "listTitle": "Access Review Log",
+      "listDescription": "Outcome of each site recertification and quarterly privileged-role review. Written by flow 08.",
+      "fields": [
+        {
+          "internalName": "SiteId",
+          "displayName": "Site Register ID",
+          "type": "Number",
+          "required": false,
+          "notes": "Empty for privileged-role reviews."
+        },
+        {
+          "internalName": "Outcome",
+          "displayName": "Outcome",
+          "type": "Text",
+          "required": true,
+          "notes": "Approve or Reject, as returned by the approval."
+        },
+        {
+          "internalName": "Reviewer",
+          "displayName": "Reviewer",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "Comments",
+          "displayName": "Comments",
+          "type": "Note",
+          "required": false
+        },
+        {
+          "internalName": "AccessCount",
+          "displayName": "People/groups with access",
+          "type": "Number",
+          "required": false
+        }
+      ]
+    },
+    {
+      "listTitle": "InfoPath Register",
+      "listDescription": "Inventory of legacy InfoPath forms. Each is triaged Replace or Retire by flow 04; none is migrated as-is.",
+      "fields": [
+        {
+          "internalName": "SourceSite",
+          "displayName": "Source site (SharePoint 2013)",
+          "type": "Text",
+          "required": true
+        },
+        {
+          "internalName": "BusinessOwner",
+          "displayName": "Business owner",
+          "type": "Person",
+          "required": true
+        },
+        {
+          "internalName": "BusinessCriticality",
+          "displayName": "Business criticality",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "High",
+            "Medium",
+            "Low"
+          ]
+        },
+        {
+          "internalName": "SubmissionsLast12Months",
+          "displayName": "Submissions (last 12 months)",
+          "type": "Number",
+          "required": true
+        },
+        {
+          "internalName": "RuleCount",
+          "displayName": "Rules / conditions / actions",
+          "type": "Number",
+          "required": true
+        },
+        {
+          "internalName": "HasDataConnections",
+          "displayName": "Has data connections (UDCX / XML / SharePoint)",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "HasCodeBehind",
+          "displayName": "Has code-behind",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "HasRepeatingSections",
+          "displayName": "Has repeating sections/tables",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "Disposition",
+          "displayName": "Disposition",
+          "type": "Choice",
+          "required": false,
+          "choices": [
+            "Replace",
+            "Retire"
+          ],
+          "notes": "There is deliberately no 'Migrate as-is' option."
+        },
+        {
+          "internalName": "ReplacementPattern",
+          "displayName": "Replacement pattern",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "Status",
+          "displayName": "Status",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Registered",
+            "Awaiting owner decision",
+            "Triaged - Replace",
+            "Triaged - Retire",
+            "Triage disputed",
+            "Replacement live",
+            "Retired"
+          ],
+          "default": "Registered"
+        },
+        {
+          "internalName": "DecisionBy",
+          "displayName": "Decision by",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "DecisionDate",
+          "displayName": "Decision date",
+          "type": "DateTime",
+          "required": false
+        },
+        {
+          "internalName": "DecisionLog",
+          "displayName": "Decision log",
+          "type": "Note",
+          "required": false
+        }
+      ]
+    },
+    {
+      "listTitle": "File Share Register",
+      "listDescription": "Inventory of legacy file shares from the file share assessment. Flow 05 decides each one's disposition; migration to SharePoint Online is case by case only.",
+      "fields": [
+        {
+          "internalName": "ShareOwner",
+          "displayName": "Share owner",
+          "type": "Person",
+          "required": true
+        },
+        {
+          "internalName": "SizeGB",
+          "displayName": "Size (GB)",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "internalName": "LastModified",
+          "displayName": "Last modified",
+          "type": "DateTime",
+          "required": false
+        },
+        {
+          "internalName": "IntegrationMarker",
+          "displayName": "Integration marker",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "GenericAccountPresent",
+          "displayName": "Generic/service account present",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "ApplicationBackEnd",
+          "displayName": "Application back-end",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "PermissionComplexity",
+          "displayName": "Permission complexity",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Low",
+            "Medium",
+            "High"
+          ]
+        },
+        {
+          "internalName": "TargetSiteUrl",
+          "displayName": "Proposed target site",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "Disposition",
+          "displayName": "Disposition",
+          "type": "Choice",
+          "required": false,
+          "choices": [
+            "Migrate to SharePoint Online",
+            "Excluded - system dependent",
+            "Archive",
+            "Remediate",
+            "Delete",
+            "Move to non-SharePoint platform"
+          ]
+        },
+        {
+          "internalName": "Status",
+          "displayName": "Status",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Registered",
+            "Awaiting owner decision",
+            "Disposition required",
+            "Disposition agreed",
+            "Approved - permissions remediation before migration",
+            "Ready for migration",
+            "Migrated"
+          ],
+          "default": "Registered"
+        },
+        {
+          "internalName": "DecisionLog",
+          "displayName": "Decision log",
+          "type": "Note",
+          "required": false
+        }
+      ]
+    },
+    {
+      "listTitle": "Change Log",
+      "listDescription": "Change requests. Flow 06 routes each one to the change authority set by the PID tolerances.",
+      "fields": [
+        {
+          "internalName": "Description",
+          "displayName": "Description",
+          "type": "Note",
+          "required": true
+        },
+        {
+          "internalName": "Requester",
+          "displayName": "Raised by",
+          "type": "Person",
+          "required": true
+        },
+        {
+          "internalName": "Wave",
+          "displayName": "Wave",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "ScheduleImpactDays",
+          "displayName": "Schedule impact (days)",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "internalName": "CostImpactGBP",
+          "displayName": "Cost impact (GBP)",
+          "type": "Currency",
+          "required": false,
+          "default": 0
+        },
+        {
+          "internalName": "MaterialScopeChange",
+          "displayName": "Material scope change",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "Status",
+          "displayName": "Status",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Submitted",
+            "Awaiting decision - PM",
+            "Awaiting decision - Sponsor/Portfolio",
+            "Approved",
+            "Rejected",
+            "Implemented"
+          ],
+          "default": "Submitted"
+        },
+        {
+          "internalName": "ChangeAuthority",
+          "displayName": "Change authority",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "DecisionDate",
+          "displayName": "Decision date",
+          "type": "DateTime",
+          "required": false
+        },
+        {
+          "internalName": "DecisionLog",
+          "displayName": "Decision log",
+          "type": "Note",
+          "required": false
+        }
+      ]
+    },
+    {
+      "listTitle": "Decision Log",
+      "listDescription": "Audit trail of governance decisions written by flows 04, 06 and 07.",
+      "fields": [
+        {
+          "internalName": "Category",
+          "displayName": "Category",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Change",
+            "InfoPath",
+            "File share",
+            "Access",
+            "Wave readiness",
+            "Wave sign-off"
+          ]
+        },
+        {
+          "internalName": "Decision",
+          "displayName": "Decision",
+          "type": "Text",
+          "required": true
+        },
+        {
+          "internalName": "DecidedBy",
+          "displayName": "Decided by",
+          "type": "Text",
+          "required": true
+        },
+        {
+          "internalName": "DecisionDate",
+          "displayName": "Decision date",
+          "type": "DateTime",
+          "required": true
+        },
+        {
+          "internalName": "Rationale",
+          "displayName": "Rationale",
+          "type": "Note",
+          "required": false
+        }
+      ]
+    },
+    {
+      "listTitle": "Wave Plan",
+      "listDescription": "One row per migration wave with its readiness checklist. Changing Gate Status triggers flow 07.",
+      "fields": [
+        {
+          "internalName": "WaveStart",
+          "displayName": "Wave start",
+          "type": "DateTime",
+          "required": true
+        },
+        {
+          "internalName": "WaveEnd",
+          "displayName": "Wave end",
+          "type": "DateTime",
+          "required": true
+        },
+        {
+          "internalName": "BusinessOwner",
+          "displayName": "Business owner (sign-off)",
+          "type": "Person",
+          "required": true
+        },
+        {
+          "internalName": "PrerequisitesConfirmed",
+          "displayName": "Prerequisites DEP001-DEP005 confirmed",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "ShareGateLicenceActive",
+          "displayName": "ShareGate licence active",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "SiteOwnersConfirmed",
+          "displayName": "Site owners confirmed",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "PermissionBaselineApproved",
+          "displayName": "Permission baseline approved",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "DigitalSpringCleanDone",
+          "displayName": "Digital spring clean done",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "CommsIssued",
+          "displayName": "Site owner comms issued (2 weeks before)",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "SuperUsersBriefed",
+          "displayName": "Super users briefed (1 week before)",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "ServiceDeskBriefed",
+          "displayName": "Service Desk briefed",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "PeerTenantCoordinated",
+          "displayName": "Window agreed with peer tenant PM",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "MigrationReportUrl",
+          "displayName": "ShareGate migration report",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "ValidationChecklistComplete",
+          "displayName": "Validation checklist complete",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "Exceptions",
+          "displayName": "Agreed exceptions",
+          "type": "Note",
+          "required": false
+        },
+        {
+          "internalName": "GateStatus",
+          "displayName": "Gate status",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Planning",
+            "Readiness review requested",
+            "Readiness failed",
+            "Go - migration authorised",
+            "No-go",
+            "Sign-off requested",
+            "Sign-off blocked - evidence missing",
+            "Sign-off rejected - remediation",
+            "Signed off - hypercare"
+          ],
+          "default": "Planning"
+        },
+        {
+          "internalName": "GateLog",
+          "displayName": "Gate log",
+          "type": "Note",
+          "required": false
+        },
+        {
+          "internalName": "SignedOffDate",
+          "displayName": "Signed off",
+          "type": "DateTime",
+          "required": false
+        }
+      ]
+    },
+    {
+      "listTitle": "RAID Log",
+      "listDescription": "Risks, assumptions, issues and dependencies. Flow 09 sends the weekly digest and tolerance escalations.",
+      "fields": [
+        {
+          "internalName": "RaidType",
+          "displayName": "Type",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Risk",
+            "Assumption",
+            "Issue",
+            "Dependency"
+          ]
+        },
+        {
+          "internalName": "Severity",
+          "displayName": "Severity",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "High",
+            "Medium",
+            "Low"
+          ]
+        },
+        {
+          "internalName": "Owner",
+          "displayName": "Owner",
+          "type": "Person",
+          "required": false
+        },
+        {
+          "internalName": "DueDate",
+          "displayName": "Due date",
+          "type": "DateTime",
+          "required": false
+        },
+        {
+          "internalName": "ForecastExceedsTolerance",
+          "displayName": "Forecast to exceed tolerance",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "Status",
+          "displayName": "Status",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Open",
+            "Monitoring",
+            "Closed"
+          ],
+          "default": "Open"
+        },
+        {
+          "internalName": "ResponsePlan",
+          "displayName": "Response (avoid/reduce/transfer/accept)",
+          "type": "Note",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

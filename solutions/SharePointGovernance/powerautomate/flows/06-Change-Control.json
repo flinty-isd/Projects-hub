@@ -1,0 +1,354 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Route change requests by tolerance",
+  "description": "Triggers on each new 'Change Log' item. Applies the PID tolerances (time ±5 days, cost ±£5,000, no material scope change): changes within tolerance go to the IT Project Manager, and changes that exceed any tolerance need both the Sponsor and the Portfolio Manager to approve. Every outcome is written to the Decision Log and the raiser is told.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    },
+    "shared_approvals": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "GovernanceSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{governance-site}"
+    },
+    "TenantRootUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com"
+    },
+    "ProjectManagerEmail": {
+      "type": "String",
+      "defaultValue": "{it-project-manager}@{domain}"
+    },
+    "InfoSecApproverEmail": {
+      "type": "String",
+      "defaultValue": "{security-and-architecture}@{domain}"
+    },
+    "SponsorEmail": {
+      "type": "String",
+      "defaultValue": "{project-sponsor}@{domain}"
+    },
+    "PortfolioManagerEmail": {
+      "type": "String",
+      "defaultValue": "{it-portfolio-manager}@{domain}"
+    },
+    "ITOpsOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{it-operations-owner}@{domain}"
+    },
+    "BusinessAnalystEmail": {
+      "type": "String",
+      "defaultValue": "{business-analyst}@{domain}"
+    },
+    "ServiceDeskEmail": {
+      "type": "String",
+      "defaultValue": "{service-desk}@{domain}"
+    },
+    "TimeToleranceDays": {
+      "type": "Int",
+      "defaultValue": 5
+    },
+    "CostToleranceGBP": {
+      "type": "Int",
+      "defaultValue": 5000
+    }
+  },
+  "triggers": {
+    "When_a_change_request_is_raised": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnNewItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('GovernanceSiteUrl')",
+          "table": "Change Log"
+        }
+      },
+      "recurrence": {
+        "frequency": "Minute",
+        "interval": 5
+      },
+      "splitOn": "@triggerOutputs()?['body/value']"
+    }
+  },
+  "actions": {
+    "Condition_WithinTolerance": {
+      "type": "If",
+      "expression": {
+        "and": [
+          {
+            "lessOrEquals": [
+              "@abs(float(coalesce(triggerBody()?['ScheduleImpactDays'], 0)))",
+              "@parameters('TimeToleranceDays')"
+            ]
+          },
+          {
+            "lessOrEquals": [
+              "@abs(float(coalesce(triggerBody()?['CostImpactGBP'], 0)))",
+              "@parameters('CostToleranceGBP')"
+            ]
+          },
+          {
+            "not": {
+              "equals": [
+                "@triggerBody()?['MaterialScopeChange']",
+                true
+              ]
+            }
+          }
+        ]
+      },
+      "actions": {
+        "Mark_PM_authority": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "PatchItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('GovernanceSiteUrl')",
+              "table": "Change Log",
+              "id": "@triggerBody()?['ID']",
+              "item/Status/Value": "Awaiting decision - PM"
+            }
+          },
+          "runAfter": {}
+        },
+        "Approval_PM": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_approvals",
+              "operationId": "StartAndWaitForAnApproval",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+            },
+            "parameters": {
+              "approvalType": "Basic",
+              "WebhookApprovalCreationInput/title": "@{concat('Change request CR-', triggerBody()?['ID'], ' (within tolerance): ', triggerBody()?['Title'])}",
+              "WebhookApprovalCreationInput/assignedTo": "@parameters('ProjectManagerEmail')",
+              "WebhookApprovalCreationInput/details": "@{concat(triggerBody()?['Description'], decodeUriComponent('%0A%0A'), 'Schedule impact (days): ', string(coalesce(triggerBody()?['ScheduleImpactDays'], 0)), decodeUriComponent('%0A'), 'Cost impact (GBP): ', string(coalesce(triggerBody()?['CostImpactGBP'], 0)), decodeUriComponent('%0A'), 'Material scope change: ', string(coalesce(triggerBody()?['MaterialScopeChange'], false)), decodeUriComponent('%0A'), 'Wave: ', coalesce(triggerBody()?['Wave'], 'n/a'), decodeUriComponent('%0A'), 'Raised by: ', triggerBody()?['Requester']?['Email'])}",
+              "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
+              "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+              "WebhookApprovalCreationInput/enableNotifications": true,
+              "WebhookApprovalCreationInput/enableReassignment": true
+            }
+          },
+          "runAfter": {
+            "Mark_PM_authority": [
+              "Succeeded"
+            ]
+          }
+        },
+        "PM_Update_change": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "PatchItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('GovernanceSiteUrl')",
+              "table": "Change Log",
+              "id": "@triggerBody()?['ID']",
+              "item/Status/Value": "@if(equals(outputs('Approval_PM')?['body/outcome'], 'Approve'), 'Approved', 'Rejected')",
+              "item/ChangeAuthority": "IT Project Manager (within tolerance)",
+              "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_PM')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}",
+              "item/DecisionDate": "@utcNow()"
+            }
+          },
+          "runAfter": {
+            "Approval_PM": [
+              "Succeeded"
+            ]
+          }
+        },
+        "PM_Log_decision": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "PostItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('GovernanceSiteUrl')",
+              "table": "Decision Log",
+              "item/Title": "@{concat('CR-', triggerBody()?['ID'], ': ', triggerBody()?['Title'])}",
+              "item/Category/Value": "Change",
+              "item/Decision": "@outputs('Approval_PM')?['body/outcome']",
+              "item/DecidedBy": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_PM')?['body/responses']), '}}'))), '//responder/email/text()'), '; ')}",
+              "item/DecisionDate": "@utcNow()",
+              "item/Rationale": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_PM')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+            }
+          },
+          "runAfter": {
+            "PM_Update_change": [
+              "Succeeded"
+            ]
+          }
+        },
+        "PM_Notify_raiser": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+              "emailMessage/Subject": "@{concat('Change request CR-', triggerBody()?['ID'], ': ', outputs('Approval_PM')?['body/outcome'])}",
+              "emailMessage/Body": "<p>Change authority: IT Project Manager (within tolerance).</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_PM')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
+              "emailMessage/Importance": "Normal",
+              "emailMessage/Cc": "@parameters('ProjectManagerEmail')"
+            }
+          },
+          "runAfter": {
+            "PM_Log_decision": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "else": {
+        "actions": {
+          "Mark_Board_authority": {
+            "type": "OpenApiConnection",
+            "inputs": {
+              "host": {
+                "connectionName": "shared_sharepointonline",
+                "operationId": "PatchItem",
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+              },
+              "parameters": {
+                "dataset": "@parameters('GovernanceSiteUrl')",
+                "table": "Change Log",
+                "id": "@triggerBody()?['ID']",
+                "item/Status/Value": "Awaiting decision - Sponsor/Portfolio"
+              }
+            },
+            "runAfter": {}
+          },
+          "Approval_Sponsor_and_Portfolio": {
+            "type": "OpenApiConnection",
+            "inputs": {
+              "host": {
+                "connectionName": "shared_approvals",
+                "operationId": "StartAndWaitForAnApproval",
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+              },
+              "parameters": {
+                "approvalType": "BasicAwaitAll",
+                "WebhookApprovalCreationInput/title": "@{concat('Change request CR-', triggerBody()?['ID'], ' (EXCEEDS tolerance): ', triggerBody()?['Title'])}",
+                "WebhookApprovalCreationInput/assignedTo": "@{concat(parameters('SponsorEmail'), ';', parameters('PortfolioManagerEmail'))}",
+                "WebhookApprovalCreationInput/details": "@{concat(triggerBody()?['Description'], decodeUriComponent('%0A%0A'), 'Schedule impact (days): ', string(coalesce(triggerBody()?['ScheduleImpactDays'], 0)), decodeUriComponent('%0A'), 'Cost impact (GBP): ', string(coalesce(triggerBody()?['CostImpactGBP'], 0)), decodeUriComponent('%0A'), 'Material scope change: ', string(coalesce(triggerBody()?['MaterialScopeChange'], false)), decodeUriComponent('%0A'), 'Wave: ', coalesce(triggerBody()?['Wave'], 'n/a'), decodeUriComponent('%0A'), 'Raised by: ', triggerBody()?['Requester']?['Email'])}",
+                "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
+                "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+                "WebhookApprovalCreationInput/enableNotifications": true,
+                "WebhookApprovalCreationInput/enableReassignment": true
+              }
+            },
+            "runAfter": {
+              "Mark_Board_authority": [
+                "Succeeded"
+              ]
+            }
+          },
+          "Board_Update_change": {
+            "type": "OpenApiConnection",
+            "inputs": {
+              "host": {
+                "connectionName": "shared_sharepointonline",
+                "operationId": "PatchItem",
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+              },
+              "parameters": {
+                "dataset": "@parameters('GovernanceSiteUrl')",
+                "table": "Change Log",
+                "id": "@triggerBody()?['ID']",
+                "item/Status/Value": "@if(equals(outputs('Approval_Sponsor_and_Portfolio')?['body/outcome'], 'Approve'), 'Approved', 'Rejected')",
+                "item/ChangeAuthority": "Sponsor and Portfolio (exceeds tolerance)",
+                "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_Sponsor_and_Portfolio')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}",
+                "item/DecisionDate": "@utcNow()"
+              }
+            },
+            "runAfter": {
+              "Approval_Sponsor_and_Portfolio": [
+                "Succeeded"
+              ]
+            }
+          },
+          "Board_Log_decision": {
+            "type": "OpenApiConnection",
+            "inputs": {
+              "host": {
+                "connectionName": "shared_sharepointonline",
+                "operationId": "PostItem",
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+              },
+              "parameters": {
+                "dataset": "@parameters('GovernanceSiteUrl')",
+                "table": "Decision Log",
+                "item/Title": "@{concat('CR-', triggerBody()?['ID'], ': ', triggerBody()?['Title'])}",
+                "item/Category/Value": "Change",
+                "item/Decision": "@outputs('Approval_Sponsor_and_Portfolio')?['body/outcome']",
+                "item/DecidedBy": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_Sponsor_and_Portfolio')?['body/responses']), '}}'))), '//responder/email/text()'), '; ')}",
+                "item/DecisionDate": "@utcNow()",
+                "item/Rationale": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_Sponsor_and_Portfolio')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+              }
+            },
+            "runAfter": {
+              "Board_Update_change": [
+                "Succeeded"
+              ]
+            }
+          },
+          "Board_Notify_raiser": {
+            "type": "OpenApiConnection",
+            "inputs": {
+              "host": {
+                "connectionName": "shared_office365",
+                "operationId": "SendEmailV2",
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+              },
+              "parameters": {
+                "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+                "emailMessage/Subject": "@{concat('Change request CR-', triggerBody()?['ID'], ': ', outputs('Approval_Sponsor_and_Portfolio')?['body/outcome'])}",
+                "emailMessage/Body": "<p>Change authority: Sponsor and Portfolio (exceeds tolerance).</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_Sponsor_and_Portfolio')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
+                "emailMessage/Importance": "Normal",
+                "emailMessage/Cc": "@parameters('ProjectManagerEmail')"
+              }
+            },
+            "runAfter": {
+              "Board_Log_decision": [
+                "Succeeded"
+              ]
+            }
+          }
+        }
+      },
+      "runAfter": {}
+    }
+  }
+}

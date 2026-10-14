@@ -1,0 +1,389 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Triage InfoPath forms (Replace / Retire)",
+  "description": "Triggers on each new 'InfoPath Register' item. InfoPath forms are never migrated as-is (PID v3.1, 2.3.1): the flow recommends Retire (unused or low-criticality and rarely used) or Replace, choosing Power Apps + Power Automate for complex forms (more than 10 rules, data connections, code-behind or repeating sections) and SharePoint List + Power Automate otherwise. It asks the business owner to confirm, and logs the decision or sends a dispute to the BA.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    },
+    "shared_approvals": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "GovernanceSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{governance-site}"
+    },
+    "TenantRootUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com"
+    },
+    "ProjectManagerEmail": {
+      "type": "String",
+      "defaultValue": "{it-project-manager}@{domain}"
+    },
+    "InfoSecApproverEmail": {
+      "type": "String",
+      "defaultValue": "{security-and-architecture}@{domain}"
+    },
+    "SponsorEmail": {
+      "type": "String",
+      "defaultValue": "{project-sponsor}@{domain}"
+    },
+    "PortfolioManagerEmail": {
+      "type": "String",
+      "defaultValue": "{it-portfolio-manager}@{domain}"
+    },
+    "ITOpsOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{it-operations-owner}@{domain}"
+    },
+    "BusinessAnalystEmail": {
+      "type": "String",
+      "defaultValue": "{business-analyst}@{domain}"
+    },
+    "ServiceDeskEmail": {
+      "type": "String",
+      "defaultValue": "{service-desk}@{domain}"
+    }
+  },
+  "triggers": {
+    "When_an_InfoPath_form_is_registered": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnNewItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('GovernanceSiteUrl')",
+          "table": "InfoPath Register"
+        }
+      },
+      "recurrence": {
+        "frequency": "Minute",
+        "interval": 5
+      },
+      "splitOn": "@triggerOutputs()?['body/value']"
+    }
+  },
+  "actions": {
+    "Initialize_Disposition": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "Disposition",
+            "type": "string",
+            "value": "Replace"
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Initialize_Pattern": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "Pattern",
+            "type": "string",
+            "value": "SharePoint List + Power Automate"
+          }
+        ]
+      },
+      "runAfter": {
+        "Initialize_Disposition": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Condition_Retire": {
+      "type": "If",
+      "expression": {
+        "or": [
+          {
+            "lessOrEquals": [
+              "@triggerBody()?['SubmissionsLast12Months']",
+              0
+            ]
+          },
+          {
+            "and": [
+              {
+                "equals": [
+                  "@triggerBody()?['BusinessCriticality']?['Value']",
+                  "Low"
+                ]
+              },
+              {
+                "less": [
+                  "@triggerBody()?['SubmissionsLast12Months']",
+                  10
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "actions": {
+        "Set_Retire": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "Disposition",
+            "value": "Retire"
+          },
+          "runAfter": {}
+        },
+        "Set_Pattern_Retire": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "Pattern",
+            "value": "Retire - export data to read-only archive library"
+          },
+          "runAfter": {
+            "Set_Retire": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "else": {
+        "actions": {
+          "Condition_Complex": {
+            "type": "If",
+            "expression": {
+              "or": [
+                {
+                  "greater": [
+                    "@triggerBody()?['RuleCount']",
+                    10
+                  ]
+                },
+                {
+                  "equals": [
+                    "@triggerBody()?['HasDataConnections']",
+                    true
+                  ]
+                },
+                {
+                  "equals": [
+                    "@triggerBody()?['HasCodeBehind']",
+                    true
+                  ]
+                },
+                {
+                  "equals": [
+                    "@triggerBody()?['HasRepeatingSections']",
+                    true
+                  ]
+                }
+              ]
+            },
+            "actions": {
+              "Set_Pattern_PowerApps": {
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "Pattern",
+                  "value": "Power Apps + Power Automate"
+                },
+                "runAfter": {}
+              }
+            },
+            "runAfter": {}
+          }
+        }
+      },
+      "runAfter": {
+        "Initialize_Pattern": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Record_recommendation": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "PatchItem",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('GovernanceSiteUrl')",
+          "table": "InfoPath Register",
+          "id": "@triggerBody()?['ID']",
+          "item/Disposition/Value": "@variables('Disposition')",
+          "item/ReplacementPattern": "@variables('Pattern')",
+          "item/Status/Value": "Awaiting owner decision"
+        }
+      },
+      "runAfter": {
+        "Condition_Retire": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Approval_form_owner": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_approvals",
+          "operationId": "StartAndWaitForAnApproval",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+        },
+        "parameters": {
+          "approvalType": "Basic",
+          "WebhookApprovalCreationInput/title": "@{concat('InfoPath form triage: ', triggerBody()?['Title'], ' -> ', variables('Disposition'))}",
+          "WebhookApprovalCreationInput/assignedTo": "@{triggerBody()?['BusinessOwner']?['Email']}",
+          "WebhookApprovalCreationInput/details": "@{concat('InfoPath forms will not be migrated as-is to SharePoint Online (PID v3.1). Recommended: ', variables('Disposition'), ' via ', variables('Pattern'), '.', decodeUriComponent('%0A%0A'), 'Submissions last 12 months: ', string(triggerBody()?['SubmissionsLast12Months']), decodeUriComponent('%0A'), 'Rules: ', string(triggerBody()?['RuleCount']), decodeUriComponent('%0A'), 'Data connections (UDCX/XML/SharePoint): ', string(triggerBody()?['HasDataConnections']), decodeUriComponent('%0A'), 'Code-behind: ', string(triggerBody()?['HasCodeBehind']), decodeUriComponent('%0A%0A'), 'Approve to accept. Reject if the recommendation is wrong and add a comment; the BA will review it with you.')}",
+          "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
+          "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+          "WebhookApprovalCreationInput/enableNotifications": true,
+          "WebhookApprovalCreationInput/enableReassignment": true
+        }
+      },
+      "runAfter": {
+        "Record_recommendation": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Condition_Accepted": {
+      "type": "If",
+      "expression": {
+        "equals": [
+          "@outputs('Approval_form_owner')?['body/outcome']",
+          "Approve"
+        ]
+      },
+      "actions": {
+        "Mark_triaged": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "PatchItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('GovernanceSiteUrl')",
+              "table": "InfoPath Register",
+              "id": "@triggerBody()?['ID']",
+              "item/Status/Value": "@{concat('Triaged - ', variables('Disposition'))}",
+              "item/DecisionBy": "@{outputs('Approval_form_owner')?['body/responses'][0]['responder']['email']}",
+              "item/DecisionDate": "@utcNow()"
+            }
+          },
+          "runAfter": {}
+        },
+        "Log_decision": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "PostItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('GovernanceSiteUrl')",
+              "table": "Decision Log",
+              "item/Title": "@{concat('InfoPath: ', triggerBody()?['Title'], ' - ', variables('Disposition'))}",
+              "item/Category/Value": "InfoPath",
+              "item/Decision": "@{concat(variables('Disposition'), ' via ', variables('Pattern'))}",
+              "item/DecidedBy": "@{outputs('Approval_form_owner')?['body/responses'][0]['responder']['email']}",
+              "item/DecisionDate": "@utcNow()"
+            }
+          },
+          "runAfter": {
+            "Mark_triaged": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Notify_BA": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@parameters('BusinessAnalystEmail')",
+              "emailMessage/Subject": "@{concat('InfoPath triage agreed: ', triggerBody()?['Title'])}",
+              "emailMessage/Body": "<p><b>@{triggerBody()?['Title']}</b> (@{triggerBody()?['SourceSite']}): <b>@{variables('Disposition')}</b> via @{variables('Pattern')}.</p><p>Add it to the InfoPath replacement backlog; the legacy form stays on SharePoint 2013 until its replacement is live or it is retired.</p>",
+              "emailMessage/Importance": "Normal"
+            }
+          },
+          "runAfter": {
+            "Log_decision": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "else": {
+        "actions": {
+          "Mark_disputed": {
+            "type": "OpenApiConnection",
+            "inputs": {
+              "host": {
+                "connectionName": "shared_sharepointonline",
+                "operationId": "PatchItem",
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+              },
+              "parameters": {
+                "dataset": "@parameters('GovernanceSiteUrl')",
+                "table": "InfoPath Register",
+                "id": "@triggerBody()?['ID']",
+                "item/Status/Value": "Triage disputed",
+                "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_form_owner')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+              }
+            },
+            "runAfter": {}
+          },
+          "Notify_BA_disputed": {
+            "type": "OpenApiConnection",
+            "inputs": {
+              "host": {
+                "connectionName": "shared_office365",
+                "operationId": "SendEmailV2",
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+              },
+              "parameters": {
+                "emailMessage/To": "@parameters('BusinessAnalystEmail')",
+                "emailMessage/Subject": "@{concat('InfoPath triage disputed: ', triggerBody()?['Title'])}",
+                "emailMessage/Body": "<p>The form owner rejected the recommendation (@{variables('Disposition')} via @{variables('Pattern')}).</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_form_owner')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p><p>Agree Replace or Retire with them and update the register. Migrating the form as-is is not an option.</p>",
+                "emailMessage/Importance": "Normal"
+              }
+            },
+            "runAfter": {
+              "Mark_disputed": [
+                "Succeeded"
+              ]
+            }
+          }
+        }
+      },
+      "runAfter": {
+        "Approval_form_owner": [
+          "Succeeded"
+        ]
+      }
+    }
+  }
+}

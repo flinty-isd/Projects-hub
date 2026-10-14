@@ -1,0 +1,459 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Decide file share disposition (selective migration)",
+  "description": "Triggers on each new 'File Share Register' item. Shares with integration markers, application back-ends or generic accounts are excluded from SharePoint Online and sent to IT Operations for disposition. Shares not modified for 3+ years are offered to the owner for archive. Others migrate only with both owner and Project Manager approval, and high permission complexity must be remediated first.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    },
+    "shared_approvals": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "GovernanceSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{governance-site}"
+    },
+    "TenantRootUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com"
+    },
+    "ProjectManagerEmail": {
+      "type": "String",
+      "defaultValue": "{it-project-manager}@{domain}"
+    },
+    "InfoSecApproverEmail": {
+      "type": "String",
+      "defaultValue": "{security-and-architecture}@{domain}"
+    },
+    "SponsorEmail": {
+      "type": "String",
+      "defaultValue": "{project-sponsor}@{domain}"
+    },
+    "PortfolioManagerEmail": {
+      "type": "String",
+      "defaultValue": "{it-portfolio-manager}@{domain}"
+    },
+    "ITOpsOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{it-operations-owner}@{domain}"
+    },
+    "BusinessAnalystEmail": {
+      "type": "String",
+      "defaultValue": "{business-analyst}@{domain}"
+    },
+    "ServiceDeskEmail": {
+      "type": "String",
+      "defaultValue": "{service-desk}@{domain}"
+    }
+  },
+  "triggers": {
+    "When_a_file_share_is_registered": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnNewItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('GovernanceSiteUrl')",
+          "table": "File Share Register"
+        }
+      },
+      "recurrence": {
+        "frequency": "Minute",
+        "interval": 5
+      },
+      "splitOn": "@triggerOutputs()?['body/value']"
+    }
+  },
+  "actions": {
+    "Initialize_RequestMigration": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "RequestMigration",
+            "type": "boolean",
+            "value": false
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Condition_SystemDependent": {
+      "type": "If",
+      "expression": {
+        "or": [
+          {
+            "equals": [
+              "@triggerBody()?['IntegrationMarker']",
+              true
+            ]
+          },
+          {
+            "equals": [
+              "@triggerBody()?['GenericAccountPresent']",
+              true
+            ]
+          },
+          {
+            "equals": [
+              "@triggerBody()?['ApplicationBackEnd']",
+              true
+            ]
+          }
+        ]
+      },
+      "actions": {
+        "Mark_excluded": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "PatchItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('GovernanceSiteUrl')",
+              "table": "File Share Register",
+              "id": "@triggerBody()?['ID']",
+              "item/Disposition/Value": "Excluded - system dependent",
+              "item/Status/Value": "Disposition required",
+              "item/DecisionLog": "Integration marker, application back-end or generic account present. Excluded from SharePoint Online (PID v3.1, 2.3.1)."
+            }
+          },
+          "runAfter": {}
+        },
+        "Notify_ITOps_excluded": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@parameters('ITOpsOwnerEmail')",
+              "emailMessage/Subject": "@{concat('System-dependent file share excluded from SharePoint: ', triggerBody()?['Title'])}",
+              "emailMessage/Body": "<p><b>@{triggerBody()?['Title']}</b> has integration, application back-end or generic-account dependencies, so it will not be migrated to SharePoint Online.</p><p>Agree a disposition with the owner (remediate, archive, delete, or move to an appropriate non-SharePoint platform) and record it in the File Share Register.</p>",
+              "emailMessage/Importance": "Normal",
+              "emailMessage/Cc": "@parameters('ProjectManagerEmail')"
+            }
+          },
+          "runAfter": {
+            "Mark_excluded": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "else": {
+        "actions": {
+          "Condition_Stale": {
+            "type": "If",
+            "expression": {
+              "less": [
+                "@ticks(coalesce(triggerBody()?['LastModified'], utcNow()))",
+                "@ticks(addDays(utcNow(), -1095))"
+              ]
+            },
+            "actions": {
+              "Mark_archive_candidate": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_sharepointonline",
+                    "operationId": "PatchItem",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                  },
+                  "parameters": {
+                    "dataset": "@parameters('GovernanceSiteUrl')",
+                    "table": "File Share Register",
+                    "id": "@triggerBody()?['ID']",
+                    "item/Disposition/Value": "Archive",
+                    "item/Status/Value": "Awaiting owner decision"
+                  }
+                },
+                "runAfter": {}
+              },
+              "Approval_archive": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_approvals",
+                    "operationId": "StartAndWaitForAnApproval",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                  },
+                  "parameters": {
+                    "approvalType": "Basic",
+                    "WebhookApprovalCreationInput/title": "@{concat('Archive stale file share: ', triggerBody()?['Title'])}",
+                    "WebhookApprovalCreationInput/assignedTo": "@{triggerBody()?['ShareOwner']?['Email']}",
+                    "WebhookApprovalCreationInput/details": "@{concat('Not modified for more than 3 years. Approve to archive (not migrated). Reject to request migration instead.', decodeUriComponent('%0A%0A'), triggerBody()?['Title'])}",
+                    "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
+                    "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+                    "WebhookApprovalCreationInput/enableNotifications": true,
+                    "WebhookApprovalCreationInput/enableReassignment": true
+                  }
+                },
+                "runAfter": {
+                  "Mark_archive_candidate": [
+                    "Succeeded"
+                  ]
+                }
+              },
+              "Condition_Archive_approved": {
+                "type": "If",
+                "expression": {
+                  "equals": [
+                    "@outputs('Approval_archive')?['body/outcome']",
+                    "Approve"
+                  ]
+                },
+                "actions": {
+                  "Mark_archived": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_sharepointonline",
+                        "operationId": "PatchItem",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                      },
+                      "parameters": {
+                        "dataset": "@parameters('GovernanceSiteUrl')",
+                        "table": "File Share Register",
+                        "id": "@triggerBody()?['ID']",
+                        "item/Disposition/Value": "Archive",
+                        "item/Status/Value": "Disposition agreed"
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                },
+                "else": {
+                  "actions": {
+                    "Set_RequestMigration_after_archive_rejected": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "RequestMigration",
+                        "value": true
+                      },
+                      "runAfter": {}
+                    }
+                  }
+                },
+                "runAfter": {
+                  "Approval_archive": [
+                    "Succeeded"
+                  ]
+                }
+              }
+            },
+            "else": {
+              "actions": {
+                "Set_RequestMigration": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "RequestMigration",
+                    "value": true
+                  },
+                  "runAfter": {}
+                }
+              }
+            },
+            "runAfter": {}
+          },
+          "Condition_RequestMigration": {
+            "type": "If",
+            "expression": {
+              "equals": [
+                "@variables('RequestMigration')",
+                true
+              ]
+            },
+            "actions": {
+              "Approval_owner_and_PM": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_approvals",
+                    "operationId": "StartAndWaitForAnApproval",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                  },
+                  "parameters": {
+                    "approvalType": "BasicAwaitAll",
+                    "WebhookApprovalCreationInput/title": "@{concat('Migrate file share to SharePoint: ', triggerBody()?['Title'])}",
+                    "WebhookApprovalCreationInput/assignedTo": "@{concat(triggerBody()?['ShareOwner']?['Email'], ';', parameters('ProjectManagerEmail'))}",
+                    "WebhookApprovalCreationInput/details": "@{concat('Share: ', triggerBody()?['Title'], decodeUriComponent('%0A'), 'Size (GB): ', string(triggerBody()?['SizeGB']), decodeUriComponent('%0A'), 'Last modified: ', triggerBody()?['LastModified'], decodeUriComponent('%0A'), 'Permission complexity: ', triggerBody()?['PermissionComplexity']?['Value'], decodeUriComponent('%0A'), 'Target site: ', triggerBody()?['TargetSiteUrl'], decodeUriComponent('%0A%0A'), 'File shares move to SharePoint Online case by case only (PID v3.1, 2.3.1).')}",
+                    "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
+                    "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+                    "WebhookApprovalCreationInput/enableNotifications": true,
+                    "WebhookApprovalCreationInput/enableReassignment": true
+                  }
+                },
+                "runAfter": {}
+              },
+              "Condition_Approved": {
+                "type": "If",
+                "expression": {
+                  "equals": [
+                    "@outputs('Approval_owner_and_PM')?['body/outcome']",
+                    "Approve"
+                  ]
+                },
+                "actions": {
+                  "Condition_HighPermissionComplexity": {
+                    "type": "If",
+                    "expression": {
+                      "equals": [
+                        "@triggerBody()?['PermissionComplexity']?['Value']",
+                        "High"
+                      ]
+                    },
+                    "actions": {
+                      "Mark_remediate_first": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_sharepointonline",
+                            "operationId": "PatchItem",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                          },
+                          "parameters": {
+                            "dataset": "@parameters('GovernanceSiteUrl')",
+                            "table": "File Share Register",
+                            "id": "@triggerBody()?['ID']",
+                            "item/Disposition/Value": "Migrate to SharePoint Online",
+                            "item/Status/Value": "Approved - permissions remediation before migration"
+                          }
+                        },
+                        "runAfter": {}
+                      },
+                      "Notify_ITOps_remediate": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_office365",
+                            "operationId": "SendEmailV2",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                          },
+                          "parameters": {
+                            "emailMessage/To": "@parameters('ITOpsOwnerEmail')",
+                            "emailMessage/Subject": "@{concat('Remediate permissions before migration: ', triggerBody()?['Title'])}",
+                            "emailMessage/Body": "<p>@{triggerBody()?['Title']} is approved for migration but has high permission complexity. Flatten broken inheritance, replace individual grants with security groups, then set the register status to <i>Ready for migration</i>.</p>",
+                            "emailMessage/Importance": "Normal"
+                          }
+                        },
+                        "runAfter": {
+                          "Mark_remediate_first": [
+                            "Succeeded"
+                          ]
+                        }
+                      }
+                    },
+                    "else": {
+                      "actions": {
+                        "Mark_ready": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_sharepointonline",
+                              "operationId": "PatchItem",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                            },
+                            "parameters": {
+                              "dataset": "@parameters('GovernanceSiteUrl')",
+                              "table": "File Share Register",
+                              "id": "@triggerBody()?['ID']",
+                              "item/Disposition/Value": "Migrate to SharePoint Online",
+                              "item/Status/Value": "Ready for migration"
+                            }
+                          },
+                          "runAfter": {}
+                        }
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                },
+                "else": {
+                  "actions": {
+                    "Mark_not_migrating": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PatchItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('GovernanceSiteUrl')",
+                          "table": "File Share Register",
+                          "id": "@triggerBody()?['ID']",
+                          "item/Disposition/Value": "Archive",
+                          "item/Status/Value": "Disposition required",
+                          "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_owner_and_PM')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+                        }
+                      },
+                      "runAfter": {}
+                    },
+                    "Notify_ITOps_not_migrating": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365",
+                          "operationId": "SendEmailV2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "emailMessage/To": "@parameters('ITOpsOwnerEmail')",
+                          "emailMessage/Subject": "@{concat('File share not approved for SharePoint: ', triggerBody()?['Title'])}",
+                          "emailMessage/Body": "<p>Migration was not approved. Agree a disposition (remediate, archive, delete or move to a non-SharePoint platform) with the owner.</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_owner_and_PM')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
+                          "emailMessage/Importance": "Normal"
+                        }
+                      },
+                      "runAfter": {
+                        "Mark_not_migrating": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "runAfter": {
+                  "Approval_owner_and_PM": [
+                    "Succeeded"
+                  ]
+                }
+              }
+            },
+            "runAfter": {
+              "Condition_Stale": [
+                "Succeeded"
+              ]
+            }
+          }
+        }
+      },
+      "runAfter": {
+        "Initialize_RequestMigration": [
+          "Succeeded"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,458 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Gate wave readiness and sign-off",
+  "description": "Triggers when a 'Wave Plan' item's Gate Status changes to 'Readiness review requested' or 'Sign-off requested'. Readiness checks the wave checklist (prerequisites, ShareGate, site owners, permission baseline, spring clean, comms, super users, Service Desk, peer tenant window) and the blockout period, then asks the PM and IT Ops for go/no-go. Sign-off requires the ShareGate report and validation checklist, gets business owner and PM approval, logs it and hands over to IT Ops for BAU support.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    },
+    "shared_approvals": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "GovernanceSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{governance-site}"
+    },
+    "TenantRootUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com"
+    },
+    "ProjectManagerEmail": {
+      "type": "String",
+      "defaultValue": "{it-project-manager}@{domain}"
+    },
+    "InfoSecApproverEmail": {
+      "type": "String",
+      "defaultValue": "{security-and-architecture}@{domain}"
+    },
+    "SponsorEmail": {
+      "type": "String",
+      "defaultValue": "{project-sponsor}@{domain}"
+    },
+    "PortfolioManagerEmail": {
+      "type": "String",
+      "defaultValue": "{it-portfolio-manager}@{domain}"
+    },
+    "ITOpsOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{it-operations-owner}@{domain}"
+    },
+    "BusinessAnalystEmail": {
+      "type": "String",
+      "defaultValue": "{business-analyst}@{domain}"
+    },
+    "ServiceDeskEmail": {
+      "type": "String",
+      "defaultValue": "{service-desk}@{domain}"
+    },
+    "BlockoutStart": {
+      "type": "String",
+      "defaultValue": "2026-04-20T00:00:00Z"
+    },
+    "BlockoutEnd": {
+      "type": "String",
+      "defaultValue": "2026-05-27T23:59:59Z"
+    }
+  },
+  "triggers": {
+    "When_a_wave_gate_is_requested": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnUpdatedItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('GovernanceSiteUrl')",
+          "table": "Wave Plan"
+        }
+      },
+      "recurrence": {
+        "frequency": "Minute",
+        "interval": 5
+      },
+      "splitOn": "@triggerOutputs()?['body/value']",
+      "conditions": [
+        {
+          "expression": "@or(equals(triggerBody()?['GateStatus']?['Value'], 'Readiness review requested'), equals(triggerBody()?['GateStatus']?['Value'], 'Sign-off requested'))"
+        }
+      ]
+    }
+  },
+  "actions": {
+    "Condition_Stage": {
+      "type": "If",
+      "expression": {
+        "equals": [
+          "@triggerBody()?['GateStatus']?['Value']",
+          "Readiness review requested"
+        ]
+      },
+      "actions": {
+        "Compose_missing_items": {
+          "type": "Compose",
+          "inputs": "@{concat(if(equals(triggerBody()?['PrerequisitesConfirmed'], true), '', '<li>Prerequisites DEP001-DEP005 confirmed (admin access, ShareGate, federated groups, PnP app)</li>'), if(equals(triggerBody()?['ShareGateLicenceActive'], true), '', '<li>ShareGate licence active on the migration host</li>'), if(equals(triggerBody()?['SiteOwnersConfirmed'], true), '', '<li>Accountable primary and secondary owner confirmed for every site in the wave</li>'), if(equals(triggerBody()?['PermissionBaselineApproved'], true), '', '<li>Source permission model baseline exported and approved</li>'), if(equals(triggerBody()?['DigitalSpringCleanDone'], true), '', '<li>Site owners completed the digital spring clean</li>'), if(equals(triggerBody()?['CommsIssued'], true), '', '<li>Site owner comms issued two weeks before the wave</li>'), if(equals(triggerBody()?['SuperUsersBriefed'], true), '', '<li>Super users briefed one week before the wave</li>'), if(equals(triggerBody()?['ServiceDeskBriefed'], true), '', '<li>Service Desk briefed on call drivers and escalation route</li>'), if(equals(triggerBody()?['PeerTenantCoordinated'], true), '', '<li>Migration window agreed with the peer company in the shared tenant</li>'), if(and(lessOrEquals(ticks(triggerBody()?['WaveStart']), ticks(parameters('BlockoutEnd'))), greaterOrEquals(ticks(triggerBody()?['WaveEnd']), ticks(parameters('BlockoutStart')))), '<li>Wave dates overlap the SharePoint blockout period</li>', ''))}",
+          "runAfter": {}
+        },
+        "Condition_AllReady": {
+          "type": "If",
+          "expression": {
+            "equals": [
+              "@outputs('Compose_missing_items')",
+              ""
+            ]
+          },
+          "actions": {
+            "Approval_go_no_go": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_approvals",
+                  "operationId": "StartAndWaitForAnApproval",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                },
+                "parameters": {
+                  "approvalType": "BasicAwaitAll",
+                  "WebhookApprovalCreationInput/title": "@{concat('Wave go/no-go: ', triggerBody()?['Title'])}",
+                  "WebhookApprovalCreationInput/assignedTo": "@{concat(parameters('ProjectManagerEmail'), ';', parameters('ITOpsOwnerEmail'))}",
+                  "WebhookApprovalCreationInput/details": "@{concat('All readiness checks passed for ', triggerBody()?['Title'], ' (', formatDateTime(triggerBody()?['WaveStart'], 'dd MMM'), ' - ', formatDateTime(triggerBody()?['WaveEnd'], 'dd MMM yyyy'), '). Approve to authorise migration.')}",
+                  "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
+                  "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+                  "WebhookApprovalCreationInput/enableNotifications": true,
+                  "WebhookApprovalCreationInput/enableReassignment": true
+                }
+              },
+              "runAfter": {}
+            },
+            "Update_go_no_go": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PatchItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('GovernanceSiteUrl')",
+                  "table": "Wave Plan",
+                  "id": "@triggerBody()?['ID']",
+                  "item/GateStatus/Value": "@if(equals(outputs('Approval_go_no_go')?['body/outcome'], 'Approve'), 'Go - migration authorised', 'No-go')",
+                  "item/GateLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_go_no_go')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+                }
+              },
+              "runAfter": {
+                "Approval_go_no_go": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Log_go_no_go": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PostItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('GovernanceSiteUrl')",
+                  "table": "Decision Log",
+                  "item/Title": "@{concat('Wave gate: ', triggerBody()?['Title'])}",
+                  "item/Category/Value": "Wave readiness",
+                  "item/Decision": "@outputs('Approval_go_no_go')?['body/outcome']",
+                  "item/DecidedBy": "@{concat(parameters('ProjectManagerEmail'), '; ', parameters('ITOpsOwnerEmail'))}",
+                  "item/DecisionDate": "@utcNow()",
+                  "item/Rationale": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_go_no_go')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+                }
+              },
+              "runAfter": {
+                "Update_go_no_go": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Mark_not_ready": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_sharepointonline",
+                    "operationId": "PatchItem",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                  },
+                  "parameters": {
+                    "dataset": "@parameters('GovernanceSiteUrl')",
+                    "table": "Wave Plan",
+                    "id": "@triggerBody()?['ID']",
+                    "item/GateStatus/Value": "Readiness failed",
+                    "item/GateLog": "@{outputs('Compose_missing_items')}"
+                  }
+                },
+                "runAfter": {}
+              },
+              "Notify_PM_not_ready": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_office365",
+                    "operationId": "SendEmailV2",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                  },
+                  "parameters": {
+                    "emailMessage/To": "@parameters('ProjectManagerEmail')",
+                    "emailMessage/Subject": "@{concat('Wave not ready: ', triggerBody()?['Title'])}",
+                    "emailMessage/Body": "<p>@{triggerBody()?['Title']} cannot go to go/no-go. Outstanding:</p><ul>@{outputs('Compose_missing_items')}</ul><p>Fix these, then set Gate Status back to <i>Readiness review requested</i>.</p>",
+                    "emailMessage/Importance": "Normal"
+                  }
+                },
+                "runAfter": {
+                  "Mark_not_ready": [
+                    "Succeeded"
+                  ]
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Compose_missing_items": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "else": {
+        "actions": {
+          "Condition_EvidencePresent": {
+            "type": "If",
+            "expression": {
+              "and": [
+                {
+                  "not": {
+                    "equals": [
+                      "@coalesce(triggerBody()?['MigrationReportUrl'], '')",
+                      ""
+                    ]
+                  }
+                },
+                {
+                  "equals": [
+                    "@triggerBody()?['ValidationChecklistComplete']",
+                    true
+                  ]
+                }
+              ]
+            },
+            "actions": {
+              "Approval_wave_signoff": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_approvals",
+                    "operationId": "StartAndWaitForAnApproval",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                  },
+                  "parameters": {
+                    "approvalType": "BasicAwaitAll",
+                    "WebhookApprovalCreationInput/title": "@{concat('Wave sign-off: ', triggerBody()?['Title'])}",
+                    "WebhookApprovalCreationInput/assignedTo": "@{concat(triggerBody()?['BusinessOwner']?['Email'], ';', parameters('ProjectManagerEmail'))}",
+                    "WebhookApprovalCreationInput/details": "@{concat('Migration complete for ', triggerBody()?['Title'], '. ShareGate report: ', triggerBody()?['MigrationReportUrl'], decodeUriComponent('%0A'), 'Agreed exceptions: ', coalesce(triggerBody()?['Exceptions'], 'none'), decodeUriComponent('%0A%0A'), 'Approve to confirm the migrated content is accessible and the wave can move to BAU support.')}",
+                    "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
+                    "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+                    "WebhookApprovalCreationInput/enableNotifications": true,
+                    "WebhookApprovalCreationInput/enableReassignment": true
+                  }
+                },
+                "runAfter": {}
+              },
+              "Condition_SignedOff": {
+                "type": "If",
+                "expression": {
+                  "equals": [
+                    "@outputs('Approval_wave_signoff')?['body/outcome']",
+                    "Approve"
+                  ]
+                },
+                "actions": {
+                  "Mark_signed_off": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_sharepointonline",
+                        "operationId": "PatchItem",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                      },
+                      "parameters": {
+                        "dataset": "@parameters('GovernanceSiteUrl')",
+                        "table": "Wave Plan",
+                        "id": "@triggerBody()?['ID']",
+                        "item/GateStatus/Value": "Signed off - hypercare",
+                        "item/SignedOffDate": "@utcNow()"
+                      }
+                    },
+                    "runAfter": {}
+                  },
+                  "Log_signoff": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_sharepointonline",
+                        "operationId": "PostItem",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                      },
+                      "parameters": {
+                        "dataset": "@parameters('GovernanceSiteUrl')",
+                        "table": "Decision Log",
+                        "item/Title": "@{concat('Wave sign-off: ', triggerBody()?['Title'])}",
+                        "item/Category/Value": "Wave sign-off",
+                        "item/Decision": "Approve",
+                        "item/DecidedBy": "@{concat(triggerBody()?['BusinessOwner']?['Email'], '; ', parameters('ProjectManagerEmail'))}",
+                        "item/DecisionDate": "@utcNow()",
+                        "item/Rationale": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_wave_signoff')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+                      }
+                    },
+                    "runAfter": {
+                      "Mark_signed_off": [
+                        "Succeeded"
+                      ]
+                    }
+                  },
+                  "Handover_to_ITOps": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_office365",
+                        "operationId": "SendEmailV2",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                      },
+                      "parameters": {
+                        "emailMessage/To": "@{concat(parameters('ITOpsOwnerEmail'), ';', parameters('ServiceDeskEmail'))}",
+                        "emailMessage/Subject": "@{concat('Wave signed off - BAU support begins: ', triggerBody()?['Title'])}",
+                        "emailMessage/Body": "<p>@{triggerBody()?['Title']} is signed off. Vendor early life support is out of scope, so PoF IT now owns support for these sites under the runbook and the escalation route agreed at handover.</p><p>ShareGate report: @{triggerBody()?['MigrationReportUrl']}</p>",
+                        "emailMessage/Importance": "Normal"
+                      }
+                    },
+                    "runAfter": {
+                      "Log_signoff": [
+                        "Succeeded"
+                      ]
+                    }
+                  }
+                },
+                "else": {
+                  "actions": {
+                    "Mark_signoff_rejected": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PatchItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('GovernanceSiteUrl')",
+                          "table": "Wave Plan",
+                          "id": "@triggerBody()?['ID']",
+                          "item/GateStatus/Value": "Sign-off rejected - remediation",
+                          "item/GateLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_wave_signoff')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+                        }
+                      },
+                      "runAfter": {}
+                    },
+                    "Notify_PM_signoff_rejected": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365",
+                          "operationId": "SendEmailV2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "emailMessage/To": "@parameters('ProjectManagerEmail')",
+                          "emailMessage/Subject": "@{concat('Wave sign-off rejected: ', triggerBody()?['Title'])}",
+                          "emailMessage/Body": "<p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_wave_signoff')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p><p>Log the defects in RAID, re-run the affected migration passes, then request sign-off again.</p>",
+                          "emailMessage/Importance": "Normal"
+                        }
+                      },
+                      "runAfter": {
+                        "Mark_signoff_rejected": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "runAfter": {
+                  "Approval_wave_signoff": [
+                    "Succeeded"
+                  ]
+                }
+              }
+            },
+            "else": {
+              "actions": {
+                "Mark_evidence_missing": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "PatchItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('GovernanceSiteUrl')",
+                      "table": "Wave Plan",
+                      "id": "@triggerBody()?['ID']",
+                      "item/GateStatus/Value": "Sign-off blocked - evidence missing",
+                      "item/GateLog": "Sign-off needs the ShareGate migration report URL and a completed validation checklist."
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Notify_PM_evidence": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@parameters('ProjectManagerEmail')",
+                      "emailMessage/Subject": "@{concat('Wave sign-off blocked: ', triggerBody()?['Title'])}",
+                      "emailMessage/Body": "<p>Add the ShareGate migration report link and complete the validation checklist, then request sign-off again.</p>",
+                      "emailMessage/Importance": "Normal"
+                    }
+                  },
+                  "runAfter": {
+                    "Mark_evidence_missing": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              }
+            },
+            "runAfter": {}
+          }
+        }
+      },
+      "runAfter": {}
+    }
+  }
+}
