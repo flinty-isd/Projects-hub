@@ -2,7 +2,7 @@
   "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
   "contentVersion": "1.0.0.0",
   "displayName": "Provision governed SharePoint sites",
-  "description": "Triggers on each new 'Site Requests' item. Requires two different, enabled, internal named owners and Owners/Members security groups, gets Project Manager approval (plus InfoSec when external sharing or Highly Confidential is requested), creates the team site, runs the Set-SiteGovernanceBaseline runbook (groups, sharing off by default, sensitivity label, no custom scripts), and records the site in the Site Register for 90-day access reviews.",
+  "description": "Triggers on each new 'Site Requests' item. Requires two different, enabled, internal named owners and Owners/Members security groups, gets SharePoint service owner approval (plus InfoSec when external sharing or Highly Confidential is requested), creates the team site, runs the Set-SiteGovernanceBaseline runbook (groups, sharing off by default, sensitivity label, no custom scripts), and records the site in the Site Register for 90-day access reviews.",
   "connectionReferences": {
     "shared_sharepointonline": {
       "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
@@ -37,29 +37,17 @@
       "type": "String",
       "defaultValue": "https://{tenant}.sharepoint.com"
     },
-    "ProjectManagerEmail": {
+    "SharePointServiceOwnerEmail": {
       "type": "String",
-      "defaultValue": "{it-project-manager}@{domain}"
+      "defaultValue": "{sharepoint-service-owner}@{domain}"
     },
     "InfoSecApproverEmail": {
       "type": "String",
       "defaultValue": "{security-and-architecture}@{domain}"
     },
-    "SponsorEmail": {
-      "type": "String",
-      "defaultValue": "{project-sponsor}@{domain}"
-    },
-    "PortfolioManagerEmail": {
-      "type": "String",
-      "defaultValue": "{it-portfolio-manager}@{domain}"
-    },
     "ITOpsOwnerEmail": {
       "type": "String",
       "defaultValue": "{it-operations-owner}@{domain}"
-    },
-    "BusinessAnalystEmail": {
-      "type": "String",
-      "defaultValue": "{business-analyst}@{domain}"
     },
     "ServiceDeskEmail": {
       "type": "String",
@@ -223,7 +211,7 @@
         ]
       },
       "actions": {
-        "Approval_PM": {
+        "Approval_service_owner": {
           "type": "OpenApiConnection",
           "inputs": {
             "host": {
@@ -234,8 +222,8 @@
             "parameters": {
               "approvalType": "Basic",
               "WebhookApprovalCreationInput/title": "@{concat('New SharePoint site: ', triggerBody()?['Title'])}",
-              "WebhookApprovalCreationInput/assignedTo": "@parameters('ProjectManagerEmail')",
-              "WebhookApprovalCreationInput/details": "@{concat('Site: ', triggerBody()?['Title'], ' (', concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias']), ')', decodeUriComponent('%0A'), 'Department: ', triggerBody()?['Department'], decodeUriComponent('%0A'), 'Wave: ', triggerBody()?['Wave'], decodeUriComponent('%0A'), 'Primary owner: ', triggerBody()?['PrimaryOwner']?['Email'], decodeUriComponent('%0A'), 'Secondary owner: ', triggerBody()?['SecondaryOwner']?['Email'], decodeUriComponent('%0A'), 'Sensitivity: ', triggerBody()?['Sensitivity']?['Value'], decodeUriComponent('%0A'), 'External sharing: ', if(equals(triggerBody()?['ExternalSharingRequired'], true), 'Requested', 'Off'))}",
+              "WebhookApprovalCreationInput/assignedTo": "@parameters('SharePointServiceOwnerEmail')",
+              "WebhookApprovalCreationInput/details": "@{concat('Site: ', triggerBody()?['Title'], ' (', concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias']), ')', decodeUriComponent('%0A'), 'Department: ', triggerBody()?['Department'], decodeUriComponent('%0A'), 'Primary owner: ', triggerBody()?['PrimaryOwner']?['Email'], decodeUriComponent('%0A'), 'Secondary owner: ', triggerBody()?['SecondaryOwner']?['Email'], decodeUriComponent('%0A'), 'Sensitivity: ', triggerBody()?['Sensitivity']?['Value'], decodeUriComponent('%0A'), 'External sharing: ', if(equals(triggerBody()?['ExternalSharingRequired'], true), 'Requested', 'Off'))}",
               "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
               "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
               "WebhookApprovalCreationInput/enableNotifications": true,
@@ -244,11 +232,11 @@
           },
           "runAfter": {}
         },
-        "Condition_PM_approved": {
+        "Condition_service_owner_approved": {
           "type": "If",
           "expression": {
             "equals": [
-              "@outputs('Approval_PM')?['body/outcome']",
+              "@outputs('Approval_service_owner')?['body/outcome']",
               "Approve"
             ]
           },
@@ -284,7 +272,7 @@
                       "approvalType": "Basic",
                       "WebhookApprovalCreationInput/title": "@{concat('Security review - new site: ', triggerBody()?['Title'])}",
                       "WebhookApprovalCreationInput/assignedTo": "@parameters('InfoSecApproverEmail')",
-                      "WebhookApprovalCreationInput/details": "@{concat('Site: ', triggerBody()?['Title'], ' (', concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias']), ')', decodeUriComponent('%0A'), 'Department: ', triggerBody()?['Department'], decodeUriComponent('%0A'), 'Wave: ', triggerBody()?['Wave'], decodeUriComponent('%0A'), 'Primary owner: ', triggerBody()?['PrimaryOwner']?['Email'], decodeUriComponent('%0A'), 'Secondary owner: ', triggerBody()?['SecondaryOwner']?['Email'], decodeUriComponent('%0A'), 'Sensitivity: ', triggerBody()?['Sensitivity']?['Value'], decodeUriComponent('%0A'), 'External sharing: ', if(equals(triggerBody()?['ExternalSharingRequired'], true), 'Requested', 'Off'))}",
+                      "WebhookApprovalCreationInput/details": "@{concat('Site: ', triggerBody()?['Title'], ' (', concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias']), ')', decodeUriComponent('%0A'), 'Department: ', triggerBody()?['Department'], decodeUriComponent('%0A'), 'Primary owner: ', triggerBody()?['PrimaryOwner']?['Email'], decodeUriComponent('%0A'), 'Secondary owner: ', triggerBody()?['SecondaryOwner']?['Email'], decodeUriComponent('%0A'), 'Sensitivity: ', triggerBody()?['Sensitivity']?['Value'], decodeUriComponent('%0A'), 'External sharing: ', if(equals(triggerBody()?['ExternalSharingRequired'], true), 'Requested', 'Off'))}",
                       "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
                       "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
                       "WebhookApprovalCreationInput/enableNotifications": true,
@@ -399,7 +387,6 @@
                           "item/SiteTitle": "@triggerBody()?['Title']",
                           "item/SiteUrl": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}",
                           "item/Department": "@triggerBody()?['Department']",
-                          "item/Wave": "@triggerBody()?['Wave']",
                           "item/PrimaryOwner/Claims": "@triggerBody()?['PrimaryOwner']?['Claims']",
                           "item/SecondaryOwner/Claims": "@triggerBody()?['SecondaryOwner']?['Claims']",
                           "item/OwnersGroupId": "@triggerBody()?['OwnersGroupId']",
@@ -453,7 +440,7 @@
                           "emailMessage/Subject": "@{concat('Your SharePoint site is ready: ', triggerBody()?['Title'])}",
                           "emailMessage/Body": "<p>@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])} has been created with the agreed governance baseline: permissions through security groups, external sharing @{if(equals(triggerBody()?['ExternalSharingRequired'], true), 'limited to existing guests', 'off')}, and sensitivity <b>@{triggerBody()?['Sensitivity']?['Value']}</b>.</p><p>As site owners you are accountable for its content and access, and will be asked to recertify access every 90 days.</p>",
                           "emailMessage/Importance": "Normal",
-                          "emailMessage/Cc": "@parameters('ProjectManagerEmail')"
+                          "emailMessage/Cc": "@parameters('SharePointServiceOwnerEmail')"
                         }
                       },
                       "runAfter": {
@@ -483,7 +470,7 @@
                         },
                         "runAfter": {}
                       },
-                      "Notify_PM_failed": {
+                      "Notify_service_owner_failed": {
                         "type": "OpenApiConnection",
                         "inputs": {
                           "host": {
@@ -492,7 +479,7 @@
                             "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                           },
                           "parameters": {
-                            "emailMessage/To": "@parameters('ProjectManagerEmail')",
+                            "emailMessage/To": "@parameters('SharePointServiceOwnerEmail')",
                             "emailMessage/Subject": "@{concat('Site provisioning failed: ', triggerBody()?['Title'])}",
                             "emailMessage/Body": "<p>Site creation for @{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])} did not complete (SiteStatus @{body('Create_site')?['SiteStatus']}). Check that the alias is free and retry.</p>",
                             "emailMessage/Importance": "Normal"
@@ -565,7 +552,7 @@
           },
           "else": {
             "actions": {
-              "Mark_rejected_PM": {
+              "Mark_rejected_ServiceOwner": {
                 "type": "OpenApiConnection",
                 "inputs": {
                   "host": {
@@ -578,12 +565,12 @@
                     "table": "Site Requests",
                     "id": "@triggerBody()?['ID']",
                     "item/Status/Value": "Rejected",
-                    "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_PM')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+                    "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_service_owner')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
                   }
                 },
                 "runAfter": {}
               },
-              "Notify_rejected_PM": {
+              "Notify_rejected_ServiceOwner": {
                 "type": "OpenApiConnection",
                 "inputs": {
                   "host": {
@@ -594,12 +581,12 @@
                   "parameters": {
                     "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
                     "emailMessage/Subject": "Site request rejected",
-                    "emailMessage/Body": "<p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_PM')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
+                    "emailMessage/Body": "<p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_service_owner')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
                     "emailMessage/Importance": "Normal"
                   }
                 },
                 "runAfter": {
-                  "Mark_rejected_PM": [
+                  "Mark_rejected_ServiceOwner": [
                     "Succeeded"
                   ]
                 }
@@ -607,7 +594,7 @@
             }
           },
           "runAfter": {
-            "Approval_PM": [
+            "Approval_service_owner": [
               "Succeeded"
             ]
           }

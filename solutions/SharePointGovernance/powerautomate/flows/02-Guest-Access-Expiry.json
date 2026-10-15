@@ -31,29 +31,17 @@
       "type": "String",
       "defaultValue": "https://{tenant}.sharepoint.com"
     },
-    "ProjectManagerEmail": {
+    "SharePointServiceOwnerEmail": {
       "type": "String",
-      "defaultValue": "{it-project-manager}@{domain}"
+      "defaultValue": "{sharepoint-service-owner}@{domain}"
     },
     "InfoSecApproverEmail": {
       "type": "String",
       "defaultValue": "{security-and-architecture}@{domain}"
     },
-    "SponsorEmail": {
-      "type": "String",
-      "defaultValue": "{project-sponsor}@{domain}"
-    },
-    "PortfolioManagerEmail": {
-      "type": "String",
-      "defaultValue": "{it-portfolio-manager}@{domain}"
-    },
     "ITOpsOwnerEmail": {
       "type": "String",
       "defaultValue": "{it-operations-owner}@{domain}"
-    },
-    "BusinessAnalystEmail": {
-      "type": "String",
-      "defaultValue": "{business-analyst}@{domain}"
     },
     "ServiceDeskEmail": {
       "type": "String",

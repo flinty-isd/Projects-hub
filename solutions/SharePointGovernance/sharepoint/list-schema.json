@@ -3,7 +3,7 @@
   "lists": [
     {
       "listTitle": "Site Register",
-      "listDescription": "One row per SharePoint Online site in scope (up to 230). Source of truth for owners, security groups, sharing and the 90-day access review schedule. Rows are added by flow 03; migrated sites created outside it are bulk-loaded from the Migration Planner.",
+      "listDescription": "One row per SharePoint Online site. Source of truth for owners, security groups, sharing and the 90-day access review schedule. New sites are added by flow 03; sites that existed before these flows were introduced are bulk-loaded once.",
       "fields": [
         {
           "internalName": "SiteTitle",
@@ -20,12 +20,6 @@
         {
           "internalName": "Department",
           "displayName": "Department",
-          "type": "Text",
-          "required": false
-        },
-        {
-          "internalName": "Wave",
-          "displayName": "Wave",
           "type": "Text",
           "required": false
         },
@@ -142,12 +136,6 @@
           "required": true
         },
         {
-          "internalName": "Wave",
-          "displayName": "Wave",
-          "type": "Text",
-          "required": false
-        },
-        {
           "internalName": "Requester",
           "displayName": "Requester",
           "type": "Person",
@@ -195,7 +183,7 @@
           "type": "Boolean",
           "required": false,
           "default": false,
-          "notes": "Yes routes the request to InfoSec as well as the PM."
+          "notes": "Yes routes the request to InfoSec as well as the SharePoint service owner."
         },
         {
           "internalName": "Sensitivity",
@@ -403,7 +391,7 @@
     },
     {
       "listTitle": "Access Review Log",
-      "listDescription": "Outcome of each site recertification and quarterly privileged-role review. Written by flow 08.",
+      "listDescription": "Outcome of each site recertification and quarterly privileged-role review. Written by flow 06.",
       "fields": [
         {
           "internalName": "SiteId",
@@ -651,86 +639,8 @@
       ]
     },
     {
-      "listTitle": "Change Log",
-      "listDescription": "Change requests. Flow 06 routes each one to the change authority set by the PID tolerances.",
-      "fields": [
-        {
-          "internalName": "Description",
-          "displayName": "Description",
-          "type": "Note",
-          "required": true
-        },
-        {
-          "internalName": "Requester",
-          "displayName": "Raised by",
-          "type": "Person",
-          "required": true
-        },
-        {
-          "internalName": "Wave",
-          "displayName": "Wave",
-          "type": "Text",
-          "required": false
-        },
-        {
-          "internalName": "ScheduleImpactDays",
-          "displayName": "Schedule impact (days)",
-          "type": "Number",
-          "required": false,
-          "default": 0
-        },
-        {
-          "internalName": "CostImpactGBP",
-          "displayName": "Cost impact (GBP)",
-          "type": "Currency",
-          "required": false,
-          "default": 0
-        },
-        {
-          "internalName": "MaterialScopeChange",
-          "displayName": "Material scope change",
-          "type": "Boolean",
-          "required": false,
-          "default": false
-        },
-        {
-          "internalName": "Status",
-          "displayName": "Status",
-          "type": "Choice",
-          "required": true,
-          "choices": [
-            "Submitted",
-            "Awaiting decision - PM",
-            "Awaiting decision - Sponsor/Portfolio",
-            "Approved",
-            "Rejected",
-            "Implemented"
-          ],
-          "default": "Submitted"
-        },
-        {
-          "internalName": "ChangeAuthority",
-          "displayName": "Change authority",
-          "type": "Text",
-          "required": false
-        },
-        {
-          "internalName": "DecisionDate",
-          "displayName": "Decision date",
-          "type": "DateTime",
-          "required": false
-        },
-        {
-          "internalName": "DecisionLog",
-          "displayName": "Decision log",
-          "type": "Note",
-          "required": false
-        }
-      ]
-    },
-    {
       "listTitle": "Decision Log",
-      "listDescription": "Audit trail of governance decisions written by flows 04, 06 and 07.",
+      "listDescription": "Audit trail of governance decisions written by flow 04 (and available for access and file share decisions).",
       "fields": [
         {
           "internalName": "Category",
@@ -738,12 +648,9 @@
           "type": "Choice",
           "required": true,
           "choices": [
-            "Change",
             "InfoPath",
             "File share",
-            "Access",
-            "Wave readiness",
-            "Wave sign-off"
+            "Access"
           ]
         },
         {
@@ -767,208 +674,6 @@
         {
           "internalName": "Rationale",
           "displayName": "Rationale",
-          "type": "Note",
-          "required": false
-        }
-      ]
-    },
-    {
-      "listTitle": "Wave Plan",
-      "listDescription": "One row per migration wave with its readiness checklist. Changing Gate Status triggers flow 07.",
-      "fields": [
-        {
-          "internalName": "WaveStart",
-          "displayName": "Wave start",
-          "type": "DateTime",
-          "required": true
-        },
-        {
-          "internalName": "WaveEnd",
-          "displayName": "Wave end",
-          "type": "DateTime",
-          "required": true
-        },
-        {
-          "internalName": "BusinessOwner",
-          "displayName": "Business owner (sign-off)",
-          "type": "Person",
-          "required": true
-        },
-        {
-          "internalName": "PrerequisitesConfirmed",
-          "displayName": "Prerequisites DEP001-DEP005 confirmed",
-          "type": "Boolean",
-          "required": false,
-          "default": false
-        },
-        {
-          "internalName": "ShareGateLicenceActive",
-          "displayName": "ShareGate licence active",
-          "type": "Boolean",
-          "required": false,
-          "default": false
-        },
-        {
-          "internalName": "SiteOwnersConfirmed",
-          "displayName": "Site owners confirmed",
-          "type": "Boolean",
-          "required": false,
-          "default": false
-        },
-        {
-          "internalName": "PermissionBaselineApproved",
-          "displayName": "Permission baseline approved",
-          "type": "Boolean",
-          "required": false,
-          "default": false
-        },
-        {
-          "internalName": "DigitalSpringCleanDone",
-          "displayName": "Digital spring clean done",
-          "type": "Boolean",
-          "required": false,
-          "default": false
-        },
-        {
-          "internalName": "CommsIssued",
-          "displayName": "Site owner comms issued (2 weeks before)",
-          "type": "Boolean",
-          "required": false,
-          "default": false
-        },
-        {
-          "internalName": "SuperUsersBriefed",
-          "displayName": "Super users briefed (1 week before)",
-          "type": "Boolean",
-          "required": false,
-          "default": false
-        },
-        {
-          "internalName": "ServiceDeskBriefed",
-          "displayName": "Service Desk briefed",
-          "type": "Boolean",
-          "required": false,
-          "default": false
-        },
-        {
-          "internalName": "PeerTenantCoordinated",
-          "displayName": "Window agreed with peer tenant PM",
-          "type": "Boolean",
-          "required": false,
-          "default": false
-        },
-        {
-          "internalName": "MigrationReportUrl",
-          "displayName": "ShareGate migration report",
-          "type": "Text",
-          "required": false
-        },
-        {
-          "internalName": "ValidationChecklistComplete",
-          "displayName": "Validation checklist complete",
-          "type": "Boolean",
-          "required": false,
-          "default": false
-        },
-        {
-          "internalName": "Exceptions",
-          "displayName": "Agreed exceptions",
-          "type": "Note",
-          "required": false
-        },
-        {
-          "internalName": "GateStatus",
-          "displayName": "Gate status",
-          "type": "Choice",
-          "required": true,
-          "choices": [
-            "Planning",
-            "Readiness review requested",
-            "Readiness failed",
-            "Go - migration authorised",
-            "No-go",
-            "Sign-off requested",
-            "Sign-off blocked - evidence missing",
-            "Sign-off rejected - remediation",
-            "Signed off - hypercare"
-          ],
-          "default": "Planning"
-        },
-        {
-          "internalName": "GateLog",
-          "displayName": "Gate log",
-          "type": "Note",
-          "required": false
-        },
-        {
-          "internalName": "SignedOffDate",
-          "displayName": "Signed off",
-          "type": "DateTime",
-          "required": false
-        }
-      ]
-    },
-    {
-      "listTitle": "RAID Log",
-      "listDescription": "Risks, assumptions, issues and dependencies. Flow 09 sends the weekly digest and tolerance escalations.",
-      "fields": [
-        {
-          "internalName": "RaidType",
-          "displayName": "Type",
-          "type": "Choice",
-          "required": true,
-          "choices": [
-            "Risk",
-            "Assumption",
-            "Issue",
-            "Dependency"
-          ]
-        },
-        {
-          "internalName": "Severity",
-          "displayName": "Severity",
-          "type": "Choice",
-          "required": true,
-          "choices": [
-            "High",
-            "Medium",
-            "Low"
-          ]
-        },
-        {
-          "internalName": "Owner",
-          "displayName": "Owner",
-          "type": "Person",
-          "required": false
-        },
-        {
-          "internalName": "DueDate",
-          "displayName": "Due date",
-          "type": "DateTime",
-          "required": false
-        },
-        {
-          "internalName": "ForecastExceedsTolerance",
-          "displayName": "Forecast to exceed tolerance",
-          "type": "Boolean",
-          "required": false,
-          "default": false
-        },
-        {
-          "internalName": "Status",
-          "displayName": "Status",
-          "type": "Choice",
-          "required": true,
-          "choices": [
-            "Open",
-            "Monitoring",
-            "Closed"
-          ],
-          "default": "Open"
-        },
-        {
-          "internalName": "ResponsePlan",
-          "displayName": "Response (avoid/reduce/transfer/accept)",
           "type": "Note",
           "required": false
         }

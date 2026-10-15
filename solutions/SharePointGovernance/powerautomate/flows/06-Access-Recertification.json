@@ -34,29 +34,17 @@
       "type": "String",
       "defaultValue": "https://{tenant}.sharepoint.com"
     },
-    "ProjectManagerEmail": {
+    "SharePointServiceOwnerEmail": {
       "type": "String",
-      "defaultValue": "{it-project-manager}@{domain}"
+      "defaultValue": "{sharepoint-service-owner}@{domain}"
     },
     "InfoSecApproverEmail": {
       "type": "String",
       "defaultValue": "{security-and-architecture}@{domain}"
     },
-    "SponsorEmail": {
-      "type": "String",
-      "defaultValue": "{project-sponsor}@{domain}"
-    },
-    "PortfolioManagerEmail": {
-      "type": "String",
-      "defaultValue": "{it-portfolio-manager}@{domain}"
-    },
     "ITOpsOwnerEmail": {
       "type": "String",
       "defaultValue": "{it-operations-owner}@{domain}"
-    },
-    "BusinessAnalystEmail": {
-      "type": "String",
-      "defaultValue": "{business-analyst}@{domain}"
     },
     "ServiceDeskEmail": {
       "type": "String",
@@ -355,7 +343,7 @@
                     "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                   },
                   "parameters": {
-                    "emailMessage/To": "@{concat(parameters('ProjectManagerEmail'), ';', parameters('ITOpsOwnerEmail'))}",
+                    "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), ';', parameters('ITOpsOwnerEmail'))}",
                     "emailMessage/Subject": "@{concat('Orphaned site - owner account disabled: ', items('For_each_site_due')?['SiteTitle'])}",
                     "emailMessage/Body": "<p>The primary owner of @{items('For_each_site_due')?['SiteUrl']} is no longer active. Promote the secondary owner (@{items('For_each_site_due')?['SecondaryOwner']?['Email']}) or nominate a new accountable owner, then set the register status back to Active.</p>",
                     "emailMessage/Importance": "Normal"
