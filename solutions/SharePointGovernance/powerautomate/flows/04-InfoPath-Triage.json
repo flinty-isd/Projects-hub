@@ -2,7 +2,7 @@
   "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
   "contentVersion": "1.0.0.0",
   "displayName": "Triage InfoPath forms (Replace / Retire)",
-  "description": "Triggers on each new 'InfoPath Register' item. InfoPath forms are never migrated as-is (PID v3.1, 2.3.1): the flow recommends Retire (unused or low-criticality and rarely used) or Replace, choosing Power Apps + Power Automate for complex forms (more than 10 rules, data connections, code-behind or repeating sections) and SharePoint List + Power Automate otherwise. It asks the business owner to confirm, and logs the decision or sends a dispute to the BA.",
+  "description": "Triggers on each new 'InfoPath Register' item. InfoPath forms are never migrated as-is (PID v3.1, 2.3.1): the flow recommends Retire (unused or low-criticality and rarely used) or Replace, choosing Power Apps + Power Automate for complex forms (more than 10 rules, data connections, code-behind or repeating sections) and SharePoint List + Power Automate otherwise. It asks the business owner to confirm, and logs the decision or sends a dispute to the SharePoint service owner.",
   "connectionReferences": {
     "shared_sharepointonline": {
       "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
@@ -31,29 +31,17 @@
       "type": "String",
       "defaultValue": "https://{tenant}.sharepoint.com"
     },
-    "ProjectManagerEmail": {
+    "SharePointServiceOwnerEmail": {
       "type": "String",
-      "defaultValue": "{it-project-manager}@{domain}"
+      "defaultValue": "{sharepoint-service-owner}@{domain}"
     },
     "InfoSecApproverEmail": {
       "type": "String",
       "defaultValue": "{security-and-architecture}@{domain}"
     },
-    "SponsorEmail": {
-      "type": "String",
-      "defaultValue": "{project-sponsor}@{domain}"
-    },
-    "PortfolioManagerEmail": {
-      "type": "String",
-      "defaultValue": "{it-portfolio-manager}@{domain}"
-    },
     "ITOpsOwnerEmail": {
       "type": "String",
       "defaultValue": "{it-operations-owner}@{domain}"
-    },
-    "BusinessAnalystEmail": {
-      "type": "String",
-      "defaultValue": "{business-analyst}@{domain}"
     },
     "ServiceDeskEmail": {
       "type": "String",
@@ -249,7 +237,7 @@
           "approvalType": "Basic",
           "WebhookApprovalCreationInput/title": "@{concat('InfoPath form triage: ', triggerBody()?['Title'], ' -> ', variables('Disposition'))}",
           "WebhookApprovalCreationInput/assignedTo": "@{triggerBody()?['BusinessOwner']?['Email']}",
-          "WebhookApprovalCreationInput/details": "@{concat('InfoPath forms will not be migrated as-is to SharePoint Online (PID v3.1). Recommended: ', variables('Disposition'), ' via ', variables('Pattern'), '.', decodeUriComponent('%0A%0A'), 'Submissions last 12 months: ', string(triggerBody()?['SubmissionsLast12Months']), decodeUriComponent('%0A'), 'Rules: ', string(triggerBody()?['RuleCount']), decodeUriComponent('%0A'), 'Data connections (UDCX/XML/SharePoint): ', string(triggerBody()?['HasDataConnections']), decodeUriComponent('%0A'), 'Code-behind: ', string(triggerBody()?['HasCodeBehind']), decodeUriComponent('%0A%0A'), 'Approve to accept. Reject if the recommendation is wrong and add a comment; the BA will review it with you.')}",
+          "WebhookApprovalCreationInput/details": "@{concat('InfoPath forms will not be migrated as-is to SharePoint Online (PID v3.1). Recommended: ', variables('Disposition'), ' via ', variables('Pattern'), '.', decodeUriComponent('%0A%0A'), 'Submissions last 12 months: ', string(triggerBody()?['SubmissionsLast12Months']), decodeUriComponent('%0A'), 'Rules: ', string(triggerBody()?['RuleCount']), decodeUriComponent('%0A'), 'Data connections (UDCX/XML/SharePoint): ', string(triggerBody()?['HasDataConnections']), decodeUriComponent('%0A'), 'Code-behind: ', string(triggerBody()?['HasCodeBehind']), decodeUriComponent('%0A%0A'), 'Approve to accept. Reject if the recommendation is wrong and add a comment; the SharePoint service owner will review it with you.')}",
           "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
           "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
           "WebhookApprovalCreationInput/enableNotifications": true,
@@ -314,7 +302,7 @@
             ]
           }
         },
-        "Notify_BA": {
+        "Notify_service_owner_triaged": {
           "type": "OpenApiConnection",
           "inputs": {
             "host": {
@@ -323,7 +311,7 @@
               "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
             },
             "parameters": {
-              "emailMessage/To": "@parameters('BusinessAnalystEmail')",
+              "emailMessage/To": "@parameters('SharePointServiceOwnerEmail')",
               "emailMessage/Subject": "@{concat('InfoPath triage agreed: ', triggerBody()?['Title'])}",
               "emailMessage/Body": "<p><b>@{triggerBody()?['Title']}</b> (@{triggerBody()?['SourceSite']}): <b>@{variables('Disposition')}</b> via @{variables('Pattern')}.</p><p>Add it to the InfoPath replacement backlog; the legacy form stays on SharePoint 2013 until its replacement is live or it is retired.</p>",
               "emailMessage/Importance": "Normal"
@@ -356,7 +344,7 @@
             },
             "runAfter": {}
           },
-          "Notify_BA_disputed": {
+          "Notify_service_owner_disputed": {
             "type": "OpenApiConnection",
             "inputs": {
               "host": {
@@ -365,7 +353,7 @@
                 "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
               },
               "parameters": {
-                "emailMessage/To": "@parameters('BusinessAnalystEmail')",
+                "emailMessage/To": "@parameters('SharePointServiceOwnerEmail')",
                 "emailMessage/Subject": "@{concat('InfoPath triage disputed: ', triggerBody()?['Title'])}",
                 "emailMessage/Body": "<p>The form owner rejected the recommendation (@{variables('Disposition')} via @{variables('Pattern')}).</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_form_owner')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p><p>Agree Replace or Retire with them and update the register. Migrating the form as-is is not an option.</p>",
                 "emailMessage/Importance": "Normal"

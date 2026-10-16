@@ -11,22 +11,16 @@ approvals, red ends are blocks or rejections. Role names map to people in
 flowchart LR
   subgraph Access["Access & identity"]
     F1["01 Access request"] --> F2["02 Guest expiry"]
-    F3["03 Site provisioning"] --> F8["08 Access recertification"]
+    F3["03 Site provisioning"] --> F6["06 Access recertification"]
     F1 -. grants via .-> SR[("Site Register")]
     F3 --> SR
-    F8 --> SR
+    F6 --> SR
   end
   subgraph Content["Content disposition"]
     F4["04 InfoPath triage"]
     F5["05 File share disposition"]
   end
-  subgraph Control["Project control"]
-    F6["06 Change control"]
-    F7["07 Wave readiness & sign-off"]
-    F9["09 RAID escalation"]
-  end
-  F4 & F6 & F7 --> DL[("Decision Log")]
-  F9 -. tolerance breach .-> F6
+  F4 --> DL[("Decision Log")]
 ```
 
 ## 01 — Access request (Access Method Decision Table)
@@ -44,7 +38,7 @@ flowchart TD
   L2 -->|No| B1
   L2 -->|Yes| P2{"Entra ID P2?"}
   P2 -->|No| B2[/"Blocked - Entra ID P2 required"/]:::bad
-  P2 -->|Yes| AP2{"Line manager AND<br/>Project Manager approve?"}
+  P2 -->|Yes| AP2{"Line manager AND<br/>service owner approve?"}
   T -->|Long-term contractor| TB{"End date set and<br/>within 12 months?"}
   TB -->|No| X2[/"Rejected - not time-bound"/]:::bad
   TB -->|Yes| AP3{"Site owner AND<br/>InfoSec approve?"}
@@ -80,15 +74,15 @@ flowchart TD
 flowchart TD
   A([New Site Requests item]) --> V{"Two different, enabled,<br/>internal named owners +<br/>Owners/Members groups?"}
   V -->|No| X[/"Returned - ownership invalid"/]:::bad
-  V -->|Yes| PM{"Project Manager approves?"}
-  PM -->|No| R1[/"Rejected"/]:::bad
-  PM -->|Yes| S{"External sharing or<br/>Highly Confidential?"}
+  V -->|Yes| SO{"Service owner approves?"}
+  SO -->|No| R1[/"Rejected"/]:::bad
+  SO -->|Yes| S{"External sharing or<br/>Highly Confidential?"}
   S -->|Yes| IS{"InfoSec approves?"}
   IS -->|No| R2[/"Rejected by InfoSec"/]:::bad
   IS -->|Yes| C
   S -->|No| C["Create team site (STS#3)"]
   C --> OK{"Site ready?"}
-  OK -->|No| F[/"Provisioning failed -> PM"/]:::bad
+  OK -->|No| F[/"Provisioning failed -> service owner"/]:::bad
   OK -->|Yes| RB["Runbook: groups only, secondary admin,<br/>sharing off unless approved,<br/>no custom script, sensitivity label"]
   RB --> REG[/"Add to Site Register<br/>(next access review +90 days), notify owners"/]:::good
   classDef good fill:#dcfce7,stroke:#15803d,color:#14532d
@@ -105,8 +99,8 @@ flowchart TD
   CX -->|Yes| PA["Recommend Replace:<br/>Power Apps + Power Automate"]
   CX -->|No| SL["Recommend Replace:<br/>SharePoint List + Power Automate"]
   RT & PA & SL --> O{"Business owner accepts?"}
-  O -->|Yes| D[/"Triaged; Decision Log; BA adds to backlog"/]:::good
-  O -->|No| DS[/"Triage disputed -> BA agrees<br/>Replace or Retire with owner"/]:::bad
+  O -->|Yes| D[/"Triaged; Decision Log; service owner adds to backlog"/]:::good
+  O -->|No| DS[/"Triage disputed -> service owner agrees<br/>Replace or Retire with owner"/]:::bad
   classDef good fill:#dcfce7,stroke:#15803d,color:#14532d
   classDef bad fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
 ```
@@ -121,7 +115,7 @@ flowchart TD
   ST -->|Yes| AR{"Owner approves archive?"}
   AR -->|Yes| ARC[/"Archive - disposition agreed"/]:::info
   AR -->|No| MG
-  ST -->|No| MG{"Owner AND Project Manager<br/>approve migration?"}
+  ST -->|No| MG{"Owner AND service owner<br/>approve migration?"}
   MG -->|No| DR[/"Disposition required -> IT Ops"/]:::bad
   MG -->|Yes| PC{"Permission complexity High?"}
   PC -->|Yes| RM[/"Remediate permissions first"/]:::info
@@ -131,52 +125,13 @@ flowchart TD
   classDef info fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
 ```
 
-## 06 — Change control (tolerance-based authority)
-
-```mermaid
-flowchart TD
-  A([New Change Log item]) --> T{"Schedule within ±5 days AND<br/>cost within ±£5,000 AND<br/>no material scope change?"}
-  T -->|Yes| PM{"IT Project Manager decides"}
-  T -->|No| SB{"Sponsor AND Portfolio<br/>Manager both approve?"}
-  PM & SB -->|Approve| AP[/"Approved"/]:::good
-  PM & SB -->|Reject| RJ[/"Rejected"/]:::bad
-  AP & RJ --> DL[("Decision Log + notify raiser")]
-  classDef good fill:#dcfce7,stroke:#15803d,color:#14532d
-  classDef bad fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
-```
-
-## 07 — Wave readiness and sign-off
-
-```mermaid
-flowchart TD
-  A([Wave Plan: Gate Status changed]) --> S{"Which gate?"}
-  S -->|Readiness review requested| C{"All checks true and<br/>not in blockout?"}
-  C -->|No| NR[/"Readiness failed:<br/>missing items -> PM"/]:::bad
-  C -->|Yes| GO{"PM AND IT Ops approve?"}
-  GO -->|Yes| G[/"Go - migration authorised"/]:::good
-  GO -->|No| NG[/"No-go"/]:::bad
-  S -->|Sign-off requested| EV{"ShareGate report AND<br/>validation checklist?"}
-  EV -->|No| BL[/"Sign-off blocked - evidence missing"/]:::bad
-  EV -->|Yes| SO{"Business owner AND<br/>PM sign off?"}
-  SO -->|Yes| H[/"Signed off - hypercare;<br/>handover to IT Ops (BAU, no vendor ELS)"/]:::good
-  SO -->|No| RM[/"Remediate: RAID, re-run passes"/]:::bad
-  G & NG & H --> DL[("Decision Log")]
-  classDef good fill:#dcfce7,stroke:#15803d,color:#14532d
-  classDef bad fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
-```
-
-Readiness checks: prerequisites DEP001–DEP005, ShareGate licence, site
-owners confirmed, permission baseline approved, digital spring clean, site
-owner comms (2 weeks before), super users briefed (1 week before), Service
-Desk briefed, peer-tenant window agreed.
-
-## 08 — Access recertification (monthly; 90-day cycle per site)
+## 06 — Access recertification (monthly; 90-day cycle per site)
 
 ```mermaid
 flowchart TD
   A([1st of month 07:00]) --> D["Active sites with<br/>review due"]
   D --> O{"Primary owner<br/>account enabled?"}
-  O -->|No| OR[/"Orphaned -> PM + IT Ops<br/>promote secondary owner"/]:::bad
+  O -->|No| OR[/"Orphaned -> service owner + IT Ops<br/>promote secondary owner"/]:::bad
   O -->|Yes| L["List Owners + Members groups,<br/>email owner"]
   L --> RC{"Owner recertifies?"}
   RC -->|Yes| OK[/"Logged; next review +90 days"/]:::good
@@ -189,16 +144,3 @@ flowchart TD
   classDef info fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
 ```
 
-## 09 — RAID weekly escalation
-
-```mermaid
-flowchart TD
-  A([Monday 07:00]) --> F["Open RAID items that are High,<br/>overdue, unowned or<br/>forecast to exceed tolerance"]
-  F --> N{"Any?"}
-  N -->|No| Z([Nothing to send])
-  N -->|Yes| PM[/"Digest -> Project Manager<br/>for weekly checkpoint"/]:::info
-  PM --> T{"Any forecast to<br/>exceed tolerance?"}
-  T -->|Yes| SP[/"Exception -> Sponsor + Portfolio<br/>(raise change request)"/]:::bad
-  classDef bad fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
-  classDef info fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
-```

@@ -54,7 +54,7 @@ Set-PnPTenantSite -Url $SiteUrl -Connection $admin `
     -DenyAddAndCustomizePages:$true
 
 # Secondary owner as site collection admin, so the site survives the primary
-# owner leaving (flow 08 flags it as orphaned and prompts a replacement).
+# owner leaving (flow 06 flags it as orphaned and prompts a replacement).
 Set-PnPTenantSite -Url $SiteUrl -Connection $admin -Owners @($SecondaryOwner)
 
 # --- Site-level permissions -------------------------------------------------

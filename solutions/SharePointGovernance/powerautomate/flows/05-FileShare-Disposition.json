@@ -2,7 +2,7 @@
   "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
   "contentVersion": "1.0.0.0",
   "displayName": "Decide file share disposition (selective migration)",
-  "description": "Triggers on each new 'File Share Register' item. Shares with integration markers, application back-ends or generic accounts are excluded from SharePoint Online and sent to IT Operations for disposition. Shares not modified for 3+ years are offered to the owner for archive. Others migrate only with both owner and Project Manager approval, and high permission complexity must be remediated first.",
+  "description": "Triggers on each new 'File Share Register' item. Shares with integration markers, application back-ends or generic accounts are excluded from SharePoint Online and sent to IT Operations for disposition. Shares not modified for 3+ years are offered to the owner for archive. Others migrate only with both owner and SharePoint service owner approval, and high permission complexity must be remediated first.",
   "connectionReferences": {
     "shared_sharepointonline": {
       "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
@@ -31,29 +31,17 @@
       "type": "String",
       "defaultValue": "https://{tenant}.sharepoint.com"
     },
-    "ProjectManagerEmail": {
+    "SharePointServiceOwnerEmail": {
       "type": "String",
-      "defaultValue": "{it-project-manager}@{domain}"
+      "defaultValue": "{sharepoint-service-owner}@{domain}"
     },
     "InfoSecApproverEmail": {
       "type": "String",
       "defaultValue": "{security-and-architecture}@{domain}"
     },
-    "SponsorEmail": {
-      "type": "String",
-      "defaultValue": "{project-sponsor}@{domain}"
-    },
-    "PortfolioManagerEmail": {
-      "type": "String",
-      "defaultValue": "{it-portfolio-manager}@{domain}"
-    },
     "ITOpsOwnerEmail": {
       "type": "String",
       "defaultValue": "{it-operations-owner}@{domain}"
-    },
-    "BusinessAnalystEmail": {
-      "type": "String",
-      "defaultValue": "{business-analyst}@{domain}"
     },
     "ServiceDeskEmail": {
       "type": "String",
@@ -152,7 +140,7 @@
               "emailMessage/Subject": "@{concat('System-dependent file share excluded from SharePoint: ', triggerBody()?['Title'])}",
               "emailMessage/Body": "<p><b>@{triggerBody()?['Title']}</b> has integration, application back-end or generic-account dependencies, so it will not be migrated to SharePoint Online.</p><p>Agree a disposition with the owner (remediate, archive, delete, or move to an appropriate non-SharePoint platform) and record it in the File Share Register.</p>",
               "emailMessage/Importance": "Normal",
-              "emailMessage/Cc": "@parameters('ProjectManagerEmail')"
+              "emailMessage/Cc": "@parameters('SharePointServiceOwnerEmail')"
             }
           },
           "runAfter": {
@@ -286,7 +274,7 @@
               ]
             },
             "actions": {
-              "Approval_owner_and_PM": {
+              "Approval_share_owner_and_service_owner": {
                 "type": "OpenApiConnection",
                 "inputs": {
                   "host": {
@@ -297,7 +285,7 @@
                   "parameters": {
                     "approvalType": "BasicAwaitAll",
                     "WebhookApprovalCreationInput/title": "@{concat('Migrate file share to SharePoint: ', triggerBody()?['Title'])}",
-                    "WebhookApprovalCreationInput/assignedTo": "@{concat(triggerBody()?['ShareOwner']?['Email'], ';', parameters('ProjectManagerEmail'))}",
+                    "WebhookApprovalCreationInput/assignedTo": "@{concat(triggerBody()?['ShareOwner']?['Email'], ';', parameters('SharePointServiceOwnerEmail'))}",
                     "WebhookApprovalCreationInput/details": "@{concat('Share: ', triggerBody()?['Title'], decodeUriComponent('%0A'), 'Size (GB): ', string(triggerBody()?['SizeGB']), decodeUriComponent('%0A'), 'Last modified: ', triggerBody()?['LastModified'], decodeUriComponent('%0A'), 'Permission complexity: ', triggerBody()?['PermissionComplexity']?['Value'], decodeUriComponent('%0A'), 'Target site: ', triggerBody()?['TargetSiteUrl'], decodeUriComponent('%0A%0A'), 'File shares move to SharePoint Online case by case only (PID v3.1, 2.3.1).')}",
                     "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
                     "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
@@ -311,7 +299,7 @@
                 "type": "If",
                 "expression": {
                   "equals": [
-                    "@outputs('Approval_owner_and_PM')?['body/outcome']",
+                    "@outputs('Approval_share_owner_and_service_owner')?['body/outcome']",
                     "Approve"
                   ]
                 },
@@ -406,7 +394,7 @@
                           "id": "@triggerBody()?['ID']",
                           "item/Disposition/Value": "Archive",
                           "item/Status/Value": "Disposition required",
-                          "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_owner_and_PM')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+                          "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_share_owner_and_service_owner')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
                         }
                       },
                       "runAfter": {}
@@ -422,7 +410,7 @@
                         "parameters": {
                           "emailMessage/To": "@parameters('ITOpsOwnerEmail')",
                           "emailMessage/Subject": "@{concat('File share not approved for SharePoint: ', triggerBody()?['Title'])}",
-                          "emailMessage/Body": "<p>Migration was not approved. Agree a disposition (remediate, archive, delete or move to a non-SharePoint platform) with the owner.</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_owner_and_PM')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
+                          "emailMessage/Body": "<p>Migration was not approved. Agree a disposition (remediate, archive, delete or move to a non-SharePoint platform) with the owner.</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_share_owner_and_service_owner')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
                           "emailMessage/Importance": "Normal"
                         }
                       },
@@ -435,7 +423,7 @@
                   }
                 },
                 "runAfter": {
-                  "Approval_owner_and_PM": [
+                  "Approval_share_owner_and_service_owner": [
                     "Succeeded"
                   ]
                 }

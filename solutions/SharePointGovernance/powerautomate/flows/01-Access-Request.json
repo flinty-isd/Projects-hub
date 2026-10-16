@@ -34,29 +34,17 @@
       "type": "String",
       "defaultValue": "https://{tenant}.sharepoint.com"
     },
-    "ProjectManagerEmail": {
+    "SharePointServiceOwnerEmail": {
       "type": "String",
-      "defaultValue": "{it-project-manager}@{domain}"
+      "defaultValue": "{sharepoint-service-owner}@{domain}"
     },
     "InfoSecApproverEmail": {
       "type": "String",
       "defaultValue": "{security-and-architecture}@{domain}"
     },
-    "SponsorEmail": {
-      "type": "String",
-      "defaultValue": "{project-sponsor}@{domain}"
-    },
-    "PortfolioManagerEmail": {
-      "type": "String",
-      "defaultValue": "{it-portfolio-manager}@{domain}"
-    },
     "ITOpsOwnerEmail": {
       "type": "String",
       "defaultValue": "{it-operations-owner}@{domain}"
-    },
-    "BusinessAnalystEmail": {
-      "type": "String",
-      "defaultValue": "{business-analyst}@{domain}"
     },
     "ServiceDeskEmail": {
       "type": "String",
@@ -537,7 +525,7 @@
                         "emailMessage/Subject": "SharePoint access request blocked: licence required",
                         "emailMessage/Body": "<p>Editing SharePoint Online content requires a named Microsoft 365 licence that includes SharePoint (minimum M365 F3). No such licence is assigned to your account.</p><p>Your line manager can raise a licence request with the Service Desk; resubmit once it is assigned.</p>",
                         "emailMessage/Importance": "Normal",
-                        "emailMessage/Cc": "@parameters('ProjectManagerEmail')"
+                        "emailMessage/Cc": "@parameters('SharePointServiceOwnerEmail')"
                       }
                     },
                     "runAfter": {
@@ -593,7 +581,7 @@
                     ]
                   },
                   "actions": {
-                    "Owner_Approval_manager_and_PM": {
+                    "Owner_Approval_manager_and_service_owner": {
                       "type": "OpenApiConnection",
                       "inputs": {
                         "host": {
@@ -604,7 +592,7 @@
                         "parameters": {
                           "approvalType": "BasicAwaitAll",
                           "WebhookApprovalCreationInput/title": "@{concat('Site Owner/Author access: ', triggerBody()?['Requester']?['Email'])}",
-                          "WebhookApprovalCreationInput/assignedTo": "@{concat(triggerBody()?['LineManager']?['Email'], ';', parameters('ProjectManagerEmail'))}",
+                          "WebhookApprovalCreationInput/assignedTo": "@{concat(triggerBody()?['LineManager']?['Email'], ';', parameters('SharePointServiceOwnerEmail'))}",
                           "WebhookApprovalCreationInput/details": "@{concat('Requester: ', triggerBody()?['Requester']?['Email'], decodeUriComponent('%0A'), 'Access type: ', triggerBody()?['UserType']?['Value'], decodeUriComponent('%0A'), 'Site: ', body('Get_target_site')?['SiteUrl'], decodeUriComponent('%0A'), 'Justification: ', triggerBody()?['BusinessJustification'])}",
                           "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
                           "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
@@ -618,7 +606,7 @@
                       "type": "If",
                       "expression": {
                         "equals": [
-                          "@outputs('Owner_Approval_manager_and_PM')?['body/outcome']",
+                          "@outputs('Owner_Approval_manager_and_service_owner')?['body/outcome']",
                           "Approve"
                         ]
                       },
@@ -796,7 +784,7 @@
                                 "table": "Access Requests",
                                 "id": "@triggerBody()?['ID']",
                                 "item/Status/Value": "Rejected",
-                                "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Owner_Approval_manager_and_PM')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+                                "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Owner_Approval_manager_and_service_owner')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
                               }
                             },
                             "runAfter": {}
@@ -812,7 +800,7 @@
                               "parameters": {
                                 "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
                                 "emailMessage/Subject": "SharePoint access request rejected",
-                                "emailMessage/Body": "<p>Your request for access to @{body('Get_target_site')?['SiteTitle']} was rejected.</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Owner_Approval_manager_and_PM')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
+                                "emailMessage/Body": "<p>Your request for access to @{body('Get_target_site')?['SiteTitle']} was rejected.</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Owner_Approval_manager_and_service_owner')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
                                 "emailMessage/Importance": "Normal"
                               }
                             },
@@ -825,7 +813,7 @@
                         }
                       },
                       "runAfter": {
-                        "Owner_Approval_manager_and_PM": [
+                        "Owner_Approval_manager_and_service_owner": [
                           "Succeeded"
                         ]
                       }
@@ -864,7 +852,7 @@
                             "emailMessage/Subject": "Site Owner access blocked: Entra ID P2 required",
                             "emailMessage/Body": "<p>The approved access model requires Site Owners and Authors to hold Entra ID P2 for ownership accountability and audit. Ask the Service Desk to assign it, then resubmit.</p>",
                             "emailMessage/Importance": "Normal",
-                            "emailMessage/Cc": "@parameters('ProjectManagerEmail')"
+                            "emailMessage/Cc": "@parameters('SharePointServiceOwnerEmail')"
                           }
                         },
                         "runAfter": {
@@ -911,7 +899,7 @@
                         "emailMessage/Subject": "SharePoint access request blocked: licence required",
                         "emailMessage/Body": "<p>Site Owner / Author access requires a named Microsoft 365 E3 (or equivalent) licence that includes SharePoint.</p><p>Your line manager can raise a licence request with the Service Desk; resubmit once it is assigned.</p>",
                         "emailMessage/Importance": "Normal",
-                        "emailMessage/Cc": "@parameters('ProjectManagerEmail')"
+                        "emailMessage/Cc": "@parameters('SharePointServiceOwnerEmail')"
                       }
                     },
                     "runAfter": {
