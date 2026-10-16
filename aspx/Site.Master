@@ -1,0 +1,27 @@
+<%@ Master Language="C#" AutoEventWireup="true" CodeFile="Site.Master.cs" Inherits="SiteMaster" %>
+<!DOCTYPE html>
+<html>
+<head runat="server">
+    <title>SharePoint PM Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="Styles/dashboard.css" />
+</head>
+<body>
+    <form id="form1" runat="server">
+        <div class="header">
+            <h1>&#128202; SharePoint PM Dashboard</h1>
+        </div>
+        <asp:Panel ID="StatusBanner" runat="server" CssClass="banner">
+            <asp:Literal ID="StatusMessage" runat="server" />
+        </asp:Panel>
+        <div class="tabs">
+            <asp:HyperLink ID="TabOverview" runat="server" NavigateUrl="~/Default.aspx" CssClass="tab">Overview</asp:HyperLink>
+            <asp:HyperLink ID="TabTimeline" runat="server" NavigateUrl="~/Timeline.aspx" CssClass="tab">Timeline</asp:HyperLink>
+            <asp:HyperLink ID="TabKpis" runat="server" NavigateUrl="~/Kpis.aspx" CssClass="tab">KPIs</asp:HyperLink>
+            <asp:HyperLink ID="TabRisks" runat="server" NavigateUrl="~/Risks.aspx" CssClass="tab">Risks &amp; Issues</asp:HyperLink>
+        </div>
+        <div class="content">
+            <asp:ContentPlaceHolder ID="MainContent" runat="server" />
+        </div>
+    </form>
+</body>
+</html>
