@@ -1,8 +1,45 @@
-# 📊 SharePoint PM dashboard
+# 📊 SharePoint dashboards
 
-A project-management dashboard over SharePoint list data — project status,
-timeline, KPIs, and risks/issues. It falls back to demo data when no
-credentials are configured, so it renders immediately.
+Two dashboards over SharePoint list data — a **PM dashboard** (project status,
+timeline, KPIs, risks/issues) and an **IT Governance site** (policies, control
+compliance, audit findings, risk register, exceptions).
+
+## Native mode — the chosen route
+
+Both dashboards render **natively inside SharePoint**. Nothing to host, no
+Azure AD app registration, and SharePoint's own permissions apply.
+
+1. **`/provisioning`** — PnP PowerShell that creates the seven lists, with the
+   exact internal column names everything else expects. Plus a sample-data
+   seeder.
+2. **`/sharepoint-modern`** — JSON column/view formatting (status pills, a
+   `% Complete` progress bar, red past-due dates, amber expiry warnings, a
+   heat-coloured risk score) and PnP scripts that apply it and build the two
+   modern pages.
+
+```powershell
+.\provisioning\Provision-SharePointLists.ps1 -SiteUrl $url -ClientId $id
+.\sharepoint-modern\Apply-Formatting.ps1     -SiteUrl $url -ClientId $id
+.\sharepoint-modern\Provision-ModernPages.ps1 -SiteUrl $url -ClientId $id -Publish
+```
+
+Each folder's README has the detail, including what native mode gives up
+(the Gantt timeline and the 5×5 heat-map grid — see the "Charts" notes in
+`sharepoint-modern/README.md`).
+
+**[`DEPLOYMENT.md`](DEPLOYMENT.md)** is the runbook for a real M365 tenant:
+prerequisites and permissions, site layout, dry run and verification,
+promoting dev → test → prod, unattended pipeline runs, and how Microsoft
+Fabric and Copilot agents layer on top of the same lists.
+
+## Hosted app implementations
+
+Kept as an alternative for anyone who needs the custom charts and the Gantt, or
+who wants the data outside SharePoint's own rendering. It falls back to demo
+data when no credentials are configured, so it renders immediately.
+
+- **`/` (root)** — Python/Streamlit PM dashboard, and the `pytest` suite and
+  CI that run against it. See "Streamlit version" below.
 
 ## Streamlit version
 
