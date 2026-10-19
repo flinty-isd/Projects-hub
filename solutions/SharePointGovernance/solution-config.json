@@ -1,0 +1,63 @@
+{
+  "$comment": "Settings for tools/build_solution.py. Bump 'version' for every release you import: Power Platform only upgrades a solution to a higher version.",
+  "uniqueName": "SharePointGovernance",
+  "displayName": "SharePoint Governance (BAU)",
+  "description": "Power Automate flows that enforce SharePoint Online governance controls (PID v3.1) in BAU.",
+  "version": "1.0.0.0",
+  "publisher": {
+    "uniqueName": "HPUKIT",
+    "displayName": "HPUK IT",
+    "prefix": "spg",
+    "optionValuePrefix": 46310
+  },
+  "environmentVariables": {
+    "GovernanceSiteUrl": {
+      "displayName": "Governance site URL",
+      "description": "Full URL of the SharePoint site holding the governance lists, e.g. https://contoso.sharepoint.com/sites/SPOGovernance."
+    },
+    "TenantRootUrl": {
+      "displayName": "Tenant root URL",
+      "description": "Root SharePoint URL, e.g. https://contoso.sharepoint.com. New sites are created under /sites/."
+    },
+    "SharePointServiceOwnerEmail": {
+      "displayName": "SharePoint service owner email",
+      "description": "Mailbox of the SharePoint service owner (a shared mailbox or distribution list is best). Approves new sites and file share migrations."
+    },
+    "InfoSecApproverEmail": {
+      "displayName": "InfoSec approver email",
+      "description": "Security & Architecture approver for guest access, privileged roles and sensitive sites."
+    },
+    "ITOpsOwnerEmail": {
+      "displayName": "IT Operations owner email",
+      "description": "IT Operations owner: PIM assignments, file share dispositions, orphaned-site alerts."
+    },
+    "ServiceDeskEmail": {
+      "displayName": "Service Desk email",
+      "description": "Service Desk shared mailbox that receives fulfilment tickets (AD group changes, access removals)."
+    },
+    "AutomationSubscriptionId": {
+      "displayName": "Automation subscription ID",
+      "description": "Azure subscription ID of the Automation account that runs Set-SiteGovernanceBaseline."
+    },
+    "AutomationResourceGroup": {
+      "displayName": "Automation resource group",
+      "description": "Resource group of the Automation account."
+    },
+    "AutomationAccountName": {
+      "displayName": "Automation account name",
+      "description": "Name of the Azure Automation account."
+    },
+    "ReviewIntervalDays": {
+      "displayName": "Access review interval (days)",
+      "description": "Days between access recertifications for each site.",
+      "default": 90
+    }
+  },
+  "connectionReferences": {
+    "shared_sharepointonline": "SharePoint",
+    "shared_office365": "Office 365 Outlook",
+    "shared_approvals": "Approvals",
+    "shared_webcontents": "HTTP with Microsoft Entra ID (Graph)",
+    "shared_azureautomation": "Azure Automation"
+  }
+}
