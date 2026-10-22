@@ -18,11 +18,15 @@
         in Members (never "Everyone except external users": the tenant is shared)
       * locks Notices Archive, Comms Distribution and Delivery Log to the
         configuration maintainers group (and the flow identity where it writes)
+      * turns on content approval for Site Pages and gives the HR approver
+        group a custom "Approve pages" permission level on Site Pages only
       * creates and publishes Publisher-Guide.aspx on HPUK News from
         pages/Publisher-Guide.html
 
     Not done here (no supported cmdlet; see the README):
       * enabling audience targeting on Site Pages
+      * the built-in page approval flow that notifies HR (Site Pages >
+        Automate > Configure page approval flow)
       * hub association and organisation news site designation (IT)
       * News web part configuration on the home pages
 
@@ -39,6 +43,7 @@ param(
     [Parameter(Mandatory)] [string] $HPUKPublisherGroupId,
     [Parameter(Mandatory)] [string] $OtherPublisherGroupId,
     [Parameter(Mandatory)] [string] $ConfigMaintainerGroupId,
+    [Parameter(Mandatory)] [string] $HRApproverGroupId,         # HR group that approves news pages on both sites
     [Parameter(Mandatory)] [string] $FlowIdentityUpn,           # account the flows' SharePoint connection signs in as
     [string] $TermGroup = 'Communications',
     [string] $ClientId,
@@ -125,6 +130,18 @@ foreach ($site in $sites) {
     Add-PnPGroupMember -Group (Get-PnPGroup -AssociatedVisitorGroup -Connection $conn) -LoginName (Get-GroupClaim $ReaderGroupId) -Connection $conn
     Add-PnPGroupMember -Group (Get-PnPGroup -AssociatedMemberGroup -Connection $conn) -LoginName (Get-GroupClaim $site.Publishers) -Connection $conn
 
+    # Page approval by HR: publishers' pages stay invisible to readers until HR approves them.
+    # Communication sites have no "Approve" level, so add one: Contribute plus Approve Items.
+    if (-not (Get-PnPRoleDefinition -Identity 'Approve pages' -Connection $conn -ErrorAction SilentlyContinue)) {
+        Add-PnPRoleDefinition -RoleName 'Approve pages' -Clone 'Contribute' -Include ApproveItems `
+            -Description 'Contribute, plus approve or reject news pages' -Connection $conn | Out-Null
+        Write-Output '  + permission level Approve pages'
+    }
+    Set-PnPList -Identity 'Site Pages' -EnableModeration $true -Connection $conn | Out-Null
+    Set-PnPList -Identity 'Site Pages' -BreakRoleInheritance -CopyRoleAssignments -Connection $conn | Out-Null
+    Set-PnPListPermission -Identity 'Site Pages' -User (Get-GroupClaim $HRApproverGroupId) -AddRole 'Approve pages' -Connection $conn
+    Write-Output '  ~ Site Pages: content approval on, HR approvers added'
+
     if ($site.Key -eq 'HPUK News') {
         Set-PnPList -Identity 'Notices and Attachments' -EnableVersioning $true -EnableMinorVersions $false -Connection $conn | Out-Null
 
@@ -166,3 +183,5 @@ Write-Output '  1. Site Pages > Settings > Audience targeting: turn on, on both 
 Write-Output '  2. IT: associate both sites with the intranet hub; designate HPUK News as an organisation news site.'
 Write-Output '  3. Home pages: configure the News web parts (Status = Live filter, Safety view).'
 Write-Output '  4. Fill Comms Distribution with one row per port (Enabled = No until destinations are verified).'
+Write-Output '  5. Site Pages > Automate > Power Automate > Configure page approval flow: approvers = the HR group, on both sites.'
+Write-Output '  6. Run Set-NewsRetention.ps1 (7-year retention) as a Purview compliance admin.'

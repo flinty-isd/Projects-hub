@@ -137,7 +137,7 @@ Production imports the **exact artifact** that passed Test. It is never rebuilt.
 | 3 | Create connections as the service account in Test and Prod; fill in the `deploy/*.json` files | IT | Settings files merged |
 | 4 | Add the GitHub environments, secrets and required reviewers, and add the Dev/Test/Prod jobs to both workflows | IT / repo maintainer | A merge to `main` reaches Test unaided |
 | 5 | **Governance**: UAT in Test against the test governance site, using the test plan in its README | SharePoint service owner | Each flow passes its quick test; evidence filed |
-| 6 | **News**: UAT in Test against test news sites, using the test table in its README | Communications, IT | Test table signed off, including partial failure and resend |
+| 6 | **News**: UAT in Test against test news sites, using the test table in its README, with HR approving the test pages and Chloe, Rachel or Toby sending the urgent tests | Communications, HR, IT | Test table signed off, including approval, unauthorised urgent, partial failure and resend |
 | 7 | Production: approve the Prod job for governance, then news. Turn flows on in the README order | Service owner, IT Operations | Flows on; first scheduled runs succeed |
 | 8 | Hand over: runbook, owner list, alert routing | IT Operations | Support owner confirms |
 

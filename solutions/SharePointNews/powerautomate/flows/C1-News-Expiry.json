@@ -39,6 +39,10 @@
     "SupportOwnerEmail": {
       "type": "String",
       "defaultValue": "{news-support-owner}@{domain}"
+    },
+    "UrgentPublisherEmails": {
+      "type": "String",
+      "defaultValue": "{urgent-publisher-1}@{domain};{urgent-publisher-2}@{domain}"
     }
   },
   "triggers": {

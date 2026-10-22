@@ -3,7 +3,7 @@
   "lists": [
     {
       "listTitle": "Site Pages",
-      "listDescription": "The Site Pages library on BOTH news sites (HPUK News and Other News), with identical columns and internal names. News posts are pages with PromotedState 2.",
+      "listDescription": "The Site Pages library on BOTH news sites (HPUK News and Other News), with identical columns and internal names. News posts are pages with PromotedState 2. Content approval is on: HR approves pages before they are published to readers.",
       "sites": [
         "HPUK News",
         "Other News"
@@ -15,7 +15,9 @@
         "_ModernAudienceTargetUserField",
         "Description",
         "FileLeafRef",
-        "BannerImageUrl"
+        "BannerImageUrl",
+        "{ModerationStatus}",
+        "OData__ModerationStatus"
       ],
       "fields": [
         {
@@ -45,7 +47,7 @@
             "Harwich",
             "Thamesport"
           ],
-          "notes": "Required. Choose 'All ports' for a notice that goes everywhere; a blank Port is not allowed, so a forgotten value can never broadcast to every port. Port values are placeholders to confirm with Communications; they must match the Comms Distribution Port values exactly."
+          "notes": "Required. Choose 'All ports' for a notice that goes everywhere; a blank Port is not allowed, so a forgotten value can never broadcast to every port. Confirmed ports. Must match the Comms Distribution Port values exactly."
         },
         {
           "internalName": "ExpiryDate",
@@ -72,7 +74,7 @@
           "type": "Boolean",
           "required": false,
           "default": false,
-          "notes": "Explicit publisher decision. Who may set it is an editorial decision for Communications."
+          "notes": "Only authorised urgent publishers (Chloe, Rachel and Toby; the UrgentPublisherEmails environment variable) can trigger an alert. C3 ignores Urgent on anyone else's posts and tells Communications."
         },
         {
           "internalName": "InRoundup",
@@ -134,7 +136,7 @@
             "Harwich",
             "Thamesport"
           ],
-          "notes": "Required. Choose 'All ports' for a notice that goes everywhere; a blank Port is not allowed, so a forgotten value can never broadcast to every port. Port values are placeholders to confirm with Communications; they must match the Comms Distribution Port values exactly."
+          "notes": "Required. Choose 'All ports' for a notice that goes everywhere; a blank Port is not allowed, so a forgotten value can never broadcast to every port. Confirmed ports. Must match the Comms Distribution Port values exactly."
         },
         {
           "internalName": "ExpiryDate",
@@ -239,7 +241,7 @@
             "Harwich",
             "Thamesport"
           ],
-          "notes": "Port values are placeholders to confirm with Communications; they must match the Comms Distribution Port values exactly. Never 'All ports': that value lives on posts only."
+          "notes": "Confirmed ports. Must match the Comms Distribution Port values exactly. Never 'All ports': that value lives on posts only."
         },
         {
           "internalName": "EmailGroup",
@@ -331,6 +333,7 @@
           "choices": [
             "Sent",
             "Failed",
+            "Skipped - not an urgent publisher",
             "Skipped - audience targeted",
             "Skipped - no destinations"
           ]

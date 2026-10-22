@@ -29,7 +29,11 @@
     },
     "SupportOwnerEmail": {
       "displayName": "News support owner email",
-      "description": "Operational support owner for the news flows: receives failure alerts."
+      "description": "Operational support owner for the news flows (Nigel Bell): receives failure alerts."
+    },
+    "UrgentPublisherEmails": {
+      "displayName": "Urgent publisher emails",
+      "description": "Semicolon-separated addresses of the people allowed to send urgent notices (Chloe, Rachel and Toby). Urgent posts by anyone else are not sent."
     },
     "RoundupWindowDays": {
       "displayName": "Roundup window (days)",
