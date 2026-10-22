@@ -1,0 +1,362 @@
+{
+  "$comment": "Lists and columns for the HPUK News and Other News sites. Provisioned by provisioning/Provision-NewsSites.ps1; tools/validate_flows.py (SharePointGovernance) checks every column the flows use against this file. The dispatch key in Delivery Log Title is: urgent|<site>|<page ID>|r<NotificationRound>|<port>|<channel>, or roundup|<Monday date>|<port>|<channel>.",
+  "lists": [
+    {
+      "listTitle": "Site Pages",
+      "listDescription": "The Site Pages library on BOTH news sites (HPUK News and Other News), with identical columns and internal names. News posts are pages with PromotedState 2. Content approval is on: HR approves pages before they are published to readers.",
+      "sites": [
+        "HPUK News",
+        "Other News"
+      ],
+      "builtinColumns": [
+        "PromotedState",
+        "FirstPublishedDate",
+        "{VersionNumber}",
+        "_ModernAudienceTargetUserField",
+        "Description",
+        "FileLeafRef",
+        "BannerImageUrl",
+        "{ModerationStatus}",
+        "OData__ModerationStatus"
+      ],
+      "fields": [
+        {
+          "internalName": "Department",
+          "displayName": "Department",
+          "type": "Taxonomy",
+          "required": true,
+          "termSet": "Communications|Department",
+          "notes": "Communications Department term set."
+        },
+        {
+          "internalName": "Category",
+          "displayName": "Category",
+          "type": "Taxonomy",
+          "required": true,
+          "termSet": "Communications|Category",
+          "notes": "Includes Safety, Operations, HR, IT, Facilities, Canteen, Main Stores (vocabulary to be approved by Communications). The Safety news views filter on this."
+        },
+        {
+          "internalName": "Port",
+          "displayName": "Port",
+          "type": "MultiChoice",
+          "required": true,
+          "choices": [
+            "All ports",
+            "Felixstowe",
+            "Harwich",
+            "Thamesport"
+          ],
+          "notes": "Required. Choose 'All ports' for a notice that goes everywhere; a blank Port is not allowed, so a forgotten value can never broadcast to every port. Confirmed ports. Must match the Comms Distribution Port values exactly."
+        },
+        {
+          "internalName": "ExpiryDate",
+          "displayName": "Expiry date",
+          "type": "DateOnly",
+          "required": false,
+          "notes": "Last day the notice is current. C1 sets Status to Expired the next morning. Blank means no automatic expiry."
+        },
+        {
+          "internalName": "Status",
+          "displayName": "Status",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Live",
+            "Expired"
+          ],
+          "default": "Live",
+          "notes": "Presentation state only (news web parts filter on Live). Not an editorial approval state."
+        },
+        {
+          "internalName": "Urgent",
+          "displayName": "Urgent",
+          "type": "Boolean",
+          "required": false,
+          "default": false,
+          "notes": "Only authorised urgent publishers (Chloe, Rachel and Toby; the UrgentPublisherEmails environment variable) can trigger an alert. C3 ignores Urgent on anyone else's posts and tells Communications."
+        },
+        {
+          "internalName": "InRoundup",
+          "displayName": "Include in weekly roundup",
+          "type": "Boolean",
+          "required": false,
+          "default": true
+        },
+        {
+          "internalName": "UrgentSent",
+          "displayName": "Urgent alert sent",
+          "type": "Boolean",
+          "required": false,
+          "default": false,
+          "notes": "Set by C3 only after every destination succeeds. Not the duplicate control: the Delivery Log dispatch key is."
+        },
+        {
+          "internalName": "NotificationRound",
+          "displayName": "Notification round",
+          "type": "Number",
+          "required": false,
+          "default": 1,
+          "notes": "Part of the dispatch key. To send an urgent notice again (for a correction), Communications raises this by one and sets UrgentSent back to No. Ordinary edits never resend."
+        }
+      ]
+    },
+    {
+      "listTitle": "Notices and Attachments",
+      "listDescription": "Document library on HPUK News for notice attachments, linked from posts. Major versioning on.",
+      "sites": [
+        "HPUK News"
+      ],
+      "template": "DocumentLibrary",
+      "fields": [
+        {
+          "internalName": "Department",
+          "displayName": "Department",
+          "type": "Taxonomy",
+          "required": true,
+          "termSet": "Communications|Department",
+          "notes": "Communications Department term set."
+        },
+        {
+          "internalName": "Category",
+          "displayName": "Category",
+          "type": "Taxonomy",
+          "required": true,
+          "termSet": "Communications|Category",
+          "notes": "Includes Safety, Operations, HR, IT, Facilities, Canteen, Main Stores (vocabulary to be approved by Communications). The Safety news views filter on this."
+        },
+        {
+          "internalName": "Port",
+          "displayName": "Port",
+          "type": "MultiChoice",
+          "required": true,
+          "choices": [
+            "All ports",
+            "Felixstowe",
+            "Harwich",
+            "Thamesport"
+          ],
+          "notes": "Required. Choose 'All ports' for a notice that goes everywhere; a blank Port is not allowed, so a forgotten value can never broadcast to every port. Confirmed ports. Must match the Comms Distribution Port values exactly."
+        },
+        {
+          "internalName": "ExpiryDate",
+          "displayName": "Expiry date",
+          "type": "DateOnly",
+          "required": false,
+          "notes": "Last day the notice is current. C1 sets Status to Expired the next morning. Blank means no automatic expiry."
+        },
+        {
+          "internalName": "Status",
+          "displayName": "Status",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Live",
+            "Expired"
+          ],
+          "default": "Live",
+          "notes": "Presentation state only (news web parts filter on Live). Not an editorial approval state."
+        }
+      ]
+    },
+    {
+      "listTitle": "Notices Archive",
+      "listDescription": "Read-only list on HPUK News holding historical notices migrated from Internal Notices. Edit rights: configuration maintainers only, during migration.",
+      "sites": [
+        "HPUK News"
+      ],
+      "fields": [
+        {
+          "internalName": "SourceId",
+          "displayName": "Source item ID",
+          "type": "Text",
+          "required": true,
+          "notes": "ID of the item in the source Internal Notices list, for reconciliation."
+        },
+        {
+          "internalName": "OriginalCreated",
+          "displayName": "Originally created",
+          "type": "DateTime",
+          "required": true
+        },
+        {
+          "internalName": "OriginalModified",
+          "displayName": "Originally modified",
+          "type": "DateTime",
+          "required": false
+        },
+        {
+          "internalName": "OriginalAuthor",
+          "displayName": "Original author",
+          "type": "Text",
+          "required": false,
+          "notes": "Text, not a person column: many original authors have left."
+        },
+        {
+          "internalName": "NoticeText",
+          "displayName": "Notice text",
+          "type": "Note",
+          "required": true,
+          "richText": true
+        },
+        {
+          "internalName": "AttachmentLinks",
+          "displayName": "Attachment links",
+          "type": "Note",
+          "required": false,
+          "richText": true
+        },
+        {
+          "internalName": "Department",
+          "displayName": "Department",
+          "type": "Taxonomy",
+          "required": true,
+          "termSet": "Communications|Department",
+          "notes": "Communications Department term set."
+        },
+        {
+          "internalName": "Category",
+          "displayName": "Category",
+          "type": "Taxonomy",
+          "required": true,
+          "termSet": "Communications|Category",
+          "notes": "Includes Safety, Operations, HR, IT, Facilities, Canteen, Main Stores (vocabulary to be approved by Communications). The Safety news views filter on this."
+        }
+      ]
+    },
+    {
+      "listTitle": "Comms Distribution",
+      "listDescription": "One row per port destination for C2 and C3. Edit rights: configuration maintainers only.",
+      "sites": [
+        "HPUK News"
+      ],
+      "fields": [
+        {
+          "internalName": "Port",
+          "displayName": "Port",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Felixstowe",
+            "Harwich",
+            "Thamesport"
+          ],
+          "notes": "Confirmed ports. Must match the Comms Distribution Port values exactly. Never 'All ports': that value lives on posts only."
+        },
+        {
+          "internalName": "EmailGroup",
+          "displayName": "Email group",
+          "type": "Text",
+          "required": false,
+          "notes": "Distribution list or Microsoft 365 group address. Blank: no email for this port."
+        },
+        {
+          "internalName": "TeamId",
+          "displayName": "Team ID",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "ChannelId",
+          "displayName": "Channel ID",
+          "type": "Text",
+          "required": false,
+          "notes": "Team ID and Channel ID both blank: no Teams post for this port."
+        },
+        {
+          "internalName": "Enabled",
+          "displayName": "Enabled",
+          "type": "Boolean",
+          "required": false,
+          "default": true
+        },
+        {
+          "internalName": "BusinessOwner",
+          "displayName": "Business owner",
+          "type": "Person",
+          "required": true
+        }
+      ]
+    },
+    {
+      "listTitle": "Delivery Log",
+      "listDescription": "One row per delivery attempt from C2 and C3. Title is the dispatch key. Edit rights: flow identity and configuration maintainers only; readers: support owner.",
+      "sites": [
+        "HPUK News"
+      ],
+      "fields": [
+        {
+          "internalName": "SourceSite",
+          "displayName": "Source site",
+          "type": "Text",
+          "required": true
+        },
+        {
+          "internalName": "PageId",
+          "displayName": "Page ID",
+          "type": "Number",
+          "required": true
+        },
+        {
+          "internalName": "PublishedVersion",
+          "displayName": "Published version",
+          "type": "Text",
+          "required": false
+        },
+        {
+          "internalName": "NotificationRound",
+          "displayName": "Notification round",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "internalName": "Destination",
+          "displayName": "Destination",
+          "type": "Text",
+          "required": true
+        },
+        {
+          "internalName": "Channel",
+          "displayName": "Channel",
+          "type": "Choice",
+          "required": false,
+          "choices": [
+            "Email",
+            "Teams"
+          ]
+        },
+        {
+          "internalName": "DeliveryStatus",
+          "displayName": "Delivery status",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Sent",
+            "Failed",
+            "Skipped - not an urgent publisher",
+            "Skipped - audience targeted",
+            "Skipped - no destinations"
+          ]
+        },
+        {
+          "internalName": "DeliveredAt",
+          "displayName": "Delivered at",
+          "type": "DateTime",
+          "required": true
+        },
+        {
+          "internalName": "ErrorDetail",
+          "displayName": "Error detail",
+          "type": "Note",
+          "required": false
+        },
+        {
+          "internalName": "FlowRunId",
+          "displayName": "Flow run ID",
+          "type": "Text",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

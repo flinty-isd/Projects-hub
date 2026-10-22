@@ -1,0 +1,136 @@
+# SharePoint News and Notices
+
+The build for **HPUK SharePoint Online News Design v1.2**: two communication
+sites (HPUK News and Other News) aggregated on the intranet home, with
+expiry, a weekly port roundup and urgent notices automated in Power Automate.
+It uses standard modern pages only, with no SPFx.
+
+| Part | What it is |
+|------|-----------|
+| [`sharepoint/list-schema.json`](sharepoint/list-schema.json) | Every list and column on both sites. The single source for provisioning and flow validation |
+| [`provisioning/Provision-NewsSites.ps1`](provisioning/Provision-NewsSites.ps1) | PnP script that applies the schema, views, permissions, HR page approval and the Publisher Guide page to both sites |
+| [`provisioning/Set-NewsRetention.ps1`](provisioning/Set-NewsRetention.ps1) | Purview retention policy: 7 years on both sites |
+| [`pages/Publisher-Guide.html`](pages/Publisher-Guide.html) | Content of Publisher-Guide.aspx on HPUK News |
+| [`powerautomate/flows/`](powerautomate/flows) | C1 expiry, C2 weekly port roundup, C3a/C3b urgent notice (one per site) |
+| [`solution-config.json`](solution-config.json) | Solution package settings: environment variables and connection references |
+
+## Design decisions
+
+The design leaves several points open. Most of them change how the build
+works, so the build takes a position on each. Each one is easy to reverse
+if Communications or IT decide otherwise.
+
+| # | Design v1.2 says | The build does | Why |
+|---|------------------|----------------|-----|
+| 1 | Port blank means all ports | **Port is required**, with an explicit *All ports* choice | A forgotten Port on an urgent notice would otherwise email every port |
+| 2 | A Managers-targeted post must not be emailed to a whole port; either route or exclude it | **Audience-targeted posts are excluded** from the roundup and from urgent broadcasts. C3 logs *Skipped - audience targeted* and tells Communications | Audience targeting is personalisation, not a distribution list. Port routing can't express "managers at Felixstowe" |
+| 3 | Dispatch key uses an "agreed publication event" | Key = `urgent\|site\|page ID\|r<NotificationRound>\|port\|channel`. **NotificationRound** is a page column (default 1) | Edits never resend. Communications sends a correction by raising the round and resetting UrgentSent |
+| 4 | Don't assume a metadata update leaves the published page unchanged | C1 and C3 update Status and UrgentSent with **ValidateUpdateListItem** (`bNewDocumentUpdate`): no new version, no draft | A normal update leaves a published news page with a pending draft |
+| 5 | UrgentSent is not the sole duplicate control | The trigger runs only for **major versions** (`x.0`) with UrgentSent = No, one at a time. Each port and channel is checked against the **Delivery Log** before sending | Retries send only the failures. Setting UrgentSent cannot re-trigger the flow |
+| 6 | Expiry boundary to confirm | **ExpiryDate is the last current day.** C1 runs 06:00 UK time and expires dates before today (UK date, so BST is handled) | Matches the design's proposed rule |
+| 7 | Frontline route for generic accounts | **Out of this build.** PID v3.1 prohibits shared and generic accounts in SharePoint. Its approved routes are the Employee App (view-only staff) and display-mode pages (screens) | Avoids a design that breaks the access model |
+| 8 | Everyone except external users as Visitors, to confirm | **A scoped reader group** is required by the script, and EEEU is never used | The tenant is shared with a peer company |
+| 9 | Compare the built-in news digest with C2 | C2 is built, with **InRoundup** and per-port routing that the built-in digest can't do | Pilot both. If the built-in digest is good enough, turn C2 off |
+| 10 | Classification and governance of the sites | Request both sites through the **governance Site Requests list** (flow 03), Sensitivity *General*, with named primary and secondary owners | Puts the sites in the Site Register, so they get 90-day access reviews |
+
+### Business decisions (confirmed 22 October 2026)
+
+| Decision | Confirmed | Where it's applied |
+|----------|-----------|--------------------|
+| Ports | **Felixstowe, Harwich, Thamesport** (plus *All ports* on posts) | `list-schema.json`: Port choices on posts and Comms Distribution |
+| Who can send urgent notices | **Chloe, Rachel and Toby** | `UrgentPublisherEmails` environment variable. C3 sends only when the post's author or last editor is on the list; anything else is logged as *Skipped - not an urgent publisher* and Communications is told |
+| Page approval | **On for both sites; HR approves** | The provisioning script turns on content approval for Site Pages and gives the HR group an *Approve pages* level. Unapproved pages are never sent: C3 requires *Approved*, and C2 reads approved pages only |
+| Retention | **7 years** from creation, on both sites | `provisioning/Set-NewsRetention.ps1`: a Purview retention policy. Nothing is deleted automatically at the end unless the records owner asks for `-DeleteAfterRetention` |
+| Support owner | **Nigel Bell** | `SupportOwnerEmail` environment variable: receives all flow failure alerts |
+
+Still open: the Department and Category terms (Communications approves the
+vocabulary; IT creates the term sets).
+
+## How it works
+
+```mermaid
+flowchart LR
+  P([Publisher publishes a post]) --> SP[("Site Pages<br/>both sites")]
+  SP -- "daily 06:00: ExpiryDate passed" --> C1["C1 Expiry"] -- "Status = Expired" --> SP
+  SP -- "Mondays 07:00: Live, InRoundup, last 7 days" --> C2["C2 Port roundup"]
+  SP -- "approved major version, Urgent, not yet sent,<br/>by an urgent publisher" --> C3["C3 Urgent notice"]
+  CD[("Comms Distribution<br/>port → email group, Teams channel")] --> C2 & C3
+  C2 & C3 -- "check key, then send" --> OUT[/"Email from Comms mailbox<br/>Teams channel post"/]
+  C2 & C3 -- "Sent / Failed / Skipped" --> DL[("Delivery Log")]
+  C3 -- "all sent: UrgentSent = Yes" --> SP
+```
+
+## Deploying
+
+1. **IT foundations.** Request both sites through the governance Site
+   Requests list. Associate both with the intranet hub, and designate HPUK
+   News as an organisation news site. Create these Entra security groups:
+   - HPUK readers (scoped to the HPUK population)
+   - HPUK News publishers
+   - Other News publishers
+   - HR news approvers
+   - news configuration maintainers
+
+   Also create the Department and Category term sets, and a shared mailbox
+   for sending, with Send As for the flow identity.
+2. **Provision.** Run `provisioning/Provision-NewsSites.ps1` with the two site
+   URLs, the group object IDs (including `-HRApproverGroupId`) and the flow
+   identity's UPN. Then have a Purview compliance admin run
+   `provisioning/Set-NewsRetention.ps1` for the 7-year retention.
+3. **Manual site settings.** These have no supported cmdlet:
+   - Site Pages → *Settings → Audience targeting* → **On**, on both sites.
+   - Site Pages → *Automate → Power Automate → Configure page approval flow*,
+     approvers = the HR news approvers group, on both sites. Content approval
+     is already on; this flow emails HR when a page is submitted.
+   - Create the page templates *HPUK News post* and *Other News post*. Use
+     this reading order: summary (in Description), main content, action
+     required and deadline, attachments, business contact.
+   - Home pages: set up the News web parts as listed below.
+4. **Comms Distribution.** Add one row per port, with its email group, Team ID
+   and Channel ID. Set `Enabled` = No until each destination has been tested.
+5. **Import the flows.** Build the package and import it as in
+   [the governance README](../SharePointGovernance/README.md#importing):
+   ```
+   python solutions/SharePointGovernance/tools/build_solution.py --root solutions/SharePointNews
+   ```
+   It needs three connections (SharePoint, Office 365 Outlook, Microsoft
+   Teams), signed in as the flow identity, and seven environment variables,
+   including Nigel's address (`SupportOwnerEmail`) and the urgent publishers'
+   addresses, separated by semicolons (`UrgentPublisherEmails`).
+   CI also builds it: download the artifact *SharePointNews-solution*.
+6. Turn on **C1** first, then **C3a/C3b**, then **C2**.
+
+### News web part settings
+
+| Page | Web part | Source | Filter | Layout |
+|------|----------|--------|--------|--------|
+| HPUK News home | News | This site | Page properties: Status = Live | Top story |
+| HPUK News home | News (Safety) | This site | Status = Live **and** Category = Safety | List |
+| Other News home | News | This site | Status = Live | Side-by-side |
+| Intranet home | News (main) | HPUK News | Status = Live; audience targeting on | Top story |
+| Intranet home | News (secondary) | Other News | Status = Live; audience targeting on | List, lower on the page |
+
+If the News web part can't filter on the managed metadata Category in your
+tenant, use a Category view of Site Pages in a Highlighted content web part
+for the Safety section instead.
+
+## Testing
+
+Use test sites, test groups and safe test recipients first: the PoC set-up
+is not the production permission model.
+
+| Test | Pass condition |
+|------|----------------|
+| Expiry | A post with yesterday's ExpiryDate shows Expired after the 06:00 run. A blank date stays Live. The page version doesn't change and no draft appears |
+| Urgent, happy path | One email and one Teams post per matching port. Delivery Log has one *Sent* row per port and channel. UrgentSent = Yes |
+| Urgent, edit | Editing and republishing a sent urgent post sends nothing |
+| Urgent, correction | Round + 1 and UrgentSent = No, then republish. Exactly one new alert per destination |
+| Urgent, partial failure | Disable one Teams channel. The other sends succeed, the failure is logged, support is alerted and UrgentSent stays No. Resubmitting the run sends only the failed one |
+| Approval | A submitted page stays hidden from a reader until HR approves it. An urgent post sends nothing until it is approved, then sends once |
+| Unauthorised urgent | An urgent post by a publisher not on the urgent list sends nothing, logs *Skipped - not an urgent publisher* and tells Communications once |
+| Audience-targeted urgent | Nothing is broadcast. A *Skipped - audience targeted* row is logged and Communications is emailed once |
+| All ports | A post tagged *All ports* reaches every enabled row |
+| Roundup | Correct 7-day window and ports. A port with no posts gets nothing. A same-day re-run sends nothing new |
+| Daylight saving | Runs in the week the clocks change still fire at 06:00 and 07:00 UK time |
+| Reader boundary | Someone outside the HPUK reader group can't open pages or attachments |
+| Retention | Deleting a test page leaves a copy in the Preservation Hold library (after the policy has distributed) |

@@ -1,0 +1,50 @@
+{
+  "$comment": "Settings for SharePointGovernance/tools/build_solution.py --root solutions/SharePointNews. Bump 'version' for every release you import.",
+  "uniqueName": "SharePointNews",
+  "displayName": "SharePoint News and Notices",
+  "description": "Expiry, weekly port roundup and urgent notice flows for the HPUK News and Other News sites.",
+  "version": "1.0.0.0",
+  "publisher": {
+    "uniqueName": "HPUKIT",
+    "displayName": "HPUK IT",
+    "prefix": "spg",
+    "optionValuePrefix": 46310
+  },
+  "environmentVariables": {
+    "HPUKNewsSiteUrl": {
+      "displayName": "HPUK News site URL",
+      "description": "Full URL of the HPUK News communication site. Comms Distribution and Delivery Log live here."
+    },
+    "OtherNewsSiteUrl": {
+      "displayName": "Other News site URL",
+      "description": "Full URL of the Other News communication site."
+    },
+    "CommsSenderMailbox": {
+      "displayName": "Communications sender mailbox",
+      "description": "Shared mailbox the roundup and urgent emails are sent from. The flow identity needs Send As on it."
+    },
+    "CommsTeamEmail": {
+      "displayName": "Communications team email",
+      "description": "Where notices about skipped urgent alerts (audience-targeted, no destination) and delivery failures go."
+    },
+    "SupportOwnerEmail": {
+      "displayName": "News support owner email",
+      "description": "Operational support owner for the news flows (Nigel Bell): receives failure alerts."
+    },
+    "UrgentPublisherEmails": {
+      "displayName": "Urgent publisher emails",
+      "description": "Semicolon-separated addresses of the people allowed to send urgent notices (Chloe, Rachel and Toby). Urgent posts by anyone else are not sent."
+    },
+    "RoundupWindowDays": {
+      "displayName": "Roundup window (days)",
+      "description": "How many days back the Monday roundup looks for newly published posts.",
+      "default": 7
+    }
+  },
+  "connectionReferenceTag": "news",
+  "connectionReferences": {
+    "shared_sharepointonline": "SharePoint (news)",
+    "shared_office365": "Office 365 Outlook (news)",
+    "shared_teams": "Microsoft Teams (news)"
+  }
+}
