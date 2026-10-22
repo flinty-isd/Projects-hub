@@ -28,7 +28,8 @@ SharePointGovernance/
 ├── sharepoint/            list-schema.json: the 8 governance lists the flows use
 ├── runbooks/              Set-SiteGovernanceBaseline.ps1 (Azure Automation, called by flow 03)
 ├── diagrams/              Mermaid process diagrams
-└── tools/                 validate_flows.py: static checks run in CI
+├── solution-config.json   solution name, version, publisher, environment variables
+└── tools/                 validate_flows.py (static checks) and build_solution.py (packager)
 ```
 
 ## Roles
@@ -57,10 +58,11 @@ one person's address: approvals still reach someone during absences.
    file shares still outstanding after migration into *InfoPath Register* and
    *File Share Register*. Each loaded item triggers flow 04 or 05, so load in
    batches the owners can handle.
-2. **Connections**: create connection references for SharePoint, Office 365
-   Outlook, Approvals, **HTTP with Microsoft Entra ID** (resource
-   `https://graph.microsoft.com`) and Azure Automation, each owned by a
-   service principal or a dedicated licensed flow-owner account. This is
+2. **Connections**: in the target environment create a connection for
+   SharePoint, Office 365 Outlook, Approvals, **HTTP with Microsoft Entra
+   ID** (base resource and Azure AD resource URI both
+   `https://graph.microsoft.com`) and Azure Automation, each signed in as a
+   dedicated licensed flow-owner account. This is
    the one place a non-personal identity is used, and it never gets
    SharePoint content access.
 3. **Graph permissions** for the HTTP with Entra ID connection:
@@ -72,14 +74,52 @@ one person's address: approvals still reach someone during absences.
    certificate `PnPAppCertificate` for the PnP Enterprise App (DEP005). The
    app needs `Sites.FullControl.All` (SharePoint) and
    `InformationProtectionPolicy.Read.All` (Graph).
-5. **Import the flows** into a solution and set the environment variables
-   (`GovernanceSiteUrl`, `TenantRootUrl`, the role mailboxes above, and the
-   Automation account IDs).
+5. **Import the solution** (see [Importing](#importing) below) and fill in
+   the environment variables when prompted.
 6. Turn the flows on in this order: 03 and 06 (sites), then 01 and 02
    (access), then 04 and 05.
 7. **Ownership**: hand the flows and their connections to the SharePoint
    service owner's team in the BAU support model (runbook / KB), so they
    don't depend on a project account.
+
+## Importing
+
+The flows are imported as one unmanaged Power Platform solution.
+
+**Get the package.** Either download it from GitHub (Actions → *Governance
+flows* → latest run on `main` → artifact *SharePointGovernance-solution*), or
+build it locally:
+
+```
+python solutions/SharePointGovernance/tools/build_solution.py
+```
+
+This writes `solutions/SharePointGovernance/dist/SharePointGovernance_<version>.zip`.
+
+**Import it.**
+
+1. Go to [make.powerautomate.com](https://make.powerautomate.com) and pick
+   the BAU environment (top right). Use a dev or test environment first.
+2. **Solutions → Import solution → Browse**, choose the .zip, **Next**.
+3. **Connections**: for each of the five connection references, pick the
+   connection you created in step 2 of Deploying.
+4. **Environment variables**: fill in all of them. These are the governance
+   site URL, the tenant root URL, the four role mailboxes, the three
+   Automation account values, and the review interval (90 days by default).
+5. **Import**. It takes a minute or two.
+6. Open the solution and turn each flow on (they import switched off), in
+   the order given in Deploying step 6. A flow that won't turn on shows the
+   connection or setting it's missing.
+
+**Updating.** Change the flows, bump `version` in `solution-config.json`,
+rebuild and import again. The flow IDs are fixed, so the import upgrades the
+existing flows instead of adding copies. Your connection and environment
+variable values are kept.
+
+**Not yet tried against a real tenant.** The package follows the standard
+solution format, but it hasn't been imported anywhere yet. If the import
+reports a specific error, the fix belongs in `tools/build_solution.py`, so
+every future build includes it.
 
 ## Behaviour worth knowing
 
