@@ -5,14 +5,25 @@ duplicate action names, dangling runAfter / body() / outputs() references,
 undeclared parameters or variables, and SharePoint columns that the flows
 read or write but sharepoint/list-schema.json does not define.
 
-Usage: python solutions/SharePointGovernance/tools/validate_flows.py
+Usage: python solutions/SharePointGovernance/tools/validate_flows.py [--root SOLUTION_DIR]
+
+--root points the checks at another solution folder laid out the same way
+(powerautomate/flows/, sharepoint/list-schema.json); the default is
+SharePointGovernance.
 """
 import json
 import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+
+def _root():
+    if "--root" in sys.argv:
+        return Path(sys.argv[sys.argv.index("--root") + 1]).resolve()
+    return Path(__file__).resolve().parent.parent
+
+
+ROOT = _root()
 FLOWS = sorted((ROOT / "powerautomate" / "flows").glob("*.json"))
 SCHEMA = json.loads((ROOT / "sharepoint" / "list-schema.json").read_text())
 
@@ -29,13 +40,15 @@ ITEM_FIELD = re.compile(r"\bitems\('([^']+)'\)\?\['([^']+)'\]")
 def list_columns():
     cols = {}
     for lst in SCHEMA["lists"]:
-        cols[lst["listTitle"]] = BUILTIN | {f["internalName"] for f in lst["fields"]}
+        # builtinColumns: platform columns a list has without declaring them (e.g. Site Pages' PromotedState).
+        cols[lst["listTitle"]] = (BUILTIN | set(lst.get("builtinColumns", []))
+                                  | {f["internalName"] for f in lst["fields"]})
     return cols
 
 
 def choice_values():
     return {(lst["listTitle"], f["internalName"]): set(f["choices"])
-            for lst in SCHEMA["lists"] for f in lst["fields"] if f["type"] == "Choice"}
+            for lst in SCHEMA["lists"] for f in lst["fields"] if f["type"] in ("Choice", "MultiChoice")}
 
 
 CHOICES = choice_values()

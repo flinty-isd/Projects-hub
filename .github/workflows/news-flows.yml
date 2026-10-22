@@ -1,0 +1,31 @@
+name: News flows
+
+on:
+  pull_request:
+    paths:
+      - "solutions/SharePointNews/**"
+      - "solutions/SharePointGovernance/tools/**"
+  push:
+    branches: [main]
+    paths:
+      - "solutions/SharePointNews/**"
+      - "solutions/SharePointGovernance/tools/**"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate flow definitions against the list schema
+        run: python solutions/SharePointGovernance/tools/validate_flows.py --root solutions/SharePointNews
+      - name: Build the importable solution package
+        run: python solutions/SharePointGovernance/tools/build_solution.py --root solutions/SharePointNews --out dist
+      - name: Upload solution package
+        uses: actions/upload-artifact@v4
+        with:
+          name: SharePointNews-solution
+          path: dist/*.zip

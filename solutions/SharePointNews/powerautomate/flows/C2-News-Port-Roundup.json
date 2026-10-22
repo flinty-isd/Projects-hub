@@ -1,0 +1,595 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "C2 Weekly port news roundup",
+  "description": "Runs Mondays at 07:00 UK time. Collects published, Live posts from HPUK News and Other News first published in the last RoundupWindowDays days with InRoundup set, leaves out audience-targeted posts, and sends each enabled Comms Distribution port a digest of the posts tagged for that port or All ports, by email from the Communications mailbox and to its Teams channel. Ports with no posts get nothing. Each port and channel is sent at most once a week, recorded in the Delivery Log, so a re-run only retries failures.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    },
+    "shared_teams": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "HPUKNewsSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{hpuk-news}"
+    },
+    "OtherNewsSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{other-news}"
+    },
+    "CommsSenderMailbox": {
+      "type": "String",
+      "defaultValue": "{communications-shared-mailbox}@{domain}"
+    },
+    "CommsTeamEmail": {
+      "type": "String",
+      "defaultValue": "{communications-team}@{domain}"
+    },
+    "SupportOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{news-support-owner}@{domain}"
+    },
+    "RoundupWindowDays": {
+      "type": "Int",
+      "defaultValue": 7
+    }
+  },
+  "triggers": {
+    "Weekly_Monday_0700_UK": {
+      "type": "Recurrence",
+      "recurrence": {
+        "frequency": "Week",
+        "interval": 1,
+        "timeZone": "GMT Standard Time",
+        "schedule": {
+          "hours": [
+            7
+          ],
+          "minutes": [
+            0
+          ],
+          "weekDays": [
+            "Monday"
+          ]
+        }
+      }
+    }
+  },
+  "actions": {
+    "Initialize_Failures": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "Failures",
+            "type": "array",
+            "value": []
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Window_start": {
+      "type": "Compose",
+      "inputs": "@addDays(utcNow(), mul(-1, parameters('RoundupWindowDays')), 'yyyy-MM-ddTHH:mm:ssZ')",
+      "runAfter": {
+        "Initialize_Failures": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Week_key": {
+      "type": "Compose",
+      "inputs": "@convertTimeZone(utcNow(), 'UTC', 'GMT Standard Time', 'yyyy-MM-dd')",
+      "runAfter": {
+        "Window_start": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Get_HPUK_posts": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('HPUKNewsSiteUrl')",
+          "table": "Site Pages",
+          "$filter": "@{concat('PromotedState eq 2 and Status eq ''Live'' and InRoundup eq 1 and FirstPublishedDate ge ''', outputs('Window_start'), '''')}"
+        }
+      },
+      "runAfter": {
+        "Week_key": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Get_Other_posts": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('OtherNewsSiteUrl')",
+          "table": "Site Pages",
+          "$filter": "@{concat('PromotedState eq 2 and Status eq ''Live'' and InRoundup eq 1 and FirstPublishedDate ge ''', outputs('Window_start'), '''')}"
+        }
+      },
+      "runAfter": {
+        "Get_HPUK_posts": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Select_HPUK_posts": {
+      "type": "Select",
+      "inputs": {
+        "from": "@outputs('Get_HPUK_posts')?['body/value']",
+        "select": {
+          "Site": "HPUK News",
+          "Title": "@item()?['Title']",
+          "Link": "@item()?['{Link}']",
+          "Summary": "@coalesce(item()?['Description'], '')",
+          "Category": "@coalesce(item()?['Category']?['Label'], '')",
+          "Port": "@item()?['Port']",
+          "Audience": "@item()?['_ModernAudienceTargetUserField']"
+        }
+      },
+      "runAfter": {
+        "Get_Other_posts": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Select_Other_posts": {
+      "type": "Select",
+      "inputs": {
+        "from": "@outputs('Get_Other_posts')?['body/value']",
+        "select": {
+          "Site": "Other News",
+          "Title": "@item()?['Title']",
+          "Link": "@item()?['{Link}']",
+          "Summary": "@coalesce(item()?['Description'], '')",
+          "Category": "@coalesce(item()?['Category']?['Label'], '')",
+          "Port": "@item()?['Port']",
+          "Audience": "@item()?['_ModernAudienceTargetUserField']"
+        }
+      },
+      "runAfter": {
+        "Select_HPUK_posts": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Broadcast_posts": {
+      "type": "Query",
+      "inputs": {
+        "from": "@union(body('Select_HPUK_posts'), body('Select_Other_posts'))",
+        "where": "@equals(length(coalesce(item()?['Audience'], json('[]'))), 0)"
+      },
+      "runAfter": {
+        "Select_Other_posts": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Get_destinations": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('HPUKNewsSiteUrl')",
+          "table": "Comms Distribution",
+          "$filter": "Enabled eq 1"
+        }
+      },
+      "runAfter": {
+        "Broadcast_posts": [
+          "Succeeded"
+        ]
+      }
+    },
+    "For_each_destination": {
+      "type": "Foreach",
+      "foreach": "@outputs('Get_destinations')?['body/value']",
+      "actions": {
+        "Posts_for_port": {
+          "type": "Query",
+          "inputs": {
+            "from": "@body('Broadcast_posts')",
+            "where": "@or(contains(string(item()?['Port']), '\"All ports\"'), contains(string(item()?['Port']), concat('\"', items('For_each_destination')?['Port']?['Value'], '\"')))"
+          },
+          "runAfter": {}
+        },
+        "Condition_has_posts": {
+          "type": "If",
+          "expression": {
+            "greater": [
+              "@length(body('Posts_for_port'))",
+              0
+            ]
+          },
+          "actions": {
+            "Digest_lines": {
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Posts_for_port')",
+                "select": "@concat('<li><a href=\"', item()?['Link'], '\">', item()?['Title'], '</a> (', item()?['Site'], if(empty(item()?['Category']), '', concat(', ', item()?['Category'])), ')', if(empty(item()?['Summary']), '', concat('<br>', item()?['Summary'])), '</li>')"
+              },
+              "runAfter": {}
+            },
+            "Condition_email_destination": {
+              "type": "If",
+              "expression": {
+                "not": {
+                  "equals": [
+                    "@coalesce(items('For_each_destination')?['EmailGroup'], '')",
+                    ""
+                  ]
+                }
+              },
+              "actions": {
+                "Email_Check_log": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "GetItems",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('HPUKNewsSiteUrl')",
+                      "table": "Delivery Log",
+                      "$filter": "@{concat('Title eq ''', concat(concat('roundup|', outputs('Week_key'), '|', items('For_each_destination')?['Port']?['Value']), '|Email'), ''' and DeliveryStatus eq ''Sent''')}",
+                      "$top": 1
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Email_Condition_not_sent": {
+                  "type": "If",
+                  "expression": {
+                    "equals": [
+                      "@length(outputs('Email_Check_log')?['body/value'])",
+                      0
+                    ]
+                  },
+                  "actions": {
+                    "Email_Send": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365",
+                          "operationId": "SharedMailboxSendEmailV2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
+                          "emailMessage/To": "@items('For_each_destination')?['EmailGroup']",
+                          "emailMessage/Subject": "@{concat('Weekly news roundup: ', items('For_each_destination')?['Port']?['Value'])}",
+                          "emailMessage/Body": "<p>News from the last @{parameters('RoundupWindowDays')} days for <b>@{items('For_each_destination')?['Port']?['Value']}</b>:</p><ul>@{join(body('Digest_lines'), '')}</ul><p>Read all current news on the intranet.</p>",
+                          "emailMessage/Importance": "Normal"
+                        }
+                      },
+                      "runAfter": {}
+                    },
+                    "Email_Log_sent": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PostItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('HPUKNewsSiteUrl')",
+                          "table": "Delivery Log",
+                          "item/Title": "@{concat(concat('roundup|', outputs('Week_key'), '|', items('For_each_destination')?['Port']?['Value']), '|Email')}",
+                          "item/SourceSite": "Roundup",
+                          "item/PageId": 0,
+                          "item/PublishedVersion": "@outputs('Week_key')",
+                          "item/NotificationRound": 0,
+                          "item/Destination": "@items('For_each_destination')?['EmailGroup']",
+                          "item/Channel/Value": "Email",
+                          "item/DeliveryStatus/Value": "Sent",
+                          "item/DeliveredAt": "@utcNow()",
+                          "item/FlowRunId": "@{workflow()?['run']?['name']}"
+                        }
+                      },
+                      "runAfter": {
+                        "Email_Send": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Email_Log_failed": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PostItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('HPUKNewsSiteUrl')",
+                          "table": "Delivery Log",
+                          "item/Title": "@{concat(concat('roundup|', outputs('Week_key'), '|', items('For_each_destination')?['Port']?['Value']), '|Email')}",
+                          "item/SourceSite": "Roundup",
+                          "item/PageId": 0,
+                          "item/PublishedVersion": "@outputs('Week_key')",
+                          "item/NotificationRound": 0,
+                          "item/Destination": "@items('For_each_destination')?['EmailGroup']",
+                          "item/Channel/Value": "Email",
+                          "item/DeliveryStatus/Value": "Failed",
+                          "item/DeliveredAt": "@utcNow()",
+                          "item/ErrorDetail": "@{string(actions('Email_Send')?['outputs']?['body'])}",
+                          "item/FlowRunId": "@{workflow()?['run']?['name']}"
+                        }
+                      },
+                      "runAfter": {
+                        "Email_Send": [
+                          "Failed",
+                          "TimedOut"
+                        ]
+                      }
+                    },
+                    "Email_Record_failure": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "Failures",
+                        "value": "@{concat(concat(concat('roundup|', outputs('Week_key'), '|', items('For_each_destination')?['Port']?['Value']), '|Email'), ': ', string(actions('Email_Send')?['outputs']?['statusCode']))}"
+                      },
+                      "runAfter": {
+                        "Email_Log_failed": [
+                          "Succeeded",
+                          "Failed"
+                        ]
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Email_Check_log": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "runAfter": {
+                "Digest_lines": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Condition_teams_destination": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "not": {
+                      "equals": [
+                        "@coalesce(items('For_each_destination')?['TeamId'], '')",
+                        ""
+                      ]
+                    }
+                  },
+                  {
+                    "not": {
+                      "equals": [
+                        "@coalesce(items('For_each_destination')?['ChannelId'], '')",
+                        ""
+                      ]
+                    }
+                  }
+                ]
+              },
+              "actions": {
+                "Teams_Check_log": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "GetItems",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('HPUKNewsSiteUrl')",
+                      "table": "Delivery Log",
+                      "$filter": "@{concat('Title eq ''', concat(concat('roundup|', outputs('Week_key'), '|', items('For_each_destination')?['Port']?['Value']), '|Teams'), ''' and DeliveryStatus eq ''Sent''')}",
+                      "$top": 1
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Teams_Condition_not_sent": {
+                  "type": "If",
+                  "expression": {
+                    "equals": [
+                      "@length(outputs('Teams_Check_log')?['body/value'])",
+                      0
+                    ]
+                  },
+                  "actions": {
+                    "Teams_Send": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_teams",
+                          "operationId": "PostMessageToConversation",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+                        },
+                        "parameters": {
+                          "poster": "Flow bot",
+                          "location": "Channel",
+                          "body/recipient/groupId": "@items('For_each_destination')?['TeamId']",
+                          "body/recipient/channelId": "@items('For_each_destination')?['ChannelId']",
+                          "body/messageBody": "<p>News from the last @{parameters('RoundupWindowDays')} days for <b>@{items('For_each_destination')?['Port']?['Value']}</b>:</p><ul>@{join(body('Digest_lines'), '')}</ul><p>Read all current news on the intranet.</p>"
+                        }
+                      },
+                      "runAfter": {}
+                    },
+                    "Teams_Log_sent": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PostItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('HPUKNewsSiteUrl')",
+                          "table": "Delivery Log",
+                          "item/Title": "@{concat(concat('roundup|', outputs('Week_key'), '|', items('For_each_destination')?['Port']?['Value']), '|Teams')}",
+                          "item/SourceSite": "Roundup",
+                          "item/PageId": 0,
+                          "item/PublishedVersion": "@outputs('Week_key')",
+                          "item/NotificationRound": 0,
+                          "item/Destination": "@{concat(items('For_each_destination')?['TeamId'], '/', items('For_each_destination')?['ChannelId'])}",
+                          "item/Channel/Value": "Teams",
+                          "item/DeliveryStatus/Value": "Sent",
+                          "item/DeliveredAt": "@utcNow()",
+                          "item/FlowRunId": "@{workflow()?['run']?['name']}"
+                        }
+                      },
+                      "runAfter": {
+                        "Teams_Send": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Teams_Log_failed": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PostItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('HPUKNewsSiteUrl')",
+                          "table": "Delivery Log",
+                          "item/Title": "@{concat(concat('roundup|', outputs('Week_key'), '|', items('For_each_destination')?['Port']?['Value']), '|Teams')}",
+                          "item/SourceSite": "Roundup",
+                          "item/PageId": 0,
+                          "item/PublishedVersion": "@outputs('Week_key')",
+                          "item/NotificationRound": 0,
+                          "item/Destination": "@{concat(items('For_each_destination')?['TeamId'], '/', items('For_each_destination')?['ChannelId'])}",
+                          "item/Channel/Value": "Teams",
+                          "item/DeliveryStatus/Value": "Failed",
+                          "item/DeliveredAt": "@utcNow()",
+                          "item/ErrorDetail": "@{string(actions('Teams_Send')?['outputs']?['body'])}",
+                          "item/FlowRunId": "@{workflow()?['run']?['name']}"
+                        }
+                      },
+                      "runAfter": {
+                        "Teams_Send": [
+                          "Failed",
+                          "TimedOut"
+                        ]
+                      }
+                    },
+                    "Teams_Record_failure": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "Failures",
+                        "value": "@{concat(concat(concat('roundup|', outputs('Week_key'), '|', items('For_each_destination')?['Port']?['Value']), '|Teams'), ': ', string(actions('Teams_Send')?['outputs']?['statusCode']))}"
+                      },
+                      "runAfter": {
+                        "Teams_Log_failed": [
+                          "Succeeded",
+                          "Failed"
+                        ]
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Teams_Check_log": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "runAfter": {
+                "Condition_email_destination": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "Posts_for_port": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runtimeConfiguration": {
+        "concurrency": {
+          "repetitions": 1
+        }
+      },
+      "runAfter": {
+        "Get_destinations": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Condition_any_failures": {
+      "type": "If",
+      "expression": {
+        "greater": [
+          "@length(variables('Failures'))",
+          0
+        ]
+      },
+      "actions": {
+        "Alert_support": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@parameters('SupportOwnerEmail')",
+              "emailMessage/Subject": "News roundup: some deliveries failed",
+              "emailMessage/Body": "<p>These roundup deliveries failed and are logged as Failed in the Delivery Log:</p><p>@{join(variables('Failures'), '<br>')}</p><p>Re-run the flow from its run history; destinations already sent this week are skipped.</p>",
+              "emailMessage/Importance": "Normal"
+            }
+          },
+          "runAfter": {}
+        }
+      },
+      "runAfter": {
+        "For_each_destination": [
+          "Succeeded",
+          "Failed"
+        ]
+      }
+    }
+  }
+}

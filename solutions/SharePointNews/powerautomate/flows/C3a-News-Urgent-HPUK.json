@@ -1,0 +1,728 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "C3a Urgent notice - HPUK News",
+  "description": "Triggers when an urgent news post on HPUK News is published (a major version, Status Live, Urgent Yes, UrgentSent No). Audience-targeted posts are never broadcast to whole ports: Communications is told instead. Otherwise it sends the notice once per matching Comms Distribution port and channel (email from the Communications mailbox, Teams channel post), keyed by site, page, NotificationRound, port and channel in the Delivery Log, so edits and re-runs never resend. UrgentSent is set only when every delivery succeeds, without creating a new page version. To send again, Communications sets UrgentSent back to No and raises NotificationRound by one.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    },
+    "shared_teams": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "HPUKNewsSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{hpuk-news}"
+    },
+    "OtherNewsSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{other-news}"
+    },
+    "CommsSenderMailbox": {
+      "type": "String",
+      "defaultValue": "{communications-shared-mailbox}@{domain}"
+    },
+    "CommsTeamEmail": {
+      "type": "String",
+      "defaultValue": "{communications-team}@{domain}"
+    },
+    "SupportOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{news-support-owner}@{domain}"
+    }
+  },
+  "triggers": {
+    "When_a_news_page_is_published": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnUpdatedFileItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('HPUKNewsSiteUrl')",
+          "table": "Site Pages"
+        }
+      },
+      "recurrence": {
+        "frequency": "Minute",
+        "interval": 1
+      },
+      "splitOn": "@triggerOutputs()?['body/value']",
+      "runtimeConfiguration": {
+        "concurrency": {
+          "runs": 1
+        }
+      },
+      "conditions": [
+        {
+          "expression": "@and(equals(triggerBody()?['PromotedState'], 2), equals(triggerBody()?['Urgent'], true), not(equals(triggerBody()?['UrgentSent'], true)), equals(triggerBody()?['Status']?['Value'], 'Live'), endsWith(string(triggerBody()?['{VersionNumber}']), '.0'))"
+        }
+      ]
+    }
+  },
+  "actions": {
+    "Initialize_Failures": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "Failures",
+            "type": "array",
+            "value": []
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Notification_round": {
+      "type": "Compose",
+      "inputs": "@coalesce(triggerBody()?['NotificationRound'], 1)",
+      "runAfter": {
+        "Initialize_Failures": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Dispatch_prefix": {
+      "type": "Compose",
+      "inputs": "@concat('urgent|HPUK News|', string(triggerBody()?['ID']), '|r', string(outputs('Notification_round')))",
+      "runAfter": {
+        "Notification_round": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Condition_audience_targeted": {
+      "type": "If",
+      "expression": {
+        "greater": [
+          "@length(coalesce(triggerBody()?['_ModernAudienceTargetUserField'], json('[]')))",
+          0
+        ]
+      },
+      "actions": {
+        "Audience_Check_log": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('HPUKNewsSiteUrl')",
+              "table": "Delivery Log",
+              "$filter": "@{concat('Title eq ''', outputs('Dispatch_prefix'), '|Skipped - audience targeted''')}",
+              "$top": 1
+            }
+          },
+          "runAfter": {}
+        },
+        "Audience_Condition_first_time": {
+          "type": "If",
+          "expression": {
+            "equals": [
+              "@length(outputs('Audience_Check_log')?['body/value'])",
+              0
+            ]
+          },
+          "actions": {
+            "Audience_Log": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PostItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('HPUKNewsSiteUrl')",
+                  "table": "Delivery Log",
+                  "item/Title": "@{concat(outputs('Dispatch_prefix'), '|Skipped - audience targeted')}",
+                  "item/SourceSite": "HPUK News",
+                  "item/PageId": "@triggerBody()?['ID']",
+                  "item/PublishedVersion": "@triggerBody()?['{VersionNumber}']",
+                  "item/NotificationRound": "@outputs('Notification_round')",
+                  "item/Destination": "(none)",
+                  "item/DeliveryStatus/Value": "Skipped - audience targeted",
+                  "item/DeliveredAt": "@utcNow()",
+                  "item/FlowRunId": "@{workflow()?['run']?['name']}"
+                }
+              },
+              "runAfter": {}
+            },
+            "Audience_Tell_Comms": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@parameters('CommsTeamEmail')",
+                  "emailMessage/Subject": "Urgent notice not broadcast: audience-targeted",
+                  "emailMessage/Body": "<p><a href=\"@{triggerBody()?['{Link}']}\">@{triggerBody()?['Title']}</a> (HPUK News)</p><p>This urgent notice is targeted to an audience, so it was not sent to whole ports. Send it to the intended group directly, or remove the audience and set NotificationRound up by one to broadcast it.</p>",
+                  "emailMessage/Importance": "Normal"
+                }
+              },
+              "runAfter": {
+                "Audience_Log": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "Audience_Check_log": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Audience_Stop": {
+          "type": "Terminate",
+          "inputs": {
+            "runStatus": "Succeeded"
+          },
+          "runAfter": {
+            "Audience_Condition_first_time": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Dispatch_prefix": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Get_destinations": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('HPUKNewsSiteUrl')",
+          "table": "Comms Distribution",
+          "$filter": "Enabled eq 1"
+        }
+      },
+      "runAfter": {
+        "Condition_audience_targeted": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Destinations_for_post": {
+      "type": "Query",
+      "inputs": {
+        "from": "@outputs('Get_destinations')?['body/value']",
+        "where": "@or(contains(string(triggerBody()?['Port']), '\"All ports\"'), contains(string(triggerBody()?['Port']), concat('\"', item()?['Port']?['Value'], '\"')))"
+      },
+      "runAfter": {
+        "Get_destinations": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Condition_no_destinations": {
+      "type": "If",
+      "expression": {
+        "equals": [
+          "@length(body('Destinations_for_post'))",
+          0
+        ]
+      },
+      "actions": {
+        "NoDestination_Check_log": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('HPUKNewsSiteUrl')",
+              "table": "Delivery Log",
+              "$filter": "@{concat('Title eq ''', outputs('Dispatch_prefix'), '|Skipped - no destinations''')}",
+              "$top": 1
+            }
+          },
+          "runAfter": {}
+        },
+        "NoDestination_Condition_first_time": {
+          "type": "If",
+          "expression": {
+            "equals": [
+              "@length(outputs('NoDestination_Check_log')?['body/value'])",
+              0
+            ]
+          },
+          "actions": {
+            "NoDestination_Log": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PostItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('HPUKNewsSiteUrl')",
+                  "table": "Delivery Log",
+                  "item/Title": "@{concat(outputs('Dispatch_prefix'), '|Skipped - no destinations')}",
+                  "item/SourceSite": "HPUK News",
+                  "item/PageId": "@triggerBody()?['ID']",
+                  "item/PublishedVersion": "@triggerBody()?['{VersionNumber}']",
+                  "item/NotificationRound": "@outputs('Notification_round')",
+                  "item/Destination": "(none)",
+                  "item/DeliveryStatus/Value": "Skipped - no destinations",
+                  "item/DeliveredAt": "@utcNow()",
+                  "item/FlowRunId": "@{workflow()?['run']?['name']}"
+                }
+              },
+              "runAfter": {}
+            },
+            "NoDestination_Tell_Comms": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@parameters('CommsTeamEmail')",
+                  "emailMessage/Subject": "Urgent notice not sent: no enabled destination",
+                  "emailMessage/Body": "<p><a href=\"@{triggerBody()?['{Link}']}\">@{triggerBody()?['Title']}</a> (HPUK News)</p><p>No enabled Comms Distribution row matches this notice's Port. Check the Port value on the post and the Enabled rows in Comms Distribution.</p>",
+                  "emailMessage/Importance": "Normal"
+                }
+              },
+              "runAfter": {
+                "NoDestination_Log": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "NoDestination_Check_log": [
+              "Succeeded"
+            ]
+          }
+        },
+        "NoDestination_Stop": {
+          "type": "Terminate",
+          "inputs": {
+            "runStatus": "Succeeded"
+          },
+          "runAfter": {
+            "NoDestination_Condition_first_time": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Destinations_for_post": [
+          "Succeeded"
+        ]
+      }
+    },
+    "For_each_destination": {
+      "type": "Foreach",
+      "foreach": "@body('Destinations_for_post')",
+      "actions": {
+        "Condition_email_destination": {
+          "type": "If",
+          "expression": {
+            "not": {
+              "equals": [
+                "@coalesce(items('For_each_destination')?['EmailGroup'], '')",
+                ""
+              ]
+            }
+          },
+          "actions": {
+            "Email_Check_log": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetItems",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('HPUKNewsSiteUrl')",
+                  "table": "Delivery Log",
+                  "$filter": "@{concat('Title eq ''', concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '|Email'), ''' and DeliveryStatus eq ''Sent''')}",
+                  "$top": 1
+                }
+              },
+              "runAfter": {}
+            },
+            "Email_Condition_not_sent": {
+              "type": "If",
+              "expression": {
+                "equals": [
+                  "@length(outputs('Email_Check_log')?['body/value'])",
+                  0
+                ]
+              },
+              "actions": {
+                "Email_Send": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SharedMailboxSendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
+                      "emailMessage/To": "@items('For_each_destination')?['EmailGroup']",
+                      "emailMessage/Subject": "@{concat('Urgent: ', triggerBody()?['Title'])}",
+                      "emailMessage/Body": "<p><b>@{triggerBody()?['Title']}</b></p><p>@{coalesce(triggerBody()?['Description'], '')}</p><p><a href=\"@{triggerBody()?['{Link}']}\">Read the full notice</a></p>",
+                      "emailMessage/Importance": "High"
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Email_Log_sent": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "PostItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('HPUKNewsSiteUrl')",
+                      "table": "Delivery Log",
+                      "item/Title": "@{concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '|Email')}",
+                      "item/SourceSite": "HPUK News",
+                      "item/PageId": "@triggerBody()?['ID']",
+                      "item/PublishedVersion": "@triggerBody()?['{VersionNumber}']",
+                      "item/NotificationRound": "@outputs('Notification_round')",
+                      "item/Destination": "@items('For_each_destination')?['EmailGroup']",
+                      "item/Channel/Value": "Email",
+                      "item/DeliveryStatus/Value": "Sent",
+                      "item/DeliveredAt": "@utcNow()",
+                      "item/FlowRunId": "@{workflow()?['run']?['name']}"
+                    }
+                  },
+                  "runAfter": {
+                    "Email_Send": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Email_Log_failed": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "PostItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('HPUKNewsSiteUrl')",
+                      "table": "Delivery Log",
+                      "item/Title": "@{concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '|Email')}",
+                      "item/SourceSite": "HPUK News",
+                      "item/PageId": "@triggerBody()?['ID']",
+                      "item/PublishedVersion": "@triggerBody()?['{VersionNumber}']",
+                      "item/NotificationRound": "@outputs('Notification_round')",
+                      "item/Destination": "@items('For_each_destination')?['EmailGroup']",
+                      "item/Channel/Value": "Email",
+                      "item/DeliveryStatus/Value": "Failed",
+                      "item/DeliveredAt": "@utcNow()",
+                      "item/ErrorDetail": "@{string(actions('Email_Send')?['outputs']?['body'])}",
+                      "item/FlowRunId": "@{workflow()?['run']?['name']}"
+                    }
+                  },
+                  "runAfter": {
+                    "Email_Send": [
+                      "Failed",
+                      "TimedOut"
+                    ]
+                  }
+                },
+                "Email_Record_failure": {
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "Failures",
+                    "value": "@{concat(concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '|Email'), ': ', string(actions('Email_Send')?['outputs']?['statusCode']))}"
+                  },
+                  "runAfter": {
+                    "Email_Log_failed": [
+                      "Succeeded",
+                      "Failed"
+                    ]
+                  }
+                }
+              },
+              "runAfter": {
+                "Email_Check_log": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {}
+        },
+        "Condition_teams_destination": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "not": {
+                  "equals": [
+                    "@coalesce(items('For_each_destination')?['TeamId'], '')",
+                    ""
+                  ]
+                }
+              },
+              {
+                "not": {
+                  "equals": [
+                    "@coalesce(items('For_each_destination')?['ChannelId'], '')",
+                    ""
+                  ]
+                }
+              }
+            ]
+          },
+          "actions": {
+            "Teams_Check_log": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetItems",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('HPUKNewsSiteUrl')",
+                  "table": "Delivery Log",
+                  "$filter": "@{concat('Title eq ''', concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '|Teams'), ''' and DeliveryStatus eq ''Sent''')}",
+                  "$top": 1
+                }
+              },
+              "runAfter": {}
+            },
+            "Teams_Condition_not_sent": {
+              "type": "If",
+              "expression": {
+                "equals": [
+                  "@length(outputs('Teams_Check_log')?['body/value'])",
+                  0
+                ]
+              },
+              "actions": {
+                "Teams_Send": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_teams",
+                      "operationId": "PostMessageToConversation",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+                    },
+                    "parameters": {
+                      "poster": "Flow bot",
+                      "location": "Channel",
+                      "body/recipient/groupId": "@items('For_each_destination')?['TeamId']",
+                      "body/recipient/channelId": "@items('For_each_destination')?['ChannelId']",
+                      "body/messageBody": "<p><b>Urgent</b></p><p><b>@{triggerBody()?['Title']}</b></p><p>@{coalesce(triggerBody()?['Description'], '')}</p><p><a href=\"@{triggerBody()?['{Link}']}\">Read the full notice</a></p>"
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Teams_Log_sent": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "PostItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('HPUKNewsSiteUrl')",
+                      "table": "Delivery Log",
+                      "item/Title": "@{concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '|Teams')}",
+                      "item/SourceSite": "HPUK News",
+                      "item/PageId": "@triggerBody()?['ID']",
+                      "item/PublishedVersion": "@triggerBody()?['{VersionNumber}']",
+                      "item/NotificationRound": "@outputs('Notification_round')",
+                      "item/Destination": "@{concat(items('For_each_destination')?['TeamId'], '/', items('For_each_destination')?['ChannelId'])}",
+                      "item/Channel/Value": "Teams",
+                      "item/DeliveryStatus/Value": "Sent",
+                      "item/DeliveredAt": "@utcNow()",
+                      "item/FlowRunId": "@{workflow()?['run']?['name']}"
+                    }
+                  },
+                  "runAfter": {
+                    "Teams_Send": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Teams_Log_failed": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "PostItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('HPUKNewsSiteUrl')",
+                      "table": "Delivery Log",
+                      "item/Title": "@{concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '|Teams')}",
+                      "item/SourceSite": "HPUK News",
+                      "item/PageId": "@triggerBody()?['ID']",
+                      "item/PublishedVersion": "@triggerBody()?['{VersionNumber}']",
+                      "item/NotificationRound": "@outputs('Notification_round')",
+                      "item/Destination": "@{concat(items('For_each_destination')?['TeamId'], '/', items('For_each_destination')?['ChannelId'])}",
+                      "item/Channel/Value": "Teams",
+                      "item/DeliveryStatus/Value": "Failed",
+                      "item/DeliveredAt": "@utcNow()",
+                      "item/ErrorDetail": "@{string(actions('Teams_Send')?['outputs']?['body'])}",
+                      "item/FlowRunId": "@{workflow()?['run']?['name']}"
+                    }
+                  },
+                  "runAfter": {
+                    "Teams_Send": [
+                      "Failed",
+                      "TimedOut"
+                    ]
+                  }
+                },
+                "Teams_Record_failure": {
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "Failures",
+                    "value": "@{concat(concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '|Teams'), ': ', string(actions('Teams_Send')?['outputs']?['statusCode']))}"
+                  },
+                  "runAfter": {
+                    "Teams_Log_failed": [
+                      "Succeeded",
+                      "Failed"
+                    ]
+                  }
+                }
+              },
+              "runAfter": {
+                "Teams_Check_log": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "Condition_email_destination": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runtimeConfiguration": {
+        "concurrency": {
+          "repetitions": 1
+        }
+      },
+      "runAfter": {
+        "Condition_no_destinations": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Condition_all_sent": {
+      "type": "If",
+      "expression": {
+        "equals": [
+          "@length(variables('Failures'))",
+          0
+        ]
+      },
+      "actions": {
+        "Mark_urgent_sent": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('HPUKNewsSiteUrl')",
+              "parameters/method": "POST",
+              "parameters/uri": "_api/web/lists/GetByTitle('Site Pages')/items(@{triggerBody()?['ID']})/ValidateUpdateListItem",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata",
+                "Content-Type": "application/json;odata=nometadata"
+              },
+              "parameters/body": {
+                "formValues": [
+                  {
+                    "FieldName": "UrgentSent",
+                    "FieldValue": "1"
+                  }
+                ],
+                "bNewDocumentUpdate": true
+              }
+            }
+          },
+          "runAfter": {}
+        }
+      },
+      "else": {
+        "actions": {
+          "Alert_support": {
+            "type": "OpenApiConnection",
+            "inputs": {
+              "host": {
+                "connectionName": "shared_office365",
+                "operationId": "SendEmailV2",
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+              },
+              "parameters": {
+                "emailMessage/To": "@{concat(parameters('SupportOwnerEmail'), ';', parameters('CommsTeamEmail'))}",
+                "emailMessage/Subject": "Urgent notice: some deliveries failed",
+                "emailMessage/Body": "<p><a href=\"@{triggerBody()?['{Link}']}\">@{triggerBody()?['Title']}</a> (HPUK News)</p><p>These deliveries failed and are logged as Failed in the Delivery Log:</p><p>@{join(variables('Failures'), '<br>')}</p><p>UrgentSent has been left at No. Resubmit this run from its run history: destinations already sent are skipped, so only the failures are retried.</p>",
+                "emailMessage/Importance": "Normal"
+              }
+            },
+            "runAfter": {}
+          }
+        }
+      },
+      "runAfter": {
+        "For_each_destination": [
+          "Succeeded",
+          "Failed"
+        ]
+      }
+    }
+  }
+}

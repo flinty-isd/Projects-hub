@@ -15,7 +15,7 @@ the same IDs and a re-import upgrades the existing flows instead of adding
 copies. Bump "version" in solution-config.json for each release.
 
 Usage:
-  python solutions/SharePointGovernance/tools/build_solution.py [--out DIR]
+  python solutions/SharePointGovernance/tools/build_solution.py [--out DIR] [--root SOLUTION_DIR]
 """
 import argparse
 import copy
@@ -27,7 +27,14 @@ import zipfile
 from pathlib import Path
 from xml.sax.saxutils import escape, quoteattr
 
-ROOT = Path(__file__).resolve().parent.parent
+def _root():
+    """--root SOLUTION_DIR packages another solution folder laid out the same way."""
+    if "--root" in sys.argv:
+        return Path(sys.argv[sys.argv.index("--root") + 1]).resolve()
+    return Path(__file__).resolve().parent.parent
+
+
+ROOT = _root()
 FLOWS = sorted((ROOT / "powerautomate" / "flows").glob("*.json"))
 CONFIG = json.loads((ROOT / "solution-config.json").read_text())
 
@@ -52,7 +59,8 @@ def env_param_name(param):
 
 
 def conn_ref_name(api):
-    return f"{CONFIG['publisher']['prefix']}_{api.replace('_', '')}"
+    # connectionReferenceTag keeps two solutions in one environment on separate connections.
+    return f"{CONFIG['publisher']['prefix']}_{CONFIG.get('connectionReferenceTag', '')}{api.replace('_', '')}"
 
 
 def rewrite_params(node, mapping):
@@ -250,6 +258,7 @@ CONTENT_TYPES = """<?xml version="1.0" encoding="utf-8"?><Types xmlns="http://sc
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", default=str(ROOT / "dist"), help="output directory (default: dist/)")
+    ap.add_argument("--root", help="solution folder to package (default: SharePointGovernance)")
     args = ap.parse_args()
 
     flows = [build_flow(p) for p in FLOWS]
