@@ -2,7 +2,7 @@
   "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
   "contentVersion": "1.0.0.0",
   "displayName": "C2 Weekly port news roundup",
-  "description": "Runs Mondays at 07:00 UK time. Collects published, Live posts from HPUK News and Other News first published in the last RoundupWindowDays days with InRoundup set, leaves out audience-targeted posts and posts not yet approved, and sends each enabled Comms Distribution port a digest of the posts tagged for that port or All ports, by email from the Communications mailbox and to its Teams channel. Ports with no posts get nothing. Each port and channel is sent at most once a week, recorded in the Delivery Log, so a re-run only retries failures.",
+  "description": "Runs Mondays at 07:00 UK time. Collects published, Live posts from HPUK News and Other News first published in the last RoundupWindowDays days with InRoundup set, leaves out audience-targeted posts, and sends each enabled Comms Distribution port a digest of the posts tagged for that port or All ports, by email from the Communications mailbox and to its Teams channel. Ports with no posts get nothing. Each port and channel is sent at most once a week, recorded in the Delivery Log, so a re-run only retries failures.",
   "connectionReferences": {
     "shared_sharepointonline": {
       "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
@@ -116,7 +116,7 @@
         "parameters": {
           "dataset": "@parameters('HPUKNewsSiteUrl')",
           "table": "Site Pages",
-          "$filter": "@{concat('PromotedState eq 2 and OData__ModerationStatus eq 0 and Status eq ''Live'' and InRoundup eq 1 and FirstPublishedDate ge ''', outputs('Window_start'), '''')}"
+          "$filter": "@{concat('PromotedState eq 2 and Status eq ''Live'' and InRoundup eq 1 and FirstPublishedDate ge ''', outputs('Window_start'), '''')}"
         }
       },
       "runAfter": {
@@ -136,7 +136,7 @@
         "parameters": {
           "dataset": "@parameters('OtherNewsSiteUrl')",
           "table": "Site Pages",
-          "$filter": "@{concat('PromotedState eq 2 and OData__ModerationStatus eq 0 and Status eq ''Live'' and InRoundup eq 1 and FirstPublishedDate ge ''', outputs('Window_start'), '''')}"
+          "$filter": "@{concat('PromotedState eq 2 and Status eq ''Live'' and InRoundup eq 1 and FirstPublishedDate ge ''', outputs('Window_start'), '''')}"
         }
       },
       "runAfter": {

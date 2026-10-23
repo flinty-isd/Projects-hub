@@ -8,7 +8,7 @@ It uses standard modern pages only, with no SPFx.
 | Part | What it is |
 |------|-----------|
 | [`sharepoint/list-schema.json`](sharepoint/list-schema.json) | Every list and column on both sites. The single source for provisioning and flow validation |
-| [`provisioning/Provision-NewsSites.ps1`](provisioning/Provision-NewsSites.ps1) | PnP script that applies the schema, views, permissions, HR page approval and the Publisher Guide page to both sites |
+| [`provisioning/Provision-NewsSites.ps1`](provisioning/Provision-NewsSites.ps1) | PnP script that applies the schema, views, permissions (with page approval off) and the Publisher Guide page to both sites |
 | [`provisioning/Set-NewsRetention.ps1`](provisioning/Set-NewsRetention.ps1) | Purview retention policy: 7 years on both sites |
 | [`pages/Publisher-Guide.html`](pages/Publisher-Guide.html) | Content of Publisher-Guide.aspx on HPUK News |
 | [`powerautomate/flows/`](powerautomate/flows) | C1 expiry, C2 weekly port roundup, C3a/C3b urgent notice (one per site) |
@@ -39,7 +39,7 @@ if Communications or IT decide otherwise.
 |----------|-----------|--------------------|
 | Ports | **Felixstowe, Harwich, Thamesport** (plus *All ports* on posts) | `list-schema.json`: Port choices on posts and Comms Distribution |
 | Who can send urgent notices | **Chloe, Rachel and Toby** | `UrgentPublisherEmails` environment variable. C3 sends only when the post's author or last editor is on the list; anything else is logged as *Skipped - not an urgent publisher* and Communications is told |
-| Page approval | **On for both sites; HR approves** | The provisioning script turns on content approval for Site Pages and gives the HR group an *Approve pages* level. Unapproved pages are never sent: C3 requires *Approved*, and C2 reads approved pages only |
+| Page approval | **None. Publishers are pre-approved** (changed 23 October 2026; this replaces HR approving every page) | Content approval stays off on Site Pages (the provisioning script turns it off if it was on). A published page is live straight away, and an urgent post by Chloe, Rachel or Toby alerts as soon as it is published. Membership of the publisher groups is the control, so keep them to trained, named publishers |
 | Retention | **7 years** from creation, on both sites | `provisioning/Set-NewsRetention.ps1`: a Purview retention policy. Nothing is deleted automatically at the end unless the records owner asks for `-DeleteAfterRetention` |
 | Support owner | **Nigel Bell** | `SupportOwnerEmail` environment variable: receives all flow failure alerts |
 
@@ -53,7 +53,7 @@ flowchart LR
   P([Publisher publishes a post]) --> SP[("Site Pages<br/>both sites")]
   SP -- "daily 06:00: ExpiryDate passed" --> C1["C1 Expiry"] -- "Status = Expired" --> SP
   SP -- "Mondays 07:00: Live, InRoundup, last 7 days" --> C2["C2 Port roundup"]
-  SP -- "approved major version, Urgent, not yet sent,<br/>by an urgent publisher" --> C3["C3 Urgent notice"]
+  SP -- "published major version, Urgent, not yet sent,<br/>by an urgent publisher" --> C3["C3 Urgent notice"]
   CD[("Comms Distribution<br/>port → email group, Teams channel")] --> C2 & C3
   C2 & C3 -- "check key, then send" --> OUT[/"Email from Comms mailbox<br/>Teams channel post"/]
   C2 & C3 -- "Sent / Failed / Skipped" --> DL[("Delivery Log")]
@@ -68,21 +68,17 @@ flowchart LR
    - HPUK readers (scoped to the HPUK population)
    - HPUK News publishers
    - Other News publishers
-   - HR news approvers
    - news configuration maintainers
 
    Also create the Department and Category term sets, and a shared mailbox
    for sending, with Send As for the news flow account (`svc-spo-news`, see the
    [deployment plan](../POWER-PLATFORM-DEPLOYMENT.md#identities)).
 2. **Provision.** Run `provisioning/Provision-NewsSites.ps1` with the two site
-   URLs, the group object IDs (including `-HRApproverGroupId`) and the flow
+   URLs, the group object IDs and the flow
    account's UPN (`svc-spo-news`). Then have a Purview compliance admin run
    `provisioning/Set-NewsRetention.ps1` for the 7-year retention.
 3. **Manual site settings.** These have no supported cmdlet:
    - Site Pages → *Settings → Audience targeting* → **On**, on both sites.
-   - Site Pages → *Automate → Power Automate → Configure page approval flow*,
-     approvers = the HR news approvers group, on both sites. Content approval
-     is already on; this flow emails HR when a page is submitted.
    - Create the page templates *HPUK News post* and *Other News post*. Use
      this reading order: summary (in Description), main content, action
      required and deadline, attachments, business contact.
@@ -127,7 +123,7 @@ is not the production permission model.
 | Urgent, edit | Editing and republishing a sent urgent post sends nothing |
 | Urgent, correction | Round + 1 and UrgentSent = No, then republish. Exactly one new alert per destination |
 | Urgent, partial failure | Disable one Teams channel. The other sends succeed, the failure is logged, support is alerted and UrgentSent stays No. Resubmitting the run sends only the failed one |
-| Approval | A submitted page stays hidden from a reader until HR approves it. An urgent post sends nothing until it is approved, then sends once |
+| No approval | A publisher's page is visible to readers as soon as it is published, with no approval request. An urgent post by an urgent publisher alerts once, on publish |
 | Unauthorised urgent | An urgent post by a publisher not on the urgent list sends nothing, logs *Skipped - not an urgent publisher* and tells Communications once |
 | Audience-targeted urgent | Nothing is broadcast. A *Skipped - audience targeted* row is logged and Communications is emailed once |
 | All ports | A post tagged *All ports* reaches every enabled row |
