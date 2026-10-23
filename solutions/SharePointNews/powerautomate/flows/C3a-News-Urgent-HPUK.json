@@ -2,7 +2,7 @@
   "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
   "contentVersion": "1.0.0.0",
   "displayName": "C3a Urgent notice - HPUK News",
-  "description": "Triggers when an urgent news post on HPUK News is published and approved (a major version, approved, Status Live, Urgent Yes, UrgentSent No). Only posts authored or last edited by an authorised urgent publisher (UrgentPublisherEmails) are sent; others are logged and Communications is told. Audience-targeted posts are never broadcast to whole ports: Communications is told instead. Otherwise it sends the notice once per matching Comms Distribution port and channel (email from the Communications mailbox, Teams channel post), keyed by site, page, NotificationRound, port and channel in the Delivery Log, so edits and re-runs never resend. UrgentSent is set only when every delivery succeeds, without creating a new page version. To send again, Communications sets UrgentSent back to No and raises NotificationRound by one.",
+  "description": "Triggers when an urgent news post on HPUK News is published (a major version, Status Live, Urgent Yes, UrgentSent No). Only posts authored or last edited by an authorised urgent publisher (UrgentPublisherEmails) are sent; others are logged and Communications is told. Audience-targeted posts are never broadcast to whole ports: Communications is told instead. Otherwise it sends the notice once per matching Comms Distribution port and channel (email from the Communications mailbox, Teams channel post), keyed by site, page, NotificationRound, port and channel in the Delivery Log, so edits and re-runs never resend. UrgentSent is set only when every delivery succeeds, without creating a new page version. To send again, Communications sets UrgentSent back to No and raises NotificationRound by one.",
   "connectionReferences": {
     "shared_sharepointonline": {
       "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
@@ -74,7 +74,7 @@
       },
       "conditions": [
         {
-          "expression": "@and(equals(triggerBody()?['PromotedState'], 2), equals(triggerBody()?['Urgent'], true), not(equals(triggerBody()?['UrgentSent'], true)), equals(triggerBody()?['Status']?['Value'], 'Live'), endsWith(string(triggerBody()?['{VersionNumber}']), '.0'), equals(coalesce(triggerBody()?['{ModerationStatus}']?['Value'], 'Approved'), 'Approved'))"
+          "expression": "@and(equals(triggerBody()?['PromotedState'], 2), equals(triggerBody()?['Urgent'], true), not(equals(triggerBody()?['UrgentSent'], true)), equals(triggerBody()?['Status']?['Value'], 'Live'), endsWith(string(triggerBody()?['{VersionNumber}']), '.0'))"
         }
       ]
     }

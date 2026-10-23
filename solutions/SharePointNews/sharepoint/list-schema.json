@@ -3,7 +3,7 @@
   "lists": [
     {
       "listTitle": "Site Pages",
-      "listDescription": "The Site Pages library on BOTH news sites (HPUK News and Other News), with identical columns and internal names. News posts are pages with PromotedState 2. Content approval is on: HR approves pages before they are published to readers.",
+      "listDescription": "The Site Pages library on BOTH news sites (HPUK News and Other News), with identical columns and internal names. News posts are pages with PromotedState 2. Content approval is off: publishers are pre-approved, so a published page is live straight away.",
       "sites": [
         "HPUK News",
         "Other News"
@@ -15,9 +15,7 @@
         "_ModernAudienceTargetUserField",
         "Description",
         "FileLeafRef",
-        "BannerImageUrl",
-        "{ModerationStatus}",
-        "OData__ModerationStatus"
+        "BannerImageUrl"
       ],
       "fields": [
         {
