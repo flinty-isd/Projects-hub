@@ -56,33 +56,46 @@ everything else not needed.
 | Identity | Used for | Notes |
 |----------|----------|-------|
 | **Deployment app registration** (service principal) | GitHub Actions: import, export and settings | Added as an *application user* in each environment with the *System Customizer* role. Client secret or certificate stored as GitHub secrets |
-| **Flow service account** (licensed user, e.g. `svc-spo-flows@…`) | Owns the connections the flows run as | SharePoint, Outlook, Teams and Approvals need a user connection, so a service principal can't run them |
-| **Backup owner** | Second owner of every flow and connection reference | A named person in the support team |
+| **Governance flow account** (licensed user, `svc-spo-governance@…`) | Owns the governance connections: SharePoint, Office 365 Outlook, Approvals, HTTP with Microsoft Entra ID, Azure Automation | Owned by the SharePoint service owner |
+| **News flow account** (licensed user, `svc-spo-news@…`) | Owns the news connections: SharePoint, Office 365 Outlook, Microsoft Teams | Owned by the news support owner (Nigel Bell) |
+| **Backup owner** | Second owner of every flow and connection reference | A named person in the support team, one per solution |
 
-**The flow service account needs a governance exception.** PID v3.1 prohibits
+There are **two flow accounts, one per solution** (decided 23 October 2026,
+subject to InfoSec agreeing the exceptions). Each account reaches only what
+its own flows need, so a problem with one can't affect the other solution.
+SharePoint, Outlook, Teams and Approvals need a user connection, so a
+service principal can't run the flows. Everyone else (publishers, approvers,
+requesters) keeps using their own named account; readers never see the flow
+accounts, because email goes out from the Communications mailbox (Send As)
+and Teams posts appear as Flow bot.
+
+**Each flow account needs a governance exception.** PID v3.1 prohibits
 shared and service accounts in SharePoint, and BLD-008 (page 14) allows
 service accounts only with "owner, purpose, credential and review evidence".
-Raise an entry in the Governance Exception Register before Test, recording:
+Raise one entry per account in the Governance Exception Register before
+Test:
 
-- the purpose: running the governance and news flows
-- the owner: the SharePoint service owner
-- the controls:
-  - MFA, with sign-in from named locations or Conditional Access
-  - no interactive mailbox use
-  - SharePoint rights limited to the governance and news sites (Edit on the
-    lists it writes, Read elsewhere)
-  - Send As only on the Communications mailbox
-  - credentials held in the IT password vault
+| | `svc-spo-governance` | `svc-spo-news` |
+|---|---|---|
+| Purpose | Running the governance flows (01 to 06) | Running the news flows (C1, C2, C3a, C3b) |
+| Owner | SharePoint service owner | News support owner (Nigel Bell) |
+| SharePoint rights | Governance site: Edit on the lists it writes, Read elsewhere | HPUK News and Other News: Edit on Site Pages and Delivery Log, Read elsewhere |
+| Mail | Sends from its own mailbox only | Send As on the Communications mailbox only |
+| Other | Azure Automation job operator on the governance Automation account | Member of the port Teams channels it posts to |
+
+Both entries also record:
+
+- MFA, with sign-in from named locations or Conditional Access
+- no interactive mailbox use
+- credentials held in the IT password vault
 - a 12-month expiry and review
 
-The alternative is two accounts, one per solution, which shrinks what each
-can reach. It's worth it if InfoSec prefers it.
-
 **Licences.** HTTP with Microsoft Entra ID and Azure Automation are
-**premium** connectors (check against your current licensing). The flow
-service account needs **Power Automate Premium**, or assign a **Power
+**premium** connectors (check against your current licensing). The
+governance account needs **Power Automate Premium**, or assign a **Power
 Automate Process** licence to the governance flows. The news flows use only
-standard connectors and run on the service account's Microsoft 365 licence.
+standard connectors, so the news account needs only a Microsoft 365 licence
+with a mailbox.
 
 ## Deployment settings
 
@@ -104,7 +117,7 @@ Each file holds two things:
 - **EnvironmentVariables**: site URLs, role mailboxes, Automation account
   IDs, the review interval. None of these are secrets, so they're fine in git.
 - **ConnectionReferences**: the connection ID per connector in that
-  environment. Create each connection once as the flow service account, then
+  environment. Create each connection once as that solution's flow account, then
   copy its ID from *Data → Connections* (it's in the URL).
 
 The values differ only between Test and Production, so a pull request shows
@@ -133,8 +146,8 @@ Production imports the **exact artifact** that passed Test. It is never rebuilt.
 | Step | What | Owner | Done when |
 |------|------|-------|-----------|
 | 1 | Create the three environments, the DLP policy, and the deployment app user in each | IT / Power Platform admin | Environments listed, app user has System Customizer |
-| 2 | Governance exception for the flow service account; licence it | SharePoint service owner, InfoSec | Exception recorded with an evidence reference; licence assigned |
-| 3 | Create connections as the service account in Test and Prod; fill in the `deploy/*.json` files | IT | Settings files merged |
+| 2 | Create the two flow accounts; governance exception for each; licence them (Premium or Process for governance, Microsoft 365 for news) | SharePoint service owner, news support owner, InfoSec | Both exceptions recorded with an evidence reference; licences assigned |
+| 3 | Create connections as each solution's flow account in Test and Prod; fill in the `deploy/*.json` files | IT | Settings files merged |
 | 4 | Add the GitHub environments, secrets and required reviewers, and add the Dev/Test/Prod jobs to both workflows | IT / repo maintainer | A merge to `main` reaches Test unaided |
 | 5 | **Governance**: UAT in Test against the test governance site, using the test plan in its README | SharePoint service owner | Each flow passes its quick test; evidence filed |
 | 6 | **News**: UAT in Test against test news sites, using the test table in its README, with HR approving the test pages and Chloe, Rachel or Toby sending the urgent tests | Communications, HR, IT | Test table signed off, including approval, unauthorised urgent, partial failure and resend |
@@ -147,13 +160,13 @@ deploys to Test automatically, then waits for an approved Production run.
 ## Operating it
 
 - **Monitoring.** Every flow already emails its failures to the support
-  owner. Also turn on Power Automate's *flow failure* email for the
-  service account, and review run history weekly for the first month.
+  owner. Also turn on Power Automate's *flow failure* email for both
+  flow accounts, and review run history weekly for the first month.
 - **Connections** are the usual cause of failure: a password change, MFA
-  re-prompt or licence removal on the service account. Include them in the
+  re-prompt or licence removal on a flow account. Include them in each
   account's exception review, and re-authenticate in Production only, under
   *Data → Connections*.
-- **Ownership.** The service account and the named backup co-own every flow.
+- **Ownership.** Each solution's flow account and its named backup co-own every flow in that solution.
   When the backup leaves, replace them; the flows keep running.
 - **Upgrades.** Each release has a higher version number, and Production
   only ever moves forward.
@@ -180,7 +193,6 @@ first managed release:
 
 | Decision | Owner |
 |----------|-------|
-| One flow service account for both solutions, or one each | InfoSec |
 | Environment names, regions and capacity | Power Platform admin |
 | Licensing route for the premium connectors (Premium per user vs Process) | IT / Finance |
 | Who approves Production runs | SharePoint service owner, IT Operations |

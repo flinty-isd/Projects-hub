@@ -61,8 +61,9 @@ one person's address: approvals still reach someone during absences.
 2. **Connections**: in the target environment create a connection for
    SharePoint, Office 365 Outlook, Approvals, **HTTP with Microsoft Entra
    ID** (base resource and Azure AD resource URI both
-   `https://graph.microsoft.com`) and Azure Automation, each signed in as a
-   dedicated licensed flow-owner account. This is
+   `https://graph.microsoft.com`) and Azure Automation, each signed in as the
+   governance flow account, `svc-spo-governance` (see the
+   [deployment plan](../POWER-PLATFORM-DEPLOYMENT.md#identities)). This is
    the one place a non-personal identity is used, and it never gets
    SharePoint content access.
 3. **Graph permissions** for the HTTP with Entra ID connection:
