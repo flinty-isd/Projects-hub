@@ -72,10 +72,11 @@ flowchart LR
    - news configuration maintainers
 
    Also create the Department and Category term sets, and a shared mailbox
-   for sending, with Send As for the flow identity.
+   for sending, with Send As for the news flow account (`svc-spo-news`, see the
+   [deployment plan](../POWER-PLATFORM-DEPLOYMENT.md#identities)).
 2. **Provision.** Run `provisioning/Provision-NewsSites.ps1` with the two site
    URLs, the group object IDs (including `-HRApproverGroupId`) and the flow
-   identity's UPN. Then have a Purview compliance admin run
+   account's UPN (`svc-spo-news`). Then have a Purview compliance admin run
    `provisioning/Set-NewsRetention.ps1` for the 7-year retention.
 3. **Manual site settings.** These have no supported cmdlet:
    - Site Pages → *Settings → Audience targeting* → **On**, on both sites.
@@ -94,7 +95,7 @@ flowchart LR
    python solutions/SharePointGovernance/tools/build_solution.py --root solutions/SharePointNews
    ```
    It needs three connections (SharePoint, Office 365 Outlook, Microsoft
-   Teams), signed in as the flow identity, and seven environment variables,
+   Teams), signed in as `svc-spo-news`, and seven environment variables,
    including Nigel's address (`SupportOwnerEmail`) and the urgent publishers'
    addresses, separated by semicolons (`UrgentPublisherEmails`).
    CI also builds it: download the artifact *SharePointNews-solution*.
