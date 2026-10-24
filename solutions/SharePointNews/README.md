@@ -12,6 +12,7 @@ It uses standard modern pages only, with no SPFx.
 | [`provisioning/Set-NewsRetention.ps1`](provisioning/Set-NewsRetention.ps1) | Purview retention policy: 7 years on both sites |
 | [`pages/Publisher-Guide.html`](pages/Publisher-Guide.html) | Content of Publisher-Guide.aspx on HPUK News |
 | [`powerautomate/flows/`](powerautomate/flows) | C1 expiry, C2 weekly port roundup, C3a/C3b urgent notice (one per site) |
+| [`taxonomy/`](taxonomy) | Department and Category term sets (term-store import files) |
 | [`solution-config.json`](solution-config.json) | Solution package settings: environment variables and connection references |
 
 ## Design decisions
@@ -42,9 +43,7 @@ if Communications or IT decide otherwise.
 | Page approval | **None. Publishers are pre-approved** (changed 23 October 2026; this replaces HR approving every page) | Content approval stays off on Site Pages (the provisioning script turns it off if it was on). A published page is live straight away, and an urgent post by Chloe, Rachel or Toby alerts as soon as it is published. Membership of the publisher groups is the control, so keep them to trained, named publishers |
 | Retention | **7 years** from creation, on both sites | `provisioning/Set-NewsRetention.ps1`: a Purview retention policy. Nothing is deleted automatically at the end unless the records owner asks for `-DeleteAfterRetention` |
 | Support owner | **Nigel Bell** | `SupportOwnerEmail` environment variable: receives all flow failure alerts |
-
-Still open: the Department and Category terms (Communications approves the
-vocabulary; IT creates the term sets).
+| Departments and categories | **13 departments and 16 categories, confirmed for UAT** (24 October 2026). Department is who owns a post; Category is what it is about | [`taxonomy/`](taxonomy): `TermSet-Department.csv` and `TermSet-Category.csv` for the term store, and `terms.json` with each term's definition and examples. The Safety section filters on Category **Health and Safety**. Communications gives final sign-off after UAT; changes after that are made in the term store |
 
 ### Safeguards added after the independent review (24 October 2026)
 
@@ -86,7 +85,10 @@ flowchart LR
    - Other News publishers
    - news configuration maintainers
 
-   Also create the Department and Category term sets, and a shared mailbox
+   Also create the Department and Category term sets by importing
+   `taxonomy/TermSet-Department.csv` and `taxonomy/TermSet-Category.csv`
+   into the Communications term group (SharePoint admin centre → Term store
+   → Communications → Import term set), and a shared mailbox
    for sending, with Send As for the news flow account (`svc-spo-news`, see the
    [deployment plan](../POWER-PLATFORM-DEPLOYMENT.md#identities)).
 2. **Provision.** Run `provisioning/Provision-NewsSites.ps1` with the two site
@@ -128,7 +130,7 @@ flowchart LR
 | Page | Web part | Source | Filter | Layout |
 |------|----------|--------|--------|--------|
 | HPUK News home | News | This site | Page properties: Status = Live | Top story |
-| HPUK News home | News (Safety) | This site | Status = Live **and** Category = Safety | List |
+| HPUK News home | News (Safety) | This site | Status = Live **and** Category = Health and Safety | List |
 | Other News home | News | This site | Status = Live | Side-by-side |
 | Intranet home | News (main) | HPUK News | Status = Live; audience targeting on | Top story |
 | Intranet home | News (secondary) | Other News | Status = Live; audience targeting on | List, lower on the page |
