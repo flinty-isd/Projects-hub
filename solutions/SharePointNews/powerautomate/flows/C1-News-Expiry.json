@@ -2,7 +2,7 @@
   "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
   "contentVersion": "1.0.0.0",
   "displayName": "C1 Expire news posts",
-  "description": "Runs daily at 06:00 UK time. On HPUK News and Other News, sets Status to Expired on every published, Live news post whose ExpiryDate is before today (ExpiryDate is the last day a notice is current). Uses ValidateUpdateListItem so the published page is not re-versioned or left in draft. Pages and attachments are never deleted. Alerts the support owner if any page cannot be updated.",
+  "description": "Runs daily at 06:00 UK time. On HPUK News and Other News, sets Status to Expired on every published, Live news post whose ExpiryDate is before today (ExpiryDate is the last day a notice is current). Uses ValidateUpdateListItem so the published page is not re-versioned or left in draft. Pages and attachments are never deleted. Alerts the support owner if any page cannot be updated. While ExpiryWritesEnabled is No (the default) it changes nothing and emails the support owner the pages it would have expired.",
   "connectionReferences": {
     "shared_sharepointonline": {
       "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
@@ -43,6 +43,14 @@
     "UrgentPublisherEmails": {
       "type": "String",
       "defaultValue": "{urgent-publisher-1}@{domain};{urgent-publisher-2}@{domain}"
+    },
+    "DispatchEnabled": {
+      "type": "Bool",
+      "defaultValue": false
+    },
+    "ExpiryWritesEnabled": {
+      "type": "Bool",
+      "defaultValue": false
     }
   },
   "triggers": {
@@ -77,11 +85,28 @@
       },
       "runAfter": {}
     },
+    "Initialize_WouldExpire": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "WouldExpire",
+            "type": "array",
+            "value": []
+          }
+        ]
+      },
+      "runAfter": {
+        "Initialize_Failures": [
+          "Succeeded"
+        ]
+      }
+    },
     "Today_UK": {
       "type": "Compose",
       "inputs": "@convertTimeZone(utcNow(), 'UTC', 'GMT Standard Time', 'yyyy-MM-dd')",
       "runAfter": {
-        "Initialize_Failures": [
+        "Initialize_WouldExpire": [
           "Succeeded"
         ]
       }
@@ -128,72 +153,96 @@
           "type": "Foreach",
           "foreach": "@outputs('Get_expired_pages')?['body/value']",
           "actions": {
-            "Expire_page": {
-              "type": "OpenApiConnection",
-              "inputs": {
-                "host": {
-                  "connectionName": "shared_sharepointonline",
-                  "operationId": "HttpRequest",
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                },
-                "parameters": {
-                  "dataset": "@items('For_each_site')?['url']",
-                  "parameters/method": "POST",
-                  "parameters/uri": "_api/web/lists/GetByTitle('Site Pages')/items(@{items('For_each_expired_page')?['ID']})/ValidateUpdateListItem",
-                  "parameters/headers": {
-                    "Accept": "application/json;odata=nometadata",
-                    "Content-Type": "application/json;odata=nometadata"
-                  },
-                  "parameters/body": {
-                    "formValues": [
-                      {
-                        "FieldName": "Status",
-                        "FieldValue": "Expired"
+            "Condition_writes_enabled": {
+              "type": "If",
+              "expression": {
+                "equals": [
+                  "@parameters('ExpiryWritesEnabled')",
+                  true
+                ]
+              },
+              "actions": {
+                "Expire_page": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@items('For_each_site')?['url']",
+                      "parameters/method": "POST",
+                      "parameters/uri": "_api/web/lists/GetByTitle('Site Pages')/items(@{items('For_each_expired_page')?['ID']})/ValidateUpdateListItem",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata",
+                        "Content-Type": "application/json;odata=nometadata"
+                      },
+                      "parameters/body": {
+                        "formValues": [
+                          {
+                            "FieldName": "Status",
+                            "FieldValue": "Expired"
+                          }
+                        ],
+                        "bNewDocumentUpdate": true
                       }
-                    ],
-                    "bNewDocumentUpdate": true
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Condition_update_failed": {
+                  "type": "If",
+                  "expression": {
+                    "or": [
+                      {
+                        "not": {
+                          "equals": [
+                            "@actions('Expire_page')?['status']",
+                            "Succeeded"
+                          ]
+                        }
+                      },
+                      {
+                        "contains": [
+                          "@string(body('Expire_page'))",
+                          "\"HasException\":true"
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Record_expiry_failure": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "Failures",
+                        "value": "@{concat(items('For_each_site')?['key'], ': ', items('For_each_expired_page')?['Title'])}"
+                      },
+                      "runAfter": {}
+                    }
+                  },
+                  "runAfter": {
+                    "Expire_page": [
+                      "Succeeded",
+                      "Failed",
+                      "TimedOut"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Record_would_expire": {
+                    "type": "AppendToArrayVariable",
+                    "inputs": {
+                      "name": "WouldExpire",
+                      "value": "@{concat(items('For_each_site')?['key'], ': ', items('For_each_expired_page')?['Title'])}"
+                    },
+                    "runAfter": {}
                   }
                 }
               },
               "runAfter": {}
-            },
-            "Condition_update_failed": {
-              "type": "If",
-              "expression": {
-                "or": [
-                  {
-                    "not": {
-                      "equals": [
-                        "@actions('Expire_page')?['status']",
-                        "Succeeded"
-                      ]
-                    }
-                  },
-                  {
-                    "contains": [
-                      "@string(body('Expire_page'))",
-                      "\"HasException\":true"
-                    ]
-                  }
-                ]
-              },
-              "actions": {
-                "Record_expiry_failure": {
-                  "type": "AppendToArrayVariable",
-                  "inputs": {
-                    "name": "Failures",
-                    "value": "@{concat(items('For_each_site')?['key'], ': ', items('For_each_expired_page')?['Title'])}"
-                  },
-                  "runAfter": {}
-                }
-              },
-              "runAfter": {
-                "Expire_page": [
-                  "Succeeded",
-                  "Failed",
-                  "TimedOut"
-                ]
-              }
             }
           },
           "runtimeConfiguration": {
@@ -250,6 +299,39 @@
         "For_each_site": [
           "Succeeded",
           "Failed"
+        ]
+      }
+    },
+    "Condition_dry_run": {
+      "type": "If",
+      "expression": {
+        "greater": [
+          "@length(variables('WouldExpire'))",
+          0
+        ]
+      },
+      "actions": {
+        "Report_dry_run": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@parameters('SupportOwnerEmail')",
+              "emailMessage/Subject": "News expiry (dry run): pages that would be expired",
+              "emailMessage/Body": "<p>Expiry writes are switched off (ExpiryWritesEnabled = No), so nothing was changed. With writes on, these posts would have been set to Expired:</p><p>@{join(variables('WouldExpire'), '<br>')}</p><p>Once expiry has been proven on a test page (the reader view, page version and approval state stay as they are), set ExpiryWritesEnabled to Yes.</p>",
+              "emailMessage/Importance": "Normal"
+            }
+          },
+          "runAfter": {}
+        }
+      },
+      "runAfter": {
+        "Condition_any_failures": [
+          "Succeeded"
         ]
       }
     }
