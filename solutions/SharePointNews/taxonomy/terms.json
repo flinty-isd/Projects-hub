@@ -1,0 +1,35 @@
+{
+ "departments": [
+  ["Communications", "Corporate communications, intranet news and company-wide messages that Communications manages or coordinates.", "Intranet launch update; company announcement; communications campaign"],
+  ["Human Resources", "Employee matters, benefits, recruitment, workplace policies and people programmes.", "Benefits update; recruitment campaign; employee policy"],
+  ["Information Services", "Technology, Microsoft 365, systems, applications, IT services and cyber security.", "Microsoft 365 change; system maintenance; phishing warning"],
+  ["Operations", "Day-to-day operational activity affecting ports, terminals or operational services.", "Operational change; revised process; service update"],
+  ["Engineering", "Engineering activity, infrastructure, equipment and engineering-led maintenance.", "Equipment upgrade; engineering works; infrastructure update"],
+  ["Health, Safety and Environment", "Health, safety and environmental guidance, initiatives and awareness.", "Safety campaign; environmental initiative; new safety guidance"],
+  ["Security", "Physical and port security: access control, ID passes, ISPS and site security. Cyber security belongs to Information Services.", "Access-control change; pass renewal; security procedure"],
+  ["Facilities", "Buildings, workplace services, canteen and main stores.", "Canteen opening hours; building works; main stores process"],
+  ["Finance", "Finance processes, reporting, payments and employee-facing financial information.", "Expenses change; financial-year information; payment-process update"],
+  ["Procurement", "Purchasing, suppliers, contracts and procurement processes.", "New purchasing process; supplier guidance"],
+  ["Commercial", "Customer and commercial developments suitable for internal publication.", "Customer initiative; commercial service update"],
+  ["Legal and Compliance", "Legal, regulatory, compliance and mandatory governance communications.", "Compliance requirement; regulatory change; mandatory declaration"],
+  ["Executive Leadership", "Strategic or corporate messages issued on behalf of senior leadership.", "Business strategy update; leadership announcement"]
+ ],
+ "categories": [
+  ["Company News", "General corporate announcements of broad employee interest.", "Company milestone; corporate announcement"],
+  ["Operational Update", "A change or update to normal operational activity.", "Revised operating arrangements; terminal update"],
+  ["People and Organisation", "Organisational or employee changes that aren't simply HR process guidance.", "Restructure announcement; new team structure"],
+  ["Health and Safety", "Safety information, campaigns and notices to protect employees and visitors. Posts in this category appear in the Safety section of HPUK News.", "Safety campaign; updated safe-working guidance"],
+  ["Security Alert", "Security information that needs particular awareness or action.", "Access-control alert; security awareness notice"],
+  ["IT and Systems", "Changes to applications, IT services, Microsoft 365 or other business systems.", "SharePoint update; system outage notice; Microsoft 365 change"],
+  ["Project Update", "Progress, milestones or outcomes from a defined project or programme.", "SharePoint migration update; project milestone"],
+  ["Policy and Governance", "New or revised organisational rules, standards or governance arrangements.", "Updated policy; governance-process change"],
+  ["Training and Guidance", "How to do a task, use a service or follow a process, including guidance for site owners and publishers.", "User guide; training session; site publishing guide"],
+  ["Events", "Organised business or employee events.", "Briefing session; company event"],
+  ["Community and Charity", "Community engagement, volunteering, fundraising and charitable activity.", "Charity appeal; volunteering day"],
+  ["Sustainability and Environment", "Environmental performance, sustainability programmes and related initiatives.", "Waste reduction initiative; sustainability update"],
+  ["Customer and Commercial Update", "Internal information about customers, services or commercial developments.", "New service announcement; customer-related change"],
+  ["Service Disruption", "An unplanned interruption to an operational or business service.", "System unavailable; operational service interruption"],
+  ["Planned Maintenance", "Scheduled work expected to affect a service, site, system or facility.", "Planned IT downtime; infrastructure maintenance"],
+  ["General Information", "Useful internal information that genuinely doesn't fit a more specific category.", "General employee information"]
+ ]
+}

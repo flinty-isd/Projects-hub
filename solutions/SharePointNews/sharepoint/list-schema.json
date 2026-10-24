@@ -24,7 +24,7 @@
           "type": "Taxonomy",
           "required": true,
           "termSet": "Communications|Department",
-          "notes": "Communications Department term set."
+          "notes": "Who owns the post (not who publishes it): 13 terms, confirmed for UAT (taxonomy/TermSet-Department.csv)."
         },
         {
           "internalName": "Category",
@@ -32,7 +32,7 @@
           "type": "Taxonomy",
           "required": true,
           "termSet": "Communications|Category",
-          "notes": "Includes Safety, Operations, HR, IT, Facilities, Canteen, Main Stores (vocabulary to be approved by Communications). The Safety news views filter on this."
+          "notes": "What the post is about: 16 terms, confirmed for UAT (taxonomy/TermSet-Category.csv). The Safety news views filter on Health and Safety."
         },
         {
           "internalName": "Port",
@@ -113,7 +113,7 @@
           "type": "Taxonomy",
           "required": true,
           "termSet": "Communications|Department",
-          "notes": "Communications Department term set."
+          "notes": "Who owns the post (not who publishes it): 13 terms, confirmed for UAT (taxonomy/TermSet-Department.csv)."
         },
         {
           "internalName": "Category",
@@ -121,7 +121,7 @@
           "type": "Taxonomy",
           "required": true,
           "termSet": "Communications|Category",
-          "notes": "Includes Safety, Operations, HR, IT, Facilities, Canteen, Main Stores (vocabulary to be approved by Communications). The Safety news views filter on this."
+          "notes": "What the post is about: 16 terms, confirmed for UAT (taxonomy/TermSet-Category.csv). The Safety news views filter on Health and Safety."
         },
         {
           "internalName": "Port",
@@ -210,7 +210,7 @@
           "type": "Taxonomy",
           "required": true,
           "termSet": "Communications|Department",
-          "notes": "Communications Department term set."
+          "notes": "Who owns the post (not who publishes it): 13 terms, confirmed for UAT (taxonomy/TermSet-Department.csv)."
         },
         {
           "internalName": "Category",
@@ -218,7 +218,7 @@
           "type": "Taxonomy",
           "required": true,
           "termSet": "Communications|Category",
-          "notes": "Includes Safety, Operations, HR, IT, Facilities, Canteen, Main Stores (vocabulary to be approved by Communications). The Safety news views filter on this."
+          "notes": "What the post is about: 16 terms, confirmed for UAT (taxonomy/TermSet-Category.csv). The Safety news views filter on Health and Safety."
         }
       ]
     },

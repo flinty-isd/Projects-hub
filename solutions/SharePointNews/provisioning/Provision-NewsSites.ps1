@@ -33,7 +33,8 @@
 .NOTES
     Requires PnP.PowerShell 2.x and an app registration with Sites.FullControl.All
     and TermStore.ReadWrite.All, or run with -Interactive as a SharePoint admin.
-    The Department and Category term sets must already exist in the term group.
+    The Department and Category term sets must already exist in the term group:
+    import taxonomy/TermSet-Department.csv and taxonomy/TermSet-Category.csv first.
     Not yet run against a tenant: run it on a test pair of sites first.
 #>
 param(
@@ -185,6 +186,6 @@ Write-Output ''
 Write-Output 'Manual steps left (see README):'
 Write-Output '  1. Site Pages > Settings > Audience targeting: turn on, on both sites.'
 Write-Output '  2. IT: associate both sites with the intranet hub; designate HPUK News as an organisation news site.'
-Write-Output '  3. Home pages: configure the News web parts (Status = Live filter, Safety view).'
+Write-Output '  3. Home pages: configure the News web parts (Status = Live filter; Safety section = Category Health and Safety).'
 Write-Output '  4. Fill Comms Distribution with one row per port (Enabled = No until destinations are verified).'
 Write-Output '  5. Run Set-NewsRetention.ps1 (7-year retention) as a Purview compliance admin.'
