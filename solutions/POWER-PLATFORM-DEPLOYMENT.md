@@ -162,6 +162,12 @@ deploys to Test automatically, then waits for an approved Production run.
 - **Monitoring.** Every flow already emails its failures to the support
   owner. Also turn on Power Automate's *flow failure* email for both
   flow accounts, and review run history weekly for the first month.
+- **News deliveries needing a person.** Check the Delivery Log *Needs
+  checking* view (rows left Reserved or Reconcile) whenever a failure alert
+  arrives, and weekly. The news flows never resend those on their own.
+- **Emergency stop for news.** Set the `DispatchEnabled` environment variable
+  to No: the roundup and urgent flows stop sending at once, without turning
+  any flow off.
 - **Connections** are the usual cause of failure: a password change, MFA
   re-prompt or licence removal on a flow account. Include them in each
   account's exception review, and re-authenticate in Production only, under

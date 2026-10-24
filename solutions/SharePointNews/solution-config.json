@@ -3,7 +3,7 @@
   "uniqueName": "SharePointNews",
   "displayName": "SharePoint News and Notices",
   "description": "Expiry, weekly port roundup and urgent notice flows for the HPUK News and Other News sites.",
-  "version": "1.0.0.0",
+  "version": "1.1.0.0",
   "publisher": {
     "uniqueName": "HPUKIT",
     "displayName": "HPUK IT",
@@ -35,10 +35,20 @@
       "displayName": "Urgent publisher emails",
       "description": "Semicolon-separated addresses of the people allowed to send urgent notices (Chloe, Rachel and Toby). Urgent posts by anyone else are not sent."
     },
-    "RoundupWindowDays": {
-      "displayName": "Roundup window (days)",
-      "description": "How many days back the Monday roundup looks for newly published posts.",
-      "default": 7
+    "DispatchEnabled": {
+      "displayName": "Dispatch enabled",
+      "description": "Master switch for outbound email and Teams posts from the roundup and urgent flows. No (the default) means they send nothing. Set to Yes only once the Comms Distribution rows have been tested; set back to No to stop all sending at once.",
+      "default": false
+    },
+    "ExpiryWritesEnabled": {
+      "displayName": "Expiry writes enabled",
+      "description": "Lets C1 set Status to Expired. No (the default) runs C1 as a dry run that emails the support owner the pages it would have expired. Set to Yes once expiry has been proven on a test page.",
+      "default": false
+    },
+    "UrgentGoLiveDate": {
+      "displayName": "Urgent alerts go-live date (UTC)",
+      "description": "Urgent alerts are only sent for posts first published on or after this date and time, e.g. 2026-11-02T00:00:00Z, so editing an older or migrated post never sends an alert. Set it once at go-live and don't move it. The default (2099) sends nothing.",
+      "default": "2099-01-01T00:00:00Z"
     }
   },
   "connectionReferenceTag": "news",

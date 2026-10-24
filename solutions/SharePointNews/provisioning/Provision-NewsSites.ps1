@@ -16,6 +16,8 @@
       * adds the Current and Archive views to Notices and Attachments
       * puts the scoped reader group in Visitors and each site's publisher group
         in Members (never "Everyone except external users": the tenant is shared)
+      * makes the Delivery Log dispatch key (Title) unique and indexed, and adds a
+        Needs checking view (rows that are Reserved or Reconcile)
       * locks Notices Archive, Comms Distribution and Delivery Log to the
         configuration maintainers group (and the flow identity where it writes)
       * keeps content approval off on Site Pages: publishers are pre-approved,
@@ -149,6 +151,16 @@ foreach ($site in $sites) {
                     -Fields 'DocIcon', 'LinkFilename', 'Department', 'Category', 'Port', 'ExpiryDate', 'Modified' -Connection $conn | Out-Null
                 Write-Output "  + view $($v.Title)"
             }
+        }
+
+        # The dispatch key (Title) must be unique and indexed: the flows reserve it before every send,
+        # so two runs can never both send the same notice to the same destination.
+        Set-PnPField -List 'Delivery Log' -Identity 'Title' -Values @{ Indexed = $true; EnforceUniqueValues = $true } -Connection $conn
+        if (-not (Get-PnPView -List 'Delivery Log' -Identity 'Needs checking' -Connection $conn -ErrorAction SilentlyContinue)) {
+            Add-PnPView -List 'Delivery Log' -Title 'Needs checking' `
+                -Query '<Where><Or><Eq><FieldRef Name="DeliveryStatus"/><Value Type="Choice">Reconcile</Value></Eq><Eq><FieldRef Name="DeliveryStatus"/><Value Type="Choice">Reserved</Value></Eq></Or></Where><OrderBy><FieldRef Name="DeliveredAt" Ascending="FALSE"/></OrderBy>' `
+                -Fields 'Title', 'DeliveryStatus', 'Destination', 'Channel', 'DeliveredAt', 'ErrorDetail' -Connection $conn | Out-Null
+            Write-Output '  + view Delivery Log: Needs checking'
         }
 
         $maint = Get-GroupClaim $ConfigMaintainerGroupId

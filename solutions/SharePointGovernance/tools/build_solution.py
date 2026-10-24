@@ -41,7 +41,7 @@ CONFIG = json.loads((ROOT / "solution-config.json").read_text())
 # Fixed namespace so IDs are stable across builds.
 NAMESPACE = uuid.UUID("6f1c4a52-3b1e-4f43-9a51-2d0c8e4b7a10")
 
-ENV_TYPES = {"String": "100000000", "Int": "100000001"}
+ENV_TYPES = {"String": "100000000", "Int": "100000001", "Bool": "100000002"}
 PARAM_REF = re.compile(r"parameters\('([^']+)'\)")
 
 
@@ -164,7 +164,10 @@ def connection_reference_xml(api):
 
 def env_var_xml(param, ptype):
     spec = CONFIG["environmentVariables"][param]
-    default = f"\n  <defaultvalue>{escape(str(spec['default']))}</defaultvalue>" if "default" in spec else ""
+    value = spec.get("default")
+    if isinstance(value, bool):
+        value = "yes" if value else "no"  # how Dataverse stores a Boolean environment variable
+    default = f"\n  <defaultvalue>{escape(str(value))}</defaultvalue>" if "default" in spec else ""
     required = "0" if "default" in spec else "1"
     return f"""<environmentvariabledefinition schemaname="{schema_name(param)}">{default}
   <description default={quoteattr(spec['description'])}>
