@@ -1,0 +1,4 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/row-formatting.schema.json",
+  "additionalRowClass": "=if([$DueDate] != '' && Number([$DueDate]) < Number(@now) && [$Status] != 'Done', 'sp-field-severity--severeWarning', '')"
+}
