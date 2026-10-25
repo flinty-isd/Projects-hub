@@ -3,7 +3,7 @@
   "uniqueName": "SharePointGovernance",
   "displayName": "SharePoint Governance (BAU)",
   "description": "Power Automate flows that enforce SharePoint Online governance controls (PID v3.1) in BAU.",
-  "version": "1.0.0.0",
+  "version": "1.1.0.0",
   "publisher": {
     "uniqueName": "HPUKIT",
     "displayName": "HPUK IT",
@@ -13,7 +13,7 @@
   "environmentVariables": {
     "GovernanceSiteUrl": {
       "displayName": "Governance site URL",
-      "description": "Full URL of the SharePoint site holding the governance lists, e.g. https://contoso.sharepoint.com/sites/SPOGovernance."
+      "description": "Full URL of the IT Enterprise Governance site holding the governance lists (PID v4.2, D-GSA-07 Option A), e.g. https://contoso.sharepoint.com/sites/hpuk-pof-it-enterprisegovernance."
     },
     "TenantRootUrl": {
       "displayName": "Tenant root URL",
@@ -29,7 +29,7 @@
     },
     "ITOpsOwnerEmail": {
       "displayName": "IT Operations owner email",
-      "description": "IT Operations owner: PIM assignments, file share dispositions, orphaned-site alerts."
+      "description": "IT Operations owner: applies and registers the Sites.Selected grant for each new site, PIM assignments, file share dispositions, orphaned-site alerts."
     },
     "ServiceDeskEmail": {
       "displayName": "Service Desk email",
@@ -51,6 +51,21 @@
       "displayName": "Access review interval (days)",
       "description": "Days between access recertifications for each site.",
       "default": 90
+    },
+    "SiteOrgCode": {
+      "displayName": "Site URL organisation code",
+      "description": "First part of every new site URL: sites/[org]-[location]-[department]-[site] (PID v4.2 G-08). Pending brand ruling C-03.",
+      "default": "hpuk"
+    },
+    "SiteLocationCodes": {
+      "displayName": "Site URL location codes",
+      "description": "Semicolon-separated location codes allowed in the second part of a site URL (PID v4.2 G-08).",
+      "default": "pof;har;ltp;ldn"
+    },
+    "GuestAutoRemoval": {
+      "displayName": "Remove expired guests automatically",
+      "description": "No (default): on a guest's end date flow 02 asks the site owner or sponsor to confirm removal (PID v4.2 G-11). Yes only if the Control Board rules expired guest access a critical class (D-GSA-03).",
+      "default": false
     }
   },
   "connectionReferences": {

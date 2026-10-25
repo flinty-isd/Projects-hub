@@ -5,7 +5,7 @@
 .DESCRIPTION
     Called by flow 03 (Provision governed SharePoint sites) as an Azure
     Automation runbook, after SPSiteManager has created the site. It applies
-    the controls agreed in PID v3.1:
+    the controls agreed in the PID (v4.2):
 
       * permissions only through security groups (federated AD or cloud-only),
         never individual grants
@@ -15,14 +15,26 @@
       * no custom script on the site
       * the requested sensitivity label
 
-    Authentication uses the Azure Enterprise App registered for PnP PowerShell
-    (DEP005) with a certificate held in the Automation account.
+    Authentication uses the Automation account's system-assigned managed
+    identity: the only sanctioned non-named identity (D-03, PID v4.2 2.3.1).
+    No app registration, certificate or secret is involved.
+
+    It ends with a ###RESULT### line holding a JSON result object. Success is
+    taken from that object and the Automation jobs log, never from the flow
+    alone (G-10).
 
 .NOTES
     Automation account requirements:
+      Identity:    system-assigned managed identity switched on
       Modules:     PnP.PowerShell (2.x, PowerShell 7.2 runtime)
-      Variables:   PnPClientId, TenantName (e.g. contoso), TenantId
-      Certificate: PnPAppCertificate (private key of the Enterprise App's certificate)
+      Variables:   TenantName (e.g. contoso)
+      Rights:      - Sites.Selected (FullControl) on each new site URL, applied by
+                     IT Operations when flow 03 asks, and recorded in the grant
+                     register (G-04)
+                   - SharePoint Administrator role, for the tenant-level step
+                     (sharing, secondary admin), as already held for the RCD
+                     runbook (G-03, DEP007). If InfoSec won't grant it, move the
+                     tenant-level step to a named administrator and remove it here.
 #>
 param(
     [Parameter(Mandatory)] [string] $SiteUrl,
@@ -38,16 +50,26 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$clientId = Get-AutomationVariable -Name 'PnPClientId'
 $tenant = Get-AutomationVariable -Name 'TenantName'
-$tenantId = Get-AutomationVariable -Name 'TenantId'
-$cert = Get-AutomationCertificate -Name 'PnPAppCertificate'
-
 $adminUrl = "https://$tenant-admin.sharepoint.com"
+$result = [ordered]@{ Status = 'Failed'; SiteUrl = $SiteUrl; Steps = @(); Errors = @() }
+
+function Write-Result {
+    Write-Output ('###RESULT###' + ($result | ConvertTo-Json -Compress -Depth 4))
+}
+
+trap {
+    # Partial is not success (PID v4.2, 7.4): name what failed and stop.
+    $result.Errors += $_.Exception.Message
+    if ($_.Exception.Message -match '401|403|Forbidden|Unauthorized') {
+        $result.Errors += 'Usually a missing Sites.Selected grant for this site URL (G-04).'
+    }
+    Write-Result
+    throw
+}
 
 # --- Tenant-level site settings -------------------------------------------
-$admin = Connect-PnPOnline -Url $adminUrl -ClientId $clientId -Tenant $tenantId `
-    -Thumbprint $cert.Thumbprint -ReturnConnection
+$admin = Connect-PnPOnline -Url $adminUrl -ManagedIdentity -ReturnConnection
 
 Set-PnPTenantSite -Url $SiteUrl -Connection $admin `
     -SharingCapability $ExternalSharing `
@@ -56,10 +78,10 @@ Set-PnPTenantSite -Url $SiteUrl -Connection $admin `
 # Secondary owner as site collection admin, so the site survives the primary
 # owner leaving (flow 06 flags it as orphaned and prompts a replacement).
 Set-PnPTenantSite -Url $SiteUrl -Connection $admin -Owners @($SecondaryOwner)
+$result.Steps += "Sharing $ExternalSharing; custom script off; secondary admin $SecondaryOwner"
 
 # --- Site-level permissions -------------------------------------------------
-$site = Connect-PnPOnline -Url $SiteUrl -ClientId $clientId -Tenant $tenantId `
-    -Thumbprint $cert.Thumbprint -ReturnConnection
+$site = Connect-PnPOnline -Url $SiteUrl -ManagedIdentity -ReturnConnection
 
 # Federated AD and cloud security groups both resolve with this claim format.
 function Get-GroupClaim([string] $objectId) { "c:0t.c|tenant|$objectId" }
@@ -74,7 +96,7 @@ if ($VisitorsGroupId) {
 
 foreach ($a in $assignments) {
     Add-PnPGroupMember -Group $a.Group -LoginName (Get-GroupClaim $a.Id) -Connection $site
-    Write-Output "Added group $($a.Id) to '$($a.Group.Title)'"
+    $result.Steps += "Added group $($a.Id) to '$($a.Group.Title)'"
 }
 
 # The site was created with the primary owner as an individual member of the
@@ -86,7 +108,7 @@ foreach ($a in $assignments) {
         Where-Object { $_.PrincipalType -eq 'User' -and $_.LoginName -like 'i:0#.f|membership|*' } |
         ForEach-Object {
             Remove-PnPGroupMember -Group $a.Group -LoginName $_.LoginName -Connection $site
-            Write-Output "Removed individual grant $($_.LoginName) from '$($a.Group.Title)'"
+            $result.Steps += "Removed individual grant $($_.LoginName) from '$($a.Group.Title)'"
         }
 }
 
@@ -96,10 +118,11 @@ $label = Get-PnPAvailableSensitivityLabel -Connection $site |
     Where-Object { $_.Name -eq $SensitivityLabel } | Select-Object -First 1
 if ($label) {
     Set-PnPSiteSensitivityLabel -Identity $label.Id -Connection $site
-    Write-Output "Applied sensitivity label '$SensitivityLabel'"
+    $result.Steps += "Applied sensitivity label '$SensitivityLabel'"
 } else {
     # Fail loudly: a Highly Confidential site without its label is a governance gap.
     throw "Sensitivity label '$SensitivityLabel' is not published to this tenant."
 }
 
-Write-Output "Governance baseline applied to $SiteUrl (sharing: $ExternalSharing)"
+$result.Status = 'Success'
+Write-Result

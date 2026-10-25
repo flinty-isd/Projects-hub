@@ -21,7 +21,7 @@
     },
     "CommsSenderMailbox": {
       "displayName": "Communications sender mailbox",
-      "description": "Shared mailbox the roundup and urgent emails are sent from. The flow identity needs Send As on it."
+      "description": "Shared mailbox the roundup and urgent emails are sent from. The named news flow owner needs Send As on it."
     },
     "CommsTeamEmail": {
       "displayName": "Communications team email",

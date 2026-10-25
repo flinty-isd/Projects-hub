@@ -1,6 +1,8 @@
 # SharePoint governance flows — process diagrams
 
-One diagram per flow in `../powerautomate/flows/`. Each diagram shows the
+One diagram per flow in `../powerautomate/flows/`. Flow 04 (InfoPath
+triage) was retired on 25 October 2026 (PID v4.2: InfoPath retired, triage by
+the Criticality Decision Tree). Each diagram shows the
 decision the flow enforces and who approves it. Green ends are grants or
 approvals, red ends are blocks or rejections. Role names map to people in
 [`../README.md`](../README.md#roles).
@@ -17,10 +19,8 @@ flowchart LR
     F6 --> SR
   end
   subgraph Content["Content disposition"]
-    F4["04 InfoPath triage"]
     F5["05 File share disposition"]
   end
-  F4 --> DL[("Decision Log")]
 ```
 
 ## 01 — Access request (Access Method Decision Table)
@@ -29,7 +29,7 @@ flowchart LR
 flowchart TD
   A([New Access Requests item]) --> T{User type}
   T -->|Service / shared account| X1[/"Rejected - Prohibited"/]:::bad
-  T -->|Employee - view only| V[/"Closed - use Employee App"/]:::info
+  T -->|No Microsoft licence| V[/"Closed - use Base8 CMS<br/>in the Employee App"/]:::info
   T -->|Screen / kiosk| K[/"Closed - use published display page"/]:::info
   T -->|Employee - edit| L1{"M365 licence incl.<br/>SharePoint? (min F3)"}
   L1 -->|No| B1[/"Blocked - licence required"/]:::bad
@@ -39,7 +39,7 @@ flowchart TD
   L2 -->|Yes| P2{"Entra ID P2?"}
   P2 -->|No| B2[/"Blocked - Entra ID P2 required"/]:::bad
   P2 -->|Yes| AP2{"Line manager AND<br/>service owner approve?"}
-  T -->|Long-term contractor| TB{"End date set and<br/>within 12 months?"}
+  T -->|Long-term contractor| TB{"End date set and<br/>within 90 days?"}
   TB -->|No| X2[/"Rejected - not time-bound"/]:::bad
   TB -->|Yes| AP3{"Site owner AND<br/>InfoSec approve?"}
   AP3 -->|Yes| G[/"Invite guest, add to Guests group,<br/>register end date (read-only)"/]:::good
@@ -60,9 +60,13 @@ flowchart TD
 flowchart TD
   A([Daily 06:00]) --> Q["Active guests ending<br/>within 14 days"]
   Q --> E{"End date passed?"}
-  E -->|Yes| R[/"Remove from Guests group,<br/>mark Expired, tell sponsor + InfoSec"/]:::bad
+  E -->|Yes| AR{"GuestAutoRemoval = Yes?<br/>(Board ruling, D-GSA-03)"}
+  AR -->|Yes| R[/"Remove from Guests group,<br/>mark Expired, tell sponsor, owner + InfoSec"/]:::bad
+  AR -->|No| OD{"Site owner or sponsor<br/>confirms removal? (G-11)"}
+  OD -->|Yes| R
+  OD -->|No| K[/"Kept - owner decision;<br/>InfoSec told, new request needed"/]:::info
   E -->|No| M{"Reminder already sent?"}
-  M -->|No| N[/"Remind sponsor once;<br/>renewal = new access request"/]:::info
+  M -->|No| N[/"Remind sponsor + owner once;<br/>renewal = new access request (90 days max)"/]:::info
   M -->|Yes| Z([Nothing to do])
   classDef bad fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
   classDef info fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
@@ -72,7 +76,9 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  A([New Site Requests item]) --> V{"Two different, enabled,<br/>internal named owners +<br/>Owners/Members groups?"}
+  A([New Site Requests item]) --> NM{"Alias follows<br/>[org]-[location]-[dept]-[site]? (G-08)"}
+  NM -->|No| XN[/"Returned - naming standard"/]:::bad
+  NM -->|Yes| V{"Two different, enabled,<br/>internal named owners +<br/>Owners/Members groups?"}
   V -->|No| X[/"Returned - ownership invalid"/]:::bad
   V -->|Yes| SO{"Service owner approves?"}
   SO -->|No| R1[/"Rejected"/]:::bad
@@ -83,24 +89,10 @@ flowchart TD
   S -->|No| C["Create team site (STS#3)"]
   C --> OK{"Site ready?"}
   OK -->|No| F[/"Provisioning failed -> service owner"/]:::bad
-  OK -->|Yes| RB["Runbook: groups only, secondary admin,<br/>sharing off unless approved,<br/>no custom script, sensitivity label"]
+  OK -->|Yes| GT{"IT Ops applies + registers<br/>Sites.Selected grant? (G-04)"}
+  GT -->|No| F2[/"Provisioning failed - no grant,<br/>baseline not applied"/]:::bad
+  GT -->|Yes| RB["Runbook (managed identity): groups only,<br/>secondary admin, sharing off unless approved,<br/>no custom script, sensitivity label; ###RESULT###"]
   RB --> REG[/"Add to Site Register<br/>(next access review +90 days), notify owners"/]:::good
-  classDef good fill:#dcfce7,stroke:#15803d,color:#14532d
-  classDef bad fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
-```
-
-## 04 — InfoPath triage (Replace / Retire, never as-is)
-
-```mermaid
-flowchart TD
-  A([New InfoPath Register item]) --> U{"No submissions in 12 months,<br/>or Low criticality and fewer than 10?"}
-  U -->|Yes| RT["Recommend Retire<br/>(export data to read-only archive)"]
-  U -->|No| CX{"More than 10 rules, data connections,<br/>code-behind or repeating sections?"}
-  CX -->|Yes| PA["Recommend Replace:<br/>Power Apps + Power Automate"]
-  CX -->|No| SL["Recommend Replace:<br/>SharePoint List + Power Automate"]
-  RT & PA & SL --> O{"Business owner accepts?"}
-  O -->|Yes| D[/"Triaged; Decision Log; service owner adds to backlog"/]:::good
-  O -->|No| DS[/"Triage disputed -> service owner agrees<br/>Replace or Retire with owner"/]:::bad
   classDef good fill:#dcfce7,stroke:#15803d,color:#14532d
   classDef bad fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
 ```

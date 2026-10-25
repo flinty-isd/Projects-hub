@@ -2,7 +2,7 @@
   "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
   "contentVersion": "1.0.0.0",
   "displayName": "Govern SharePoint access requests",
-  "description": "Enforces the PID v3.1 Access Method Decision Table. Triggers on each new 'Access Requests' item and routes by user type: rejects service/shared accounts outright, redirects view-only staff to the Employee App and screens to display pages, checks M365 (SharePoint) and Entra ID P2 licences via Graph before any approval, makes contractor guest access time-bound with owner + InfoSec approval, and sends privileged admin requests to InfoSec for a PIM eligible assignment. Approved access is granted only through security groups.",
+  "description": "Enforces the Access Method Decision Table (PID v4.2 Appendix A). Triggers on each new 'Access Requests' item and routes by user type: rejects service/shared accounts outright, redirects staff without a Microsoft licence to the Base8 CMS in the Employee App and screens to display pages, checks M365 (SharePoint) and Entra ID P2 licences via Graph before any approval, makes contractor guest access time-bound (90 days or less) with owner + InfoSec approval, and sends privileged admin requests to InfoSec for a PIM eligible assignment. Approved access is granted only through security groups.",
   "connectionReferences": {
     "shared_sharepointonline": {
       "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
@@ -109,7 +109,7 @@
                   "table": "Access Requests",
                   "id": "@triggerBody()?['ID']",
                   "item/Status/Value": "Rejected - Prohibited",
-                  "item/DecisionLog": "Service, shared and generic accounts are explicitly prohibited from SharePoint access (PID v3.1, Access Method Decision Table)."
+                  "item/DecisionLog": "Service, shared and generic accounts are explicitly prohibited from SharePoint access (D-03; PID v4.2 Appendix A)."
                 }
               },
               "runAfter": {}
@@ -154,7 +154,7 @@
                   "table": "Access Requests",
                   "id": "@triggerBody()?['ID']",
                   "item/Status/Value": "Closed - Use Employee App",
-                  "item/ApprovedAccessMethod": "Employee App (read-only)"
+                  "item/ApprovedAccessMethod": "Employee App - Base8 CMS (view published documents)"
                 }
               },
               "runAfter": {}
@@ -170,7 +170,7 @@
                 "parameters": {
                   "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
                   "emailMessage/Subject": "Use the Employee App to view this content",
-                  "emailMessage/Body": "<p>View-only access to departmental content, policies and H&amp;S information is provided through the Employee App, which needs no SharePoint licence. If you need to edit or collaborate, submit a new request choosing <i>Employee - edit / collaborate</i>.</p>",
+                  "emailMessage/Body": "<p>Staff without a Microsoft licence get departmental content, policies and H&amp;S information through the Base8 content system in the Employee App. They don't sign in to SharePoint, so no licence is needed. Anyone who signs in to SharePoint needs a named, licensed account: to edit or collaborate, submit a new request choosing <i>Employee - edit / collaborate</i>.</p>",
                   "emailMessage/Importance": "Normal"
                 }
               },
@@ -935,7 +935,7 @@
                   {
                     "lessOrEquals": [
                       "@ticks(coalesce(triggerBody()?['AccessEndDate'], '9999-12-31'))",
-                      "@ticks(addDays(utcNow(), 365))"
+                      "@ticks(addDays(utcNow(), 90))"
                     ]
                   }
                 ]
@@ -1155,7 +1155,7 @@
                         "table": "Access Requests",
                         "id": "@triggerBody()?['ID']",
                         "item/Status/Value": "Rejected - Not time-bound",
-                        "item/DecisionLog": "Guest access must have an end date no more than 12 months away."
+                        "item/DecisionLog": "Guest access must have an end date no more than 90 days away (PID v4.2, 8.4 and Appendix A)."
                       }
                     },
                     "runAfter": {}
@@ -1171,7 +1171,7 @@
                       "parameters": {
                         "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
                         "emailMessage/Subject": "Guest access request rejected: end date required",
-                        "emailMessage/Body": "<p>Contractor (guest) access must be time-bound. Resubmit with an access end date no more than 12 months from today.</p>",
+                        "emailMessage/Body": "<p>Contractor (guest) access must be time-bound to 90 days or less. Resubmit with an access end date no more than 90 days from today.</p>",
                         "emailMessage/Importance": "Normal"
                       }
                     },

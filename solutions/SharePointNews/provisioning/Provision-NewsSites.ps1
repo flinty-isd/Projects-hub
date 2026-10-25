@@ -19,7 +19,7 @@
       * makes the Delivery Log dispatch key (Title) unique and indexed, and adds a
         Needs checking view (rows that are Reserved or Reconcile)
       * locks Notices Archive, Comms Distribution and Delivery Log to the
-        configuration maintainers group (and the flow identity where it writes)
+        configuration maintainers group (and the named flow owner where it writes)
       * keeps content approval off on Site Pages: publishers are pre-approved,
         so a published page is live straight away (turns it off if it was on)
       * creates and publishes Publisher-Guide.aspx on HPUK News from
@@ -44,7 +44,7 @@ param(
     [Parameter(Mandatory)] [string] $HPUKPublisherGroupId,
     [Parameter(Mandatory)] [string] $OtherPublisherGroupId,
     [Parameter(Mandatory)] [string] $ConfigMaintainerGroupId,
-    [Parameter(Mandatory)] [string] $FlowIdentityUpn,           # account the flows' SharePoint connection signs in as
+    [Parameter(Mandatory)] [string] $FlowIdentityUpn,           # named news flow owner the connections sign in as (never a shared account, D-03)
     [string] $TermGroup = 'Communications',
     [string] $ClientId,
     [string] $Tenant,

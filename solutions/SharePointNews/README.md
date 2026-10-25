@@ -89,11 +89,12 @@ flowchart LR
    `taxonomy/TermSet-Department.csv` and `taxonomy/TermSet-Category.csv`
    into the Communications term group (SharePoint admin centre → Term store
    → Communications → Import term set), and a shared mailbox
-   for sending, with Send As for the news flow account (`svc-spo-news`, see the
+   for sending, with Send As for the **named news flow owner** (no service
+   or shared account, D-03; see the
    [deployment plan](../POWER-PLATFORM-DEPLOYMENT.md#identities)).
 2. **Provision.** Run `provisioning/Provision-NewsSites.ps1` with the two site
    URLs, the group object IDs and the flow
-   account's UPN (`svc-spo-news`). Then have a Purview compliance admin run
+   owner's UPN. Then have a Purview compliance admin run
    `provisioning/Set-NewsRetention.ps1` for the 7-year retention.
 3. **Manual site settings.** These have no supported cmdlet:
    - Site Pages → *Settings → Audience targeting* → **On**, on both sites.
@@ -109,7 +110,7 @@ flowchart LR
    python solutions/SharePointGovernance/tools/build_solution.py --root solutions/SharePointNews
    ```
    It needs three connections (SharePoint, Office 365 Outlook, Microsoft
-   Teams), signed in as `svc-spo-news`, and nine environment variables,
+   Teams), signed in as the named news flow owner, and nine environment variables,
    including Nigel's address (`SupportOwnerEmail`) and the urgent publishers'
    addresses, separated by semicolons (`UrgentPublisherEmails`). Leave
    `DispatchEnabled` and `ExpiryWritesEnabled` at No and `UrgentGoLiveDate`

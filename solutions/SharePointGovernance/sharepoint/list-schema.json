@@ -121,7 +121,7 @@
           "displayName": "URL alias",
           "type": "Text",
           "required": true,
-          "notes": "Becomes /sites/<alias>. Letters, numbers and hyphens only."
+          "notes": "Lower case [org]-[location]-[department]-[site], e.g. hpuk-pof-finance-payroll (PID v4.2 G-08). Flow 03 returns requests that don't follow it."
         },
         {
           "internalName": "Purpose",
@@ -207,7 +207,8 @@
             "Provisioned",
             "Provisioning failed",
             "Rejected",
-            "Returned - Ownership invalid"
+            "Returned - Ownership invalid",
+            "Returned - Naming standard"
           ],
           "default": "Submitted"
         },
@@ -285,7 +286,7 @@
           "displayName": "Access end date",
           "type": "DateTime",
           "required": false,
-          "notes": "Long-term contractor only. Must be within 12 months."
+          "notes": "Long-term contractor only. No more than 90 days ahead (PID v4.2, 8.4)."
         },
         {
           "internalName": "Status",
@@ -369,6 +370,8 @@
           "required": true,
           "choices": [
             "Active",
+            "Removal pending owner decision",
+            "Kept - owner decision",
             "Expired - access removed",
             "Revoked"
           ],
@@ -423,119 +426,6 @@
           "internalName": "AccessCount",
           "displayName": "People/groups with access",
           "type": "Number",
-          "required": false
-        }
-      ]
-    },
-    {
-      "listTitle": "InfoPath Register",
-      "listDescription": "Inventory of legacy InfoPath forms. Each is triaged Replace or Retire by flow 04; none is migrated as-is.",
-      "fields": [
-        {
-          "internalName": "SourceSite",
-          "displayName": "Source site (SharePoint 2013)",
-          "type": "Text",
-          "required": true
-        },
-        {
-          "internalName": "BusinessOwner",
-          "displayName": "Business owner",
-          "type": "Person",
-          "required": true
-        },
-        {
-          "internalName": "BusinessCriticality",
-          "displayName": "Business criticality",
-          "type": "Choice",
-          "required": true,
-          "choices": [
-            "High",
-            "Medium",
-            "Low"
-          ]
-        },
-        {
-          "internalName": "SubmissionsLast12Months",
-          "displayName": "Submissions (last 12 months)",
-          "type": "Number",
-          "required": true
-        },
-        {
-          "internalName": "RuleCount",
-          "displayName": "Rules / conditions / actions",
-          "type": "Number",
-          "required": true
-        },
-        {
-          "internalName": "HasDataConnections",
-          "displayName": "Has data connections (UDCX / XML / SharePoint)",
-          "type": "Boolean",
-          "required": false,
-          "default": false
-        },
-        {
-          "internalName": "HasCodeBehind",
-          "displayName": "Has code-behind",
-          "type": "Boolean",
-          "required": false,
-          "default": false
-        },
-        {
-          "internalName": "HasRepeatingSections",
-          "displayName": "Has repeating sections/tables",
-          "type": "Boolean",
-          "required": false,
-          "default": false
-        },
-        {
-          "internalName": "Disposition",
-          "displayName": "Disposition",
-          "type": "Choice",
-          "required": false,
-          "choices": [
-            "Replace",
-            "Retire"
-          ],
-          "notes": "There is deliberately no 'Migrate as-is' option."
-        },
-        {
-          "internalName": "ReplacementPattern",
-          "displayName": "Replacement pattern",
-          "type": "Text",
-          "required": false
-        },
-        {
-          "internalName": "Status",
-          "displayName": "Status",
-          "type": "Choice",
-          "required": true,
-          "choices": [
-            "Registered",
-            "Awaiting owner decision",
-            "Triaged - Replace",
-            "Triaged - Retire",
-            "Triage disputed",
-            "Replacement live",
-            "Retired"
-          ],
-          "default": "Registered"
-        },
-        {
-          "internalName": "DecisionBy",
-          "displayName": "Decision by",
-          "type": "Text",
-          "required": false
-        },
-        {
-          "internalName": "DecisionDate",
-          "displayName": "Decision date",
-          "type": "DateTime",
-          "required": false
-        },
-        {
-          "internalName": "DecisionLog",
-          "displayName": "Decision log",
-          "type": "Note",
           "required": false
         }
       ]
