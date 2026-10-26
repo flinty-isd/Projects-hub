@@ -21,6 +21,9 @@ flowchart LR
   subgraph Content["Content disposition"]
     F5["05 File share disposition"]
   end
+  subgraph Board["Governance decisions"]
+    F7["07 Board paper approval"] --> DL[("Decision Log")]
+  end
 ```
 
 ## 01 — Access request (Access Method Decision Table)
@@ -136,3 +139,22 @@ flowchart TD
   classDef info fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
 ```
 
+## 07 — Board paper approval (TAB or BAU governance forum)
+
+```mermaid
+flowchart TD
+  A([New Board Approval Requests item]) --> C{"Decision requested, https links,<br/>approvers set for the forum?"}
+  C -->|No| R[/"Returned - incomplete<br/>presenter told"/]:::bad
+  C -->|Yes| IR["In review"]
+  IR --> AP{"Every forum member responds<br/>(28 days)"}
+  AP -->|Not all responded| EX[/"Expired - no decision<br/>presenter and service owner told"/]:::bad
+  AP -->|Any Reject| RJ[/"Rejected"/]:::bad
+  AP -->|Any Approve with conditions| AC[/"Approved with conditions"/]:::info
+  AP -->|All Approve| OK[/"Approved"/]:::good
+  RJ --> DL[("Decision Log<br/>category Board paper")]
+  AC --> DL
+  OK --> DL
+  classDef good fill:#dcfce7,stroke:#15803d,color:#14532d
+  classDef bad fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+  classDef info fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+```

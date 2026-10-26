@@ -1,0 +1,419 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Approve a governance paper (TAB or BAU forum)",
+  "description": "Triggers on each new 'Board Approval Requests' item. Checks the request is complete, sends the paper and deck to every member of the chosen forum (TAB or the BAU governance forum) for Approve, Approve with conditions or Reject, waits for all responses for up to 28 days, then records the outcome in the Decision Log and on the request and tells the presenter and the SharePoint service owner. Any rejection rejects the paper; otherwise any condition makes it 'Approved with conditions'.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    },
+    "shared_approvals": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "GovernanceSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{governance-site}"
+    },
+    "SharePointServiceOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{sharepoint-service-owner}@{domain}"
+    },
+    "TABApproverEmails": {
+      "type": "String",
+      "defaultValue": "{tab-member-1}@{domain};{tab-member-2}@{domain}"
+    },
+    "BAUForumApproverEmails": {
+      "type": "String",
+      "defaultValue": "{forum-member-1}@{domain};{forum-member-2}@{domain}"
+    }
+  },
+  "triggers": {
+    "When_a_paper_is_submitted": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnNewItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('GovernanceSiteUrl')",
+          "table": "Board Approval Requests"
+        }
+      },
+      "recurrence": {
+        "frequency": "Minute",
+        "interval": 5
+      },
+      "splitOn": "@triggerOutputs()?['body/value']"
+    }
+  },
+  "actions": {
+    "Initialize_Approvers": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "Approvers",
+            "type": "string",
+            "value": "@{trim(if(equals(triggerBody()?['Forum']?['Value'], 'TAB'), parameters('TABApproverEmails'), parameters('BAUForumApproverEmails')))}"
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Condition_Incomplete": {
+      "type": "If",
+      "expression": {
+        "or": [
+          {
+            "equals": [
+              "@empty(variables('Approvers'))",
+              true
+            ]
+          },
+          {
+            "not": {
+              "startsWith": [
+                "@toLower(coalesce(triggerBody()?['PaperLink'], ''))",
+                "https://"
+              ]
+            }
+          },
+          {
+            "and": [
+              {
+                "not": {
+                  "equals": [
+                    "@empty(triggerBody()?['DeckLink'])",
+                    true
+                  ]
+                }
+              },
+              {
+                "not": {
+                  "startsWith": [
+                    "@toLower(coalesce(triggerBody()?['DeckLink'], ''))",
+                    "https://"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "equals": [
+              "@empty(triggerBody()?['DecisionRequested'])",
+              true
+            ]
+          }
+        ]
+      },
+      "actions": {
+        "Mark_returned": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "PatchItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('GovernanceSiteUrl')",
+              "table": "Board Approval Requests",
+              "id": "@triggerBody()?['ID']",
+              "item/Status/Value": "Returned - incomplete"
+            }
+          },
+          "runAfter": {}
+        },
+        "Notify_returned": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@{triggerBody()?['Presenter']?['Email']}",
+              "emailMessage/Subject": "@{concat('Paper returned: ', triggerBody()?['PaperReference'])}",
+              "emailMessage/Body": "<p><b>@{triggerBody()?['Title']}</b> was not sent for approval. Check that:</p><ul><li>the decision requested is filled in</li><li>the paper link (and deck link, if given) start with https:// and are shared with every approver</li><li>approvers are set for @{triggerBody()?['Forum']?['Value']} (SharePoint service owner: the flow setting)</li></ul><p>Then submit it again as a new item.</p>",
+              "emailMessage/Importance": "Normal",
+              "emailMessage/Cc": "@parameters('SharePointServiceOwnerEmail')"
+            }
+          },
+          "runAfter": {
+            "Mark_returned": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "else": {
+        "actions": {
+          "Mark_in_review": {
+            "type": "OpenApiConnection",
+            "inputs": {
+              "host": {
+                "connectionName": "shared_sharepointonline",
+                "operationId": "PatchItem",
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+              },
+              "parameters": {
+                "dataset": "@parameters('GovernanceSiteUrl')",
+                "table": "Board Approval Requests",
+                "id": "@triggerBody()?['ID']",
+                "item/Status/Value": "In review"
+              }
+            },
+            "runAfter": {}
+          },
+          "Approval_board_paper": {
+            "type": "OpenApiConnectionWebhook",
+            "inputs": {
+              "host": {
+                "connectionName": "shared_approvals",
+                "operationId": "StartAndWaitForAnApproval",
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+              },
+              "parameters": {
+                "approvalType": "CustomAwaitAll",
+                "WebhookApprovalCreationInput/responseOptions": [
+                  "Approve",
+                  "Approve with conditions",
+                  "Reject"
+                ],
+                "WebhookApprovalCreationInput/title": "@{take(concat(triggerBody()?['Forum']?['Value'], ' approval: ', triggerBody()?['PaperReference'], ' - ', triggerBody()?['Title']), 255)}",
+                "WebhookApprovalCreationInput/assignedTo": "@variables('Approvers')",
+                "WebhookApprovalCreationInput/details": "@{concat('**Decision requested**', decodeUriComponent('%0A%0A'), triggerBody()?['DecisionRequested'], decodeUriComponent('%0A%0A'), '**Paper:** ', triggerBody()?['PaperLink'], decodeUriComponent('%0A%0A'), if(empty(triggerBody()?['DeckLink']), '', concat('**Deck:** ', triggerBody()?['DeckLink'], decodeUriComponent('%0A%0A'))), '**Meeting:** ', formatDateTime(convertFromUtc(triggerBody()?['MeetingDate'], 'GMT Standard Time'), 'dd/MM/yyyy'), ' · Presenter: ', triggerBody()?['Presenter']?['DisplayName'], decodeUriComponent('%0A%0A'), 'Respond Approve, Approve with conditions (write the conditions in your comments) or Reject. Every member must respond.')}",
+                "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['PaperLink']",
+                "WebhookApprovalCreationInput/itemLinkDescription": "Open the paper",
+                "WebhookApprovalCreationInput/requestor": "@{triggerBody()?['Presenter']?['Email']}",
+                "WebhookApprovalCreationInput/enableNotifications": true,
+                "WebhookApprovalCreationInput/enableReassignment": false
+              }
+            },
+            "limit": {
+              "timeout": "P28D"
+            },
+            "runAfter": {
+              "Mark_in_review": [
+                "Succeeded"
+              ]
+            }
+          },
+          "Scope_decided": {
+            "type": "Scope",
+            "actions": {
+              "Filter_rejections": {
+                "type": "Query",
+                "inputs": {
+                  "from": "@body('Approval_board_paper')?['responses']",
+                  "where": "@equals(item()?['approverResponse'], 'Reject')"
+                },
+                "runAfter": {}
+              },
+              "Filter_conditions": {
+                "type": "Query",
+                "inputs": {
+                  "from": "@body('Approval_board_paper')?['responses']",
+                  "where": "@equals(item()?['approverResponse'], 'Approve with conditions')"
+                },
+                "runAfter": {
+                  "Filter_rejections": [
+                    "Succeeded"
+                  ]
+                }
+              },
+              "Select_response_lines": {
+                "type": "Select",
+                "inputs": {
+                  "from": "@body('Approval_board_paper')?['responses']",
+                  "select": "@concat(item()?['responder']?['displayName'], ': ', item()?['approverResponse'], if(empty(item()?['comments']), '', concat(' - ', item()?['comments'])))"
+                },
+                "runAfter": {
+                  "Filter_conditions": [
+                    "Succeeded"
+                  ]
+                }
+              },
+              "Select_responders": {
+                "type": "Select",
+                "inputs": {
+                  "from": "@body('Approval_board_paper')?['responses']",
+                  "select": "@item()?['responder']?['displayName']"
+                },
+                "runAfter": {
+                  "Select_response_lines": [
+                    "Succeeded"
+                  ]
+                }
+              },
+              "Compose_outcome": {
+                "type": "Compose",
+                "inputs": "@if(greater(length(body('Filter_rejections')), 0), 'Rejected', if(greater(length(body('Filter_conditions')), 0), 'Approved with conditions', 'Approved'))",
+                "runAfter": {
+                  "Select_responders": [
+                    "Succeeded"
+                  ]
+                }
+              },
+              "Compose_responses": {
+                "type": "Compose",
+                "inputs": "@join(body('Select_response_lines'), decodeUriComponent('%0A'))",
+                "runAfter": {
+                  "Compose_outcome": [
+                    "Succeeded"
+                  ]
+                }
+              },
+              "Log_decision": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_sharepointonline",
+                    "operationId": "PostItem",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                  },
+                  "parameters": {
+                    "dataset": "@parameters('GovernanceSiteUrl')",
+                    "table": "Decision Log",
+                    "item/Title": "@{take(concat(triggerBody()?['PaperReference'], ' - ', triggerBody()?['Title']), 255)}",
+                    "item/Category/Value": "Board paper",
+                    "item/Decision": "@{take(concat(triggerBody()?['Forum']?['Value'], ': ', outputs('Compose_outcome')), 255)}",
+                    "item/DecidedBy": "@{take(join(body('Select_responders'), '; '), 255)}",
+                    "item/DecisionDate": "@utcNow()",
+                    "item/Rationale": "@{concat(triggerBody()?['DecisionRequested'], decodeUriComponent('%0A%0A'), outputs('Compose_responses'))}"
+                  }
+                },
+                "runAfter": {
+                  "Compose_responses": [
+                    "Succeeded"
+                  ]
+                }
+              },
+              "Record_outcome": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_sharepointonline",
+                    "operationId": "PatchItem",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                  },
+                  "parameters": {
+                    "dataset": "@parameters('GovernanceSiteUrl')",
+                    "table": "Board Approval Requests",
+                    "id": "@triggerBody()?['ID']",
+                    "item/Status/Value": "@outputs('Compose_outcome')",
+                    "item/Responses": "@outputs('Compose_responses')",
+                    "item/DecidedOn": "@utcNow()",
+                    "item/DecisionLogId": "@body('Log_decision')?['ID']"
+                  }
+                },
+                "runAfter": {
+                  "Log_decision": [
+                    "Succeeded"
+                  ]
+                }
+              },
+              "Notify_outcome": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_office365",
+                    "operationId": "SendEmailV2",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                  },
+                  "parameters": {
+                    "emailMessage/To": "@{triggerBody()?['Presenter']?['Email']}",
+                    "emailMessage/Subject": "@{concat(triggerBody()?['Forum']?['Value'], ' decision: ', outputs('Compose_outcome'), ' - ', triggerBody()?['PaperReference'])}",
+                    "emailMessage/Body": "<p><b>@{triggerBody()?['Title']}</b> (@{triggerBody()?['PaperReference']}) was <b>@{toLower(outputs('Compose_outcome'))}</b> by @{triggerBody()?['Forum']?['Value']} on @{formatDateTime(convertFromUtc(utcNow(), 'GMT Standard Time'), 'dd/MM/yyyy')}.</p><p>Responses:<br>@{join(body('Select_response_lines'), '<br>')}</p><p>The outcome is recorded in the Decision Log (item @{body('Log_decision')?['ID']}). Record it in the paper's sign-off table too.</p>",
+                    "emailMessage/Importance": "Normal",
+                    "emailMessage/Cc": "@parameters('SharePointServiceOwnerEmail')"
+                  }
+                },
+                "runAfter": {
+                  "Record_outcome": [
+                    "Succeeded"
+                  ]
+                }
+              }
+            },
+            "runAfter": {
+              "Approval_board_paper": [
+                "Succeeded"
+              ]
+            }
+          },
+          "Scope_expired": {
+            "type": "Scope",
+            "actions": {
+              "Mark_expired": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_sharepointonline",
+                    "operationId": "PatchItem",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                  },
+                  "parameters": {
+                    "dataset": "@parameters('GovernanceSiteUrl')",
+                    "table": "Board Approval Requests",
+                    "id": "@triggerBody()?['ID']",
+                    "item/Status/Value": "Expired - no decision"
+                  }
+                },
+                "runAfter": {}
+              },
+              "Notify_expired": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_office365",
+                    "operationId": "SendEmailV2",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                  },
+                  "parameters": {
+                    "emailMessage/To": "@{triggerBody()?['Presenter']?['Email']}",
+                    "emailMessage/Subject": "@{concat('No decision after 28 days: ', triggerBody()?['PaperReference'])}",
+                    "emailMessage/Body": "<p>Not every member of @{triggerBody()?['Forum']?['Value']} responded to <b>@{triggerBody()?['Title']}</b> within 28 days, so the approval has closed without a decision.</p><p>Chase the outstanding members or take the paper to the meeting, then resubmit it as a new item.</p>",
+                    "emailMessage/Importance": "Normal",
+                    "emailMessage/Cc": "@parameters('SharePointServiceOwnerEmail')"
+                  }
+                },
+                "runAfter": {
+                  "Mark_expired": [
+                    "Succeeded"
+                  ]
+                }
+              }
+            },
+            "runAfter": {
+              "Approval_board_paper": [
+                "TimedOut"
+              ]
+            }
+          }
+        }
+      },
+      "runAfter": {
+        "Initialize_Approvers": [
+          "Succeeded"
+        ]
+      }
+    }
+  }
+}

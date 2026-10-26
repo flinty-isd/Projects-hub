@@ -3,7 +3,7 @@
   "uniqueName": "SharePointGovernance",
   "displayName": "SharePoint Governance (BAU)",
   "description": "Power Automate flows that enforce SharePoint Online governance controls (PID v3.1) in BAU.",
-  "version": "1.1.0.0",
+  "version": "1.2.0.0",
   "publisher": {
     "uniqueName": "HPUKIT",
     "displayName": "HPUK IT",
@@ -66,6 +66,14 @@
       "displayName": "Remove expired guests automatically",
       "description": "No (default): on a guest's end date flow 02 asks the site owner or sponsor to confirm removal (PID v4.2 G-11). Yes only if the Control Board rules expired guest access a critical class (D-GSA-03).",
       "default": false
+    },
+    "TABApproverEmails": {
+      "displayName": "TAB approver emails",
+      "description": "Semicolon-separated mailboxes of the Technical Architecture Board members who approve papers sent by flow 07. Every member must respond."
+    },
+    "BAUForumApproverEmails": {
+      "displayName": "BAU forum approver emails",
+      "description": "Semicolon-separated mailboxes of the BAU governance forum members (service owner, InfoSec, IT Operations, Stage 2 owner) who approve papers sent by flow 07."
     }
   },
   "connectionReferences": {
