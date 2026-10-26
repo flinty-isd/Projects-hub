@@ -167,6 +167,33 @@
       ]
     },
     {
+      "listTitle": "News Videos",
+      "listDescription": "Document library on BOTH news sites for video used in news posts. Videos play through Stream (on SharePoint) and are added to a post with the File and media web part. Same permissions as the site (publishers edit, readers view); major versioning on; covered by the 7-year retention. No external video embeds.",
+      "sites": [
+        "HPUK News",
+        "Other News"
+      ],
+      "template": "DocumentLibrary",
+      "fields": [
+        {
+          "internalName": "Department",
+          "displayName": "Department",
+          "type": "Taxonomy",
+          "required": false,
+          "termSet": "Communications|Department",
+          "notes": "Who owns the video. Optional."
+        },
+        {
+          "internalName": "CaptionsChecked",
+          "displayName": "Captions checked",
+          "type": "Boolean",
+          "required": false,
+          "default": false,
+          "notes": "Set to Yes once the Stream captions or transcript have been checked (accessibility, PID v4.2 9.1)."
+        }
+      ]
+    },
+    {
       "listTitle": "Notices Archive",
       "listDescription": "Read-only list on HPUK News holding historical notices migrated from Internal Notices. Edit rights: configuration maintainers only, during migration.",
       "sites": [

@@ -14,6 +14,8 @@
       * creates Notices and Attachments, Notices Archive, Comms Distribution
         and Delivery Log on HPUK News
       * adds the Current and Archive views to Notices and Attachments
+      * creates a News Videos library on both sites (major versions; videos
+        play through Stream and inherit the site's permissions)
       * puts the scoped reader group in Visitors and each site's publisher group
         in Members (never "Everyone except external users": the tenant is shared)
       * makes the Delivery Log dispatch key (Title) unique and indexed, and adds a
@@ -136,6 +138,9 @@ foreach ($site in $sites) {
         Set-PnPList -Identity 'Site Pages' -EnableModeration $false -Connection $conn | Out-Null
         Write-Output '  ~ Site Pages: content approval turned off'
     }
+
+    # Video for news posts: same permissions as the site, plays through Stream.
+    Set-PnPList -Identity 'News Videos' -EnableVersioning $true -EnableMinorVersions $false -Connection $conn | Out-Null
 
     if ($site.Key -eq 'HPUK News') {
         Set-PnPList -Identity 'Notices and Attachments' -EnableVersioning $true -EnableMinorVersions $false -Connection $conn | Out-Null
