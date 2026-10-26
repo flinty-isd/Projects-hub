@@ -530,7 +530,7 @@
     },
     {
       "listTitle": "Decision Log",
-      "listDescription": "Audit trail of governance decisions written by flow 04 (and available for access and file share decisions).",
+      "listDescription": "Audit trail of governance decisions: board paper outcomes written by flow 07, and available for access and file share decisions.",
       "fields": [
         {
           "internalName": "Category",
@@ -540,8 +540,10 @@
           "choices": [
             "InfoPath",
             "File share",
-            "Access"
-          ]
+            "Access",
+            "Board paper"
+          ],
+          "notes": "InfoPath is kept for rows written before flow 04 was retired on 25/10/2026."
         },
         {
           "internalName": "Decision",
@@ -565,6 +567,98 @@
           "internalName": "Rationale",
           "displayName": "Rationale",
           "type": "Note",
+          "required": false
+        }
+      ]
+    },
+    {
+      "listTitle": "Board Approval Requests",
+      "listDescription": "Governance papers going to TAB or the BAU governance forum for a decision. Each new item starts flow 07, which sends the paper and deck to the forum's members for approval and records the outcome in the Decision Log.",
+      "fields": [
+        {
+          "internalName": "PaperReference",
+          "displayName": "Paper reference",
+          "type": "Text",
+          "required": true,
+          "notes": "e.g. TAB-SPO-GOV-001 v1-0. The item's Title holds the paper's title."
+        },
+        {
+          "internalName": "Forum",
+          "displayName": "Forum",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "TAB",
+            "BAU governance forum"
+          ],
+          "default": "TAB"
+        },
+        {
+          "internalName": "DecisionRequested",
+          "displayName": "Decision requested",
+          "type": "Note",
+          "required": true,
+          "notes": "What the forum is asked to approve, numbered as in the paper."
+        },
+        {
+          "internalName": "PaperLink",
+          "displayName": "Paper link",
+          "type": "Text",
+          "required": true,
+          "notes": "https link to the paper, already shared with every approver."
+        },
+        {
+          "internalName": "DeckLink",
+          "displayName": "Deck link",
+          "type": "Text",
+          "required": false,
+          "notes": "https link to the presentation, already shared with every approver."
+        },
+        {
+          "internalName": "Presenter",
+          "displayName": "Presenter",
+          "type": "Person",
+          "required": true
+        },
+        {
+          "internalName": "MeetingDate",
+          "displayName": "Meeting date",
+          "type": "DateTime",
+          "required": true
+        },
+        {
+          "internalName": "Status",
+          "displayName": "Status",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Submitted",
+            "Returned - incomplete",
+            "In review",
+            "Approved",
+            "Approved with conditions",
+            "Rejected",
+            "Expired - no decision"
+          ],
+          "default": "Submitted"
+        },
+        {
+          "internalName": "Responses",
+          "displayName": "Responses",
+          "type": "Note",
+          "required": false,
+          "notes": "Each approver's response and comments, written by flow 07."
+        },
+        {
+          "internalName": "DecidedOn",
+          "displayName": "Decided on",
+          "type": "DateTime",
+          "required": false
+        },
+        {
+          "internalName": "DecisionLogId",
+          "displayName": "Decision Log item",
+          "type": "Number",
           "required": false
         }
       ]

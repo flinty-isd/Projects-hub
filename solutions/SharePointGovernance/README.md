@@ -14,6 +14,7 @@ ended with the migration and are not included.
 | 03 | [Site provisioning](powerautomate/flows/03-Site-Provisioning.json) | New *Site Requests* item | Naming standard (G-08), two named owners, permission groups, external sharing off by default; per-site Sites.Selected grant (G-04) before the baseline runbook | PID v4.2 5.3, 6.4, 8.4 |
 | 05 | [File share disposition](powerautomate/flows/05-FileShare-Disposition.json) | New *File Share Register* item | Remaining file shares move to SharePoint case by case only; integration/system-dependent shares excluded | PID v4.2 2.3.1 |
 | 06 | [Access recertification](powerautomate/flows/06-Access-Recertification.json) | Monthly, 1st, 07:00 | 90-day review of site access, orphaned-site detection, quarterly review of privileged admin roles | PID v4.2 8.4 |
+| 07 | [Board paper approval](powerautomate/flows/07-Board-Paper-Approval.json) | New *Board Approval Requests* item | Governance papers go to TAB or the BAU governance forum for a recorded decision: every member responds Approve, Approve with conditions or Reject, and the outcome lands in the *Decision Log* | BAU governance model (TAB-SPO-GOV-001) |
 
 **Flow 04 (InfoPath triage) was retired on 25 October 2026.** Microsoft
 removed InfoPath Forms Services on 14/07/2026, and PID v4.2 triages forms
@@ -53,6 +54,8 @@ only changes an environment variable.
 | `InfoSecApproverEmail` | Security & Architecture (InfoSec) | Approves guest access, privileged admin roles, and sites with external sharing or Highly Confidential content; quarterly admin-role review |
 | `ITOpsOwnerEmail` | IT Operations owner | Applies and registers the Sites.Selected grant for each new site (flow 03); creates PIM assignments; agrees dispositions for excluded file shares and permission remediation; orphaned-site alerts |
 | `ServiceDeskEmail` | Service Desk shared mailbox | Fulfilment tickets: AD group changes and access removals |
+| `TABApproverEmails` | Technical Architecture Board members | Approve governance papers submitted for TAB (flow 07); semicolon-separated, every member must respond |
+| `BAUForumApproverEmails` | BAU governance forum members | Approve papers submitted for the forum (flow 07); semicolon-separated |
 
 The SharePoint service owner role is new for BAU, so set it to whoever IT
 names as service owner. A shared mailbox or distribution list is better than
@@ -89,7 +92,8 @@ one person's address: approvals still reach someone during absences.
 5. **Import the solution** (see [Importing](#importing) below) and fill in
    the environment variables when prompted.
 6. Turn the flows on in this order: 03 and 06 (sites), then 01 and 02
-   (access), then 05.
+   (access), then 05. Flow 07 depends on no other flow and can go on at
+   any point once the approver settings are filled in.
 7. **Ownership**: hand the flows and their connections to the SharePoint
    service owner's team in the BAU support model (runbook / KB), so they
    don't depend on a project account.
@@ -119,8 +123,9 @@ This writes `solutions/SharePointGovernance/dist/SharePointGovernance_<version>.
    site URL, the tenant root URL, the four role mailboxes, the three
    Automation account values, the review interval (90 days by default), the
    site naming codes (`SiteOrgCode`, default `hpuk`, pending ruling C-03;
-   `SiteLocationCodes`, default `pof;har;ltp;ldn`) and `GuestAutoRemoval`
-   (default No; see below).
+   `SiteLocationCodes`, default `pof;har;ltp;ldn`), `GuestAutoRemoval`
+   (default No; see below) and the two approver lists for flow 07
+   (`TABApproverEmails`, `BAUForumApproverEmails`).
 5. **Import**. It takes a minute or two.
 6. Open the solution and turn each flow on (they import switched off), in
    the order given in Deploying step 6. A flow that won't turn on shows the
@@ -166,6 +171,18 @@ every future build includes it.
 - **Choice values** the flows write are checked against the list schema by
   `tools/validate_flows.py`, so a renamed status fails CI rather than failing
   silently at run time.
+
+- **Board paper approval (flow 07)**: the presenter adds an item to
+  *Board Approval Requests* with the paper reference, the decision
+  requested, the meeting date and https links to the paper and deck. Share
+  both with every approver first: the flow sends links, not copies. A
+  request missing any of these, or with no approvers set for its forum, is
+  returned. Every member must respond within 28 days (the Approvals limit is
+  30); otherwise the request closes as *Expired - no decision*. Any Reject
+  rejects the paper; otherwise any *Approve with conditions* makes it
+  *Approved with conditions*, with the conditions in the responses. The
+  outcome and each member's comments go to the *Decision Log* (category
+  *Board paper*) and back on the request.
 
 ## Validating changes
 
