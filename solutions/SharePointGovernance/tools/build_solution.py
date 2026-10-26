@@ -168,17 +168,20 @@ def env_var_xml(param, ptype):
     if isinstance(value, bool):
         value = "yes" if value else "no"  # how Dataverse stores a Boolean environment variable
     default = f"\n  <defaultvalue>{escape(str(value))}</defaultvalue>" if "default" in spec else ""
-    required = "0" if "default" in spec else "1"
+    # Never mandatory at import: the import screen can block or show variables without their
+    # titles. Values are set afterwards under Solutions > Environment variables, where the
+    # display names always show. Variables with no default say so in their description.
+    description = spec["description"] if "default" in spec else f"Set after import. {spec['description']}"
     return f"""<environmentvariabledefinition schemaname="{schema_name(param)}">{default}
-  <description default={quoteattr(spec['description'])}>
-    <label description={quoteattr(spec['description'])} languagecode="1033" />
+  <description default={quoteattr(description)}>
+    <label description={quoteattr(description)} languagecode="1033" />
   </description>
   <displayname default={quoteattr(spec['displayName'])}>
     <label description={quoteattr(spec['displayName'])} languagecode="1033" />
   </displayname>
   <introducedversion>1.0.0.0</introducedversion>
   <iscustomizable>1</iscustomizable>
-  <isrequired>{required}</isrequired>
+  <isrequired>0</isrequired>
   <secretstore>0</secretstore>
   <type>{ENV_TYPES[ptype]}</type>
 </environmentvariabledefinition>

@@ -3,7 +3,7 @@
   "uniqueName": "SharePointGovernance",
   "displayName": "SharePoint Governance (BAU)",
   "description": "Power Automate flows that enforce SharePoint Online governance controls (PID v3.1) in BAU.",
-  "version": "1.1.0.0",
+  "version": "1.1.1.0",
   "publisher": {
     "uniqueName": "HPUKIT",
     "displayName": "HPUK IT",

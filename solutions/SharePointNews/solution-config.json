@@ -3,7 +3,7 @@
   "uniqueName": "SharePointNews",
   "displayName": "SharePoint News and Notices",
   "description": "Expiry, weekly port roundup and urgent notice flows for the HPUK News and Other News sites.",
-  "version": "1.2.0.0",
+  "version": "1.2.1.0",
   "publisher": {
     "uniqueName": "HPUKIT",
     "displayName": "HPUK IT",
