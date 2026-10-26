@@ -233,7 +233,7 @@
     },
     {
       "listTitle": "Comms Distribution",
-      "listDescription": "One row per port destination for C2 and C3. Edit rights: configuration maintainers only.",
+      "listDescription": "One row per destination for C2 and C3: one per port, plus optional company-wide rows (Port = All ports) that receive every post in the Monday roundup and never get urgent alerts. Edit rights: configuration maintainers only.",
       "sites": [
         "HPUK News"
       ],
@@ -246,9 +246,10 @@
           "choices": [
             "Felixstowe",
             "Harwich",
-            "Thamesport"
+            "Thamesport",
+            "All ports"
           ],
-          "notes": "Confirmed ports. Must match the Comms Distribution Port values exactly. Never 'All ports': that value lives on posts only."
+          "notes": "Must match the post Port values exactly. All ports = company-wide destination (e.g. an all-HPUK list or a corporate Teams channel): it gets every post in the roundup, but no urgent alerts, because each port already receives All ports alerts."
         },
         {
           "internalName": "EmailGroup",

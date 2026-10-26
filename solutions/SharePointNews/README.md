@@ -105,7 +105,11 @@ flowchart LR
      required and deadline, attachments, business contact.
    - Home pages: set up the News web parts as listed below.
 4. **Comms Distribution.** Add one row per port, with its email group, Team ID
-   and Channel ID. Set `Enabled` = No until each destination has been tested.
+   and Channel ID. For a company-wide roundup, add a row with Port **All
+   ports** (for example an all-HPUK list or a corporate Teams channel): it
+   receives every post in the Monday roundup but never an urgent alert, since
+   each port already gets All ports alerts. Anyone in both a port list and the
+   company-wide list gets two roundups. Set `Enabled` = No until each destination has been tested.
 5. **Import the flows.** Build the package and import it as in
    [the governance README](../SharePointGovernance/README.md#importing):
    ```
@@ -163,6 +167,7 @@ is not the production permission model.
 | Unauthorised urgent | An urgent post by a publisher not on the urgent list sends nothing, logs *Skipped - not an urgent publisher* and tells Communications once |
 | Audience-targeted urgent | Nothing is broadcast. A *Skipped - audience targeted* row is logged and Communications is emailed once |
 | All ports | A post tagged *All ports* reaches every enabled row |
+| Company-wide roundup | An enabled Comms Distribution row with Port All ports gets one digest listing every port's posts. An urgent post for All ports does **not** go to that row |
 | Roundup by theme | `RoundupGroupByTheme` = Yes: posts appear under their theme headings (a post with two themes under both), posts with no theme under Other news |
 | Roundup | Covers last Monday 00:00 to this Monday 00:00 UK time, for the right ports. A port with no posts gets nothing. A re-run later in the week sends nothing new |
 | Daylight saving | Runs in the week the clocks change still fire at 06:00 and 07:00 UK time |
