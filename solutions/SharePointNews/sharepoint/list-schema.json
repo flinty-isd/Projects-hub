@@ -35,6 +35,15 @@
           "notes": "What the post is about: 16 terms, confirmed for UAT (taxonomy/TermSet-Category.csv). The Safety news views filter on Health and Safety."
         },
         {
+          "internalName": "StrategyTheme",
+          "displayName": "Strategy theme",
+          "type": "Taxonomy",
+          "required": false,
+          "multi": true,
+          "termSet": "Communications|Strategy theme",
+          "notes": "Which part of the strategy the story supports: Our People, Our Business, Our Environment, One TEAM (taxonomy/TermSet-StrategyTheme.csv). Optional; more than one allowed. Theme sections on the intranet home filter on it, and C2 can group the roundup by it (RoundupGroupByTheme)."
+        },
+        {
           "internalName": "Port",
           "displayName": "Port",
           "type": "MultiChoice",

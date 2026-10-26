@@ -33,8 +33,8 @@
 .NOTES
     Requires PnP.PowerShell 2.x and an app registration with Sites.FullControl.All
     and TermStore.ReadWrite.All, or run with -Interactive as a SharePoint admin.
-    The Department and Category term sets must already exist in the term group:
-    import taxonomy/TermSet-Department.csv and taxonomy/TermSet-Category.csv first.
+    The Department, Category and Strategy theme term sets must already exist in the
+    term group: import the three CSVs in taxonomy/ first.
     Not yet run against a tenant: run it on a test pair of sites first.
 #>
 param(
@@ -81,7 +81,7 @@ function Ensure-Field($conn, [string] $listTitle, $f) {
     switch ($f.type) {
         'Taxonomy' {
             $path = "$TermGroup|$($f.termSet.Split('|')[-1])"
-            Add-PnPTaxonomyField @common -TermSetPath $path -Required:([bool]$f.required) | Out-Null
+            Add-PnPTaxonomyField @common -TermSetPath $path -Required:([bool]$f.required) -MultiValue:([bool]$f.multi) | Out-Null
         }
         'MultiChoice' { Add-PnPField @common -Type MultiChoice -Choices $f.choices -Required:([bool]$f.required) | Out-Null }
         'Choice'      { Add-PnPField @common -Type Choice -Choices $f.choices -Required:([bool]$f.required) | Out-Null }

@@ -3,7 +3,7 @@
   "uniqueName": "SharePointNews",
   "displayName": "SharePoint News and Notices",
   "description": "Expiry, weekly port roundup and urgent notice flows for the HPUK News and Other News sites.",
-  "version": "1.1.0.0",
+  "version": "1.2.0.0",
   "publisher": {
     "uniqueName": "HPUKIT",
     "displayName": "HPUK IT",
@@ -49,6 +49,11 @@
       "displayName": "Urgent alerts go-live date (UTC)",
       "description": "Urgent alerts are only sent for posts first published on or after this date and time, e.g. 2026-11-02T00:00:00Z, so editing an older or migrated post never sends an alert. Set it once at go-live and don't move it. The default (2099) sends nothing.",
       "default": "2099-01-01T00:00:00Z"
+    },
+    "RoundupGroupByTheme": {
+      "displayName": "Group roundup by strategy theme",
+      "description": "Yes: the Monday roundup lists posts under Our People, Our Business, Our Environment and One TEAM, then Other news (a post with two themes appears under both). No (default): one list.",
+      "default": false
     }
   },
   "connectionReferenceTag": "news",

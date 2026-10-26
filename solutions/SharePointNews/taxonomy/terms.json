@@ -31,5 +31,11 @@
   ["Service Disruption", "An unplanned interruption to an operational or business service.", "System unavailable; operational service interruption"],
   ["Planned Maintenance", "Scheduled work expected to affect a service, site, system or facility.", "Planned IT downtime; infrastructure maintenance"],
   ["General Information", "Useful internal information that genuinely doesn't fit a more specific category.", "General employee information"]
+ ],
+ "strategyThemes": [
+  ["Our People", "Wording to be supplied by Communications.", ""],
+  ["Our Business", "Wording to be supplied by Communications.", ""],
+  ["Our Environment", "Wording to be supplied by Communications.", ""],
+  ["One TEAM", "Wording to be supplied by Communications, including the One TEAM principles.", ""]
  ]
 }
