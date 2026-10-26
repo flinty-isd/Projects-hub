@@ -119,9 +119,11 @@ flowchart LR
    It needs three connections (SharePoint, Office 365 Outlook, Microsoft
    Teams), signed in as the named news flow owner, and ten environment variables,
    including Nigel's address (`SupportOwnerEmail`) and the urgent publishers'
-   addresses, separated by semicolons (`UrgentPublisherEmails`). Leave
-   `DispatchEnabled` and `ExpiryWritesEnabled` at No and `UrgentGoLiveDate`
-   at its default for now.
+   addresses, separated by semicolons (`UrgentPublisherEmails`). None is
+   mandatory at import: after importing, open the solution → **Environment
+   variables** and set the six whose description starts "Set after import".
+   Leave `DispatchEnabled` and `ExpiryWritesEnabled` at No and
+   `UrgentGoLiveDate` at its default for now.
    CI also builds it: download the artifact *SharePointNews-solution*.
 6. Turn on **C1** first, then **C3a/C3b**, then **C2**. With the switches
    off nothing is sent or changed yet.

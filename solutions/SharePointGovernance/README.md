@@ -86,8 +86,8 @@ one person's address: approvals still reach someone during absences.
    as for the RCD runbook (G-03, DEP007). Site access comes from a
    **Sites.Selected** grant per site URL: flow 03 asks IT Operations to apply
    and register it for each new site before the runbook runs (G-04).
-5. **Import the solution** (see [Importing](#importing) below) and fill in
-   the environment variables when prompted.
+5. **Import the solution** (see [Importing](#importing) below), then set
+   the environment variables in the solution.
 6. Turn the flows on in this order: 03 and 06 (sites), then 01 and 02
    (access), then 05.
 7. **Ownership**: hand the flows and their connections to the SharePoint
@@ -115,14 +115,19 @@ This writes `solutions/SharePointGovernance/dist/SharePointGovernance_<version>.
 2. **Solutions → Import solution → Browse**, choose the .zip, **Next**.
 3. **Connections**: for each of the five connection references, pick the
    connection you created in step 2 of Deploying.
-4. **Environment variables**: fill in all of them. These are the governance
+4. **Environment variables**: none is mandatory at import, so you can leave
+   the boxes on this screen empty. After the import, open the solution →
+   **Environment variables**, where each is listed by its title, and set the
+   **Current value** of every variable whose description starts "Set after
+   import". These are the governance
    site URL, the tenant root URL, the four role mailboxes, the three
    Automation account values, the review interval (90 days by default), the
    site naming codes (`SiteOrgCode`, default `hpuk`, pending ruling C-03;
    `SiteLocationCodes`, default `pof;har;ltp;ldn`) and `GuestAutoRemoval`
    (default No; see below).
 5. **Import**. It takes a minute or two.
-6. Open the solution and turn each flow on (they import switched off), in
+6. Set the environment variables (step 4), then open the solution and turn
+   each flow on (they import switched off), in
    the order given in Deploying step 6. A flow that won't turn on shows the
    connection or setting it's missing.
 
