@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
+  "elmType": "div",
+  "txtContent": "=if(@currentField == '', '', toLocaleDateString(@currentField))",
+  "attributes": {
+    "title": "=if([$Status] == 'Active' && @currentField != '' && Number(@currentField) < Number(@now), 'Lapsed but still marked Active', if([$Status] == 'Active' && @currentField != '' && Number(@currentField) >= Number(@now) && Number(@currentField) <= Number(@now) + 7776000000, 'Expires within 90 days', ''))"
+  },
+  "style": {
+    "color": "=if([$Status] == 'Active' && @currentField != '' && Number(@currentField) < Number(@now), '#a4262c', if([$Status] == 'Active' && @currentField != '' && Number(@currentField) >= Number(@now) && Number(@currentField) <= Number(@now) + 7776000000, '#8a6116', ''))",
+    "font-weight": "=if([$Status] == 'Active' && @currentField != '' && Number(@currentField) < Number(@now) || [$Status] == 'Active' && @currentField != '' && Number(@currentField) >= Number(@now) && Number(@currentField) <= Number(@now) + 7776000000, '600', 'normal')"
+  }
+}
