@@ -2,7 +2,7 @@
   "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
   "contentVersion": "1.0.0.0",
   "displayName": "C2 Weekly port news roundup",
-  "description": "Runs Mondays at 07:00 UK time. Collects published, Live posts from HPUK News and Other News first published in the previous week (Monday 00:00 to Monday 00:00 UK time) with InRoundup set, leaves out audience-targeted posts, and sends each enabled Comms Distribution port a digest of the posts tagged for that port or All ports, by email from the Communications mailbox and to its Teams channel. Ports with no posts get nothing. Each port and channel is reserved in the Delivery Log before it is sent, at most once a week; a re-run sends only rows logged as Failed. Does nothing while DispatchEnabled is No.",
+  "description": "Runs Mondays at 07:00 UK time. Collects published, Live posts from HPUK News and Other News first published in the previous week (Monday 00:00 to Monday 00:00 UK time) with InRoundup set, leaves out audience-targeted posts, and sends each enabled Comms Distribution port a digest of the posts tagged for that port or All ports, by email from the Communications mailbox and to its Teams channel. Ports with no posts get nothing. Each port and channel is reserved in the Delivery Log before it is sent, at most once a week; a re-run sends only rows logged as Failed. Does nothing while DispatchEnabled is No. A Comms Distribution row with Port All ports is a company-wide destination and receives every post. With RoundupGroupByTheme = Yes the digest is grouped under the strategy themes (Our People, Our Business, Our Environment, One TEAM), then Other news.",
   "connectionReferences": {
     "shared_sharepointonline": {
       "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
@@ -48,6 +48,10 @@
       "defaultValue": "{urgent-publisher-1}@{domain};{urgent-publisher-2}@{domain}"
     },
     "DispatchEnabled": {
+      "type": "Bool",
+      "defaultValue": false
+    },
+    "RoundupGroupByTheme": {
       "type": "Bool",
       "defaultValue": false
     }
@@ -225,7 +229,8 @@
           "Summary": "@coalesce(item()?['Description'], '')",
           "Category": "@coalesce(item()?['Category']?['Label'], '')",
           "Port": "@item()?['Port']",
-          "Audience": "@item()?['_ModernAudienceTargetUserField']"
+          "Audience": "@item()?['_ModernAudienceTargetUserField']",
+          "Themes": "@string(coalesce(item()?['StrategyTheme'], json('[]')))"
         }
       },
       "runAfter": {
@@ -245,7 +250,8 @@
           "Summary": "@coalesce(item()?['Description'], '')",
           "Category": "@coalesce(item()?['Category']?['Label'], '')",
           "Port": "@item()?['Port']",
-          "Audience": "@item()?['_ModernAudienceTargetUserField']"
+          "Audience": "@item()?['_ModernAudienceTargetUserField']",
+          "Themes": "@string(coalesce(item()?['StrategyTheme'], json('[]')))"
         }
       },
       "runAfter": {
@@ -294,7 +300,7 @@
           "type": "Query",
           "inputs": {
             "from": "@body('Broadcast_posts')",
-            "where": "@or(contains(string(item()?['Port']), '\"All ports\"'), contains(string(item()?['Port']), concat('\"', items('For_each_destination')?['Port']?['Value'], '\"')))"
+            "where": "@or(equals(items('For_each_destination')?['Port']?['Value'], 'All ports'), contains(string(item()?['Port']), '\"All ports\"'), contains(string(item()?['Port']), concat('\"', items('For_each_destination')?['Port']?['Value'], '\"')))"
           },
           "runAfter": {}
         },
@@ -307,13 +313,157 @@
             ]
           },
           "actions": {
-            "Digest_lines": {
+            "Digest_items": {
               "type": "Select",
               "inputs": {
                 "from": "@body('Posts_for_port')",
-                "select": "@concat('<li><a href=\"', item()?['Link'], '\">', item()?['Title'], '</a> (', item()?['Site'], if(empty(item()?['Category']), '', concat(', ', item()?['Category'])), ')', if(empty(item()?['Summary']), '', concat('<br>', item()?['Summary'])), '</li>')"
+                "select": {
+                  "Html": "@concat('<li><a href=\"', item()?['Link'], '\">', item()?['Title'], '</a> (', item()?['Site'], if(empty(item()?['Category']), '', concat(', ', item()?['Category'])), ')', if(empty(item()?['Summary']), '', concat('<br>', item()?['Summary'])), '</li>')",
+                  "Themes": "@item()?['Themes']"
+                }
               },
               "runAfter": {}
+            },
+            "Digest_lines": {
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Digest_items')",
+                "select": "@item()?['Html']"
+              },
+              "runAfter": {
+                "Digest_items": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Theme_Our_People_items": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Digest_items')",
+                "where": "@contains(item()?['Themes'], '\"Label\":\"Our People\"')"
+              },
+              "runAfter": {
+                "Digest_lines": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Theme_Our_People_lines": {
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Theme_Our_People_items')",
+                "select": "@item()?['Html']"
+              },
+              "runAfter": {
+                "Theme_Our_People_items": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Theme_Our_Business_items": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Digest_items')",
+                "where": "@contains(item()?['Themes'], '\"Label\":\"Our Business\"')"
+              },
+              "runAfter": {
+                "Theme_Our_People_lines": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Theme_Our_Business_lines": {
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Theme_Our_Business_items')",
+                "select": "@item()?['Html']"
+              },
+              "runAfter": {
+                "Theme_Our_Business_items": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Theme_Our_Environment_items": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Digest_items')",
+                "where": "@contains(item()?['Themes'], '\"Label\":\"Our Environment\"')"
+              },
+              "runAfter": {
+                "Theme_Our_Business_lines": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Theme_Our_Environment_lines": {
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Theme_Our_Environment_items')",
+                "select": "@item()?['Html']"
+              },
+              "runAfter": {
+                "Theme_Our_Environment_items": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Theme_One_TEAM_items": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Digest_items')",
+                "where": "@contains(item()?['Themes'], '\"Label\":\"One TEAM\"')"
+              },
+              "runAfter": {
+                "Theme_Our_Environment_lines": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Theme_One_TEAM_lines": {
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Theme_One_TEAM_items')",
+                "select": "@item()?['Html']"
+              },
+              "runAfter": {
+                "Theme_One_TEAM_items": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Theme_none_items": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Digest_items')",
+                "where": "@not(contains(item()?['Themes'], '\"Label\":'))"
+              },
+              "runAfter": {
+                "Theme_One_TEAM_lines": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Theme_none_lines": {
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Theme_none_items')",
+                "select": "@item()?['Html']"
+              },
+              "runAfter": {
+                "Theme_none_items": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Digest_body": {
+              "type": "Compose",
+              "inputs": "@{if(equals(parameters('RoundupGroupByTheme'), true), concat(if(empty(body('Theme_Our_People_lines')), '', concat('<h3>Our People</h3><ul>', join(body('Theme_Our_People_lines'), ''), '</ul>')), if(empty(body('Theme_Our_Business_lines')), '', concat('<h3>Our Business</h3><ul>', join(body('Theme_Our_Business_lines'), ''), '</ul>')), if(empty(body('Theme_Our_Environment_lines')), '', concat('<h3>Our Environment</h3><ul>', join(body('Theme_Our_Environment_lines'), ''), '</ul>')), if(empty(body('Theme_One_TEAM_lines')), '', concat('<h3>One TEAM</h3><ul>', join(body('Theme_One_TEAM_lines'), ''), '</ul>')), if(empty(body('Theme_none_lines')), '', concat('<h3>Other news</h3><ul>', join(body('Theme_none_lines'), ''), '</ul>'))), concat('<ul>', join(body('Digest_lines'), ''), '</ul>'))}",
+              "runAfter": {
+                "Theme_none_lines": [
+                  "Succeeded"
+                ]
+              }
             },
             "Condition_email_destination": {
               "type": "If",
@@ -477,7 +627,7 @@
                           "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
                           "emailMessage/To": "@items('For_each_destination')?['EmailGroup']",
                           "emailMessage/Subject": "@{concat('Weekly news roundup: ', items('For_each_destination')?['Port']?['Value'])}",
-                          "emailMessage/Body": "<p>News published @{outputs('Week_label')} for <b>@{items('For_each_destination')?['Port']?['Value']}</b>:</p><ul>@{join(body('Digest_lines'), '')}</ul><p>Read all current news on the intranet.</p>",
+                          "emailMessage/Body": "<p>News published @{outputs('Week_label')} for <b>@{items('For_each_destination')?['Port']?['Value']}</b>:</p>@{outputs('Digest_body')}<p>Read all current news on the intranet.</p>",
                           "emailMessage/Importance": "Normal"
                         },
                         "retryPolicy": {
@@ -572,7 +722,7 @@
                 }
               },
               "runAfter": {
-                "Digest_lines": [
+                "Digest_body": [
                   "Succeeded"
                 ]
               }
@@ -752,7 +902,7 @@
                           "location": "Channel",
                           "body/recipient/groupId": "@items('For_each_destination')?['TeamId']",
                           "body/recipient/channelId": "@items('For_each_destination')?['ChannelId']",
-                          "body/messageBody": "<p>News published @{outputs('Week_label')} for <b>@{items('For_each_destination')?['Port']?['Value']}</b>:</p><ul>@{join(body('Digest_lines'), '')}</ul><p>Read all current news on the intranet.</p>"
+                          "body/messageBody": "<p>News published @{outputs('Week_label')} for <b>@{items('For_each_destination')?['Port']?['Value']}</b>:</p>@{outputs('Digest_body')}<p>Read all current news on the intranet.</p>"
                         },
                         "retryPolicy": {
                           "type": "none"

@@ -14,6 +14,8 @@
       * creates Notices and Attachments, Notices Archive, Comms Distribution
         and Delivery Log on HPUK News
       * adds the Current and Archive views to Notices and Attachments
+      * creates a News Videos library on both sites (major versions; videos
+        play through Stream and inherit the site's permissions)
       * puts the scoped reader group in Visitors and each site's publisher group
         in Members (never "Everyone except external users": the tenant is shared)
       * makes the Delivery Log dispatch key (Title) unique and indexed, and adds a
@@ -33,8 +35,8 @@
 .NOTES
     Requires PnP.PowerShell 2.x and an app registration with Sites.FullControl.All
     and TermStore.ReadWrite.All, or run with -Interactive as a SharePoint admin.
-    The Department and Category term sets must already exist in the term group:
-    import taxonomy/TermSet-Department.csv and taxonomy/TermSet-Category.csv first.
+    The Department, Category and Strategy theme term sets must already exist in the
+    term group: import the three CSVs in taxonomy/ first.
     Not yet run against a tenant: run it on a test pair of sites first.
 #>
 param(
@@ -81,7 +83,7 @@ function Ensure-Field($conn, [string] $listTitle, $f) {
     switch ($f.type) {
         'Taxonomy' {
             $path = "$TermGroup|$($f.termSet.Split('|')[-1])"
-            Add-PnPTaxonomyField @common -TermSetPath $path -Required:([bool]$f.required) | Out-Null
+            Add-PnPTaxonomyField @common -TermSetPath $path -Required:([bool]$f.required) -MultiValue:([bool]$f.multi) | Out-Null
         }
         'MultiChoice' { Add-PnPField @common -Type MultiChoice -Choices $f.choices -Required:([bool]$f.required) | Out-Null }
         'Choice'      { Add-PnPField @common -Type Choice -Choices $f.choices -Required:([bool]$f.required) | Out-Null }
@@ -136,6 +138,9 @@ foreach ($site in $sites) {
         Set-PnPList -Identity 'Site Pages' -EnableModeration $false -Connection $conn | Out-Null
         Write-Output '  ~ Site Pages: content approval turned off'
     }
+
+    # Video for news posts: same permissions as the site, plays through Stream.
+    Set-PnPList -Identity 'News Videos' -EnableVersioning $true -EnableMinorVersions $false -Connection $conn | Out-Null
 
     if ($site.Key -eq 'HPUK News') {
         Set-PnPList -Identity 'Notices and Attachments' -EnableVersioning $true -EnableMinorVersions $false -Connection $conn | Out-Null

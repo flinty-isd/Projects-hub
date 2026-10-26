@@ -43,6 +43,9 @@ if Communications or IT decide otherwise.
 | Page approval | **None. Publishers are pre-approved** (changed 23 October 2026; this replaces HR approving every page) | Content approval stays off on Site Pages (the provisioning script turns it off if it was on). A published page is live straight away, and an urgent post by Chloe, Rachel or Toby alerts as soon as it is published. Membership of the publisher groups is the control, so keep them to trained, named publishers |
 | Retention | **7 years** from creation, on both sites | `provisioning/Set-NewsRetention.ps1`: a Purview retention policy. Nothing is deleted automatically at the end unless the records owner asks for `-DeleteAfterRetention` |
 | Support owner | **Nigel Bell** | `SupportOwnerEmail` environment variable: receives all flow failure alerts |
+| Urgent notices for staff without a licence | **Updated separately in each area** (26 October 2026). About 1,500 operational staff use the Base8 CMS in the Employee App and receive no email or Teams alert | Outside these flows: C3 alerts licensed staff by email and Teams only. Each area posts its own urgent notices for unlicensed staff through its local route (Base8 CMS, noticeboards, supervisor briefings). Nothing in the build changes |
+| Images and video | Pictures added in the page (banner image and Image or Image gallery web parts) with alt text; video uploaded to a **News Videos** library on each site and shown with the File and media web part, playing through Stream. No external video embeds (G-06). Emails, Teams alerts and the roundup carry text and a link only | `list-schema.json` and `Provision-NewsSites.ps1`: the News Videos library (major versions, site permissions, a Captions checked column). Publisher Guide: Images and video section |
+| Strategy themes | **Option A** (26 October 2026): an optional **Strategy theme** label with Our People, Our Business, Our Environment and One TEAM, separate from Department and Category. A post can carry more than one | `taxonomy/TermSet-StrategyTheme.csv` and a multi-value `StrategyTheme` column on Site Pages. Theme sections on the intranet home filter on it. C2 groups the Monday roundup by theme when `RoundupGroupByTheme` = Yes (default No). Communications supplies each theme's wording, including the One TEAM principles |
 | Departments and categories | **13 departments and 16 categories, confirmed for UAT** (24 October 2026). Department is who owns a post; Category is what it is about | [`taxonomy/`](taxonomy): `TermSet-Department.csv` and `TermSet-Category.csv` for the term store, and `terms.json` with each term's definition and examples. The Safety section filters on Category **Health and Safety**. Communications gives final sign-off after UAT; changes after that are made in the term store |
 
 ### Safeguards added after the independent review (24 October 2026)
@@ -85,9 +88,9 @@ flowchart LR
    - Other News publishers
    - news configuration maintainers
 
-   Also create the Department and Category term sets by importing
-   `taxonomy/TermSet-Department.csv` and `taxonomy/TermSet-Category.csv`
-   into the Communications term group (SharePoint admin centre → Term store
+   Also create the Department, Category and Strategy theme term sets by
+   importing `taxonomy/TermSet-Department.csv`, `taxonomy/TermSet-Category.csv`
+   and `taxonomy/TermSet-StrategyTheme.csv` into the Communications term group (SharePoint admin centre → Term store
    → Communications → Import term set), and a shared mailbox
    for sending, with Send As for the **named news flow owner** (no service
    or shared account, D-03; see the
@@ -103,14 +106,18 @@ flowchart LR
      required and deadline, attachments, business contact.
    - Home pages: set up the News web parts as listed below.
 4. **Comms Distribution.** Add one row per port, with its email group, Team ID
-   and Channel ID. Set `Enabled` = No until each destination has been tested.
+   and Channel ID. For a company-wide roundup, add a row with Port **All
+   ports** (for example an all-HPUK list or a corporate Teams channel): it
+   receives every post in the Monday roundup but never an urgent alert, since
+   each port already gets All ports alerts. Anyone in both a port list and the
+   company-wide list gets two roundups. Set `Enabled` = No until each destination has been tested.
 5. **Import the flows.** Build the package and import it as in
    [the governance README](../SharePointGovernance/README.md#importing):
    ```
    python solutions/SharePointGovernance/tools/build_solution.py --root solutions/SharePointNews
    ```
    It needs three connections (SharePoint, Office 365 Outlook, Microsoft
-   Teams), signed in as the named news flow owner, and nine environment variables,
+   Teams), signed in as the named news flow owner, and ten environment variables,
    including Nigel's address (`SupportOwnerEmail`) and the urgent publishers'
    addresses, separated by semicolons (`UrgentPublisherEmails`). Leave
    `DispatchEnabled` and `ExpiryWritesEnabled` at No and `UrgentGoLiveDate`
@@ -135,6 +142,7 @@ flowchart LR
 | Other News home | News | This site | Status = Live | Side-by-side |
 | Intranet home | News (main) | HPUK News | Status = Live; audience targeting on | Top story |
 | Intranet home | News (secondary) | Other News | Status = Live; audience targeting on | List, lower on the page |
+| Intranet home (optional) | News, one per theme: Our People, Our Business, Our Environment, One TEAM | HPUK News and Other News | Status = Live **and** Strategy theme = that theme | Side-by-side or carousel |
 
 If the News web part can't filter on the managed metadata Category in your
 tenant, use a Category view of Site Pages in a Highlighted content web part
@@ -160,6 +168,8 @@ is not the production permission model.
 | Unauthorised urgent | An urgent post by a publisher not on the urgent list sends nothing, logs *Skipped - not an urgent publisher* and tells Communications once |
 | Audience-targeted urgent | Nothing is broadcast. A *Skipped - audience targeted* row is logged and Communications is emailed once |
 | All ports | A post tagged *All ports* reaches every enabled row |
+| Company-wide roundup | An enabled Comms Distribution row with Port All ports gets one digest listing every port's posts. An urgent post for All ports does **not** go to that row |
+| Roundup by theme | `RoundupGroupByTheme` = Yes: posts appear under their theme headings (a post with two themes under both), posts with no theme under Other news |
 | Roundup | Covers last Monday 00:00 to this Monday 00:00 UK time, for the right ports. A port with no posts gets nothing. A re-run later in the week sends nothing new |
 | Daylight saving | Runs in the week the clocks change still fire at 06:00 and 07:00 UK time |
 | Reader boundary | Someone outside the HPUK reader group can't open pages or attachments |
