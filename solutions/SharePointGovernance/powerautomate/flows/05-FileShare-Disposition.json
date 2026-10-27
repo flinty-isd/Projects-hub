@@ -122,7 +122,7 @@
               "id": "@triggerBody()?['ID']",
               "item/Disposition/Value": "Excluded - system dependent",
               "item/Status/Value": "Disposition required",
-              "item/DecisionLog": "Integration marker, application back-end or generic account present. Excluded from SharePoint Online (PID v3.1, 2.3.1)."
+              "item/DecisionLog": "Integration marker, application back-end or generic account present. Excluded from SharePoint Online (PID v4.2, 2.3.1)."
             }
           },
           "runAfter": {}
@@ -286,7 +286,7 @@
                     "approvalType": "BasicAwaitAll",
                     "WebhookApprovalCreationInput/title": "@{concat('Migrate file share to SharePoint: ', triggerBody()?['Title'])}",
                     "WebhookApprovalCreationInput/assignedTo": "@{concat(triggerBody()?['ShareOwner']?['Email'], ';', parameters('SharePointServiceOwnerEmail'))}",
-                    "WebhookApprovalCreationInput/details": "@{concat('Share: ', triggerBody()?['Title'], decodeUriComponent('%0A'), 'Size (GB): ', string(triggerBody()?['SizeGB']), decodeUriComponent('%0A'), 'Last modified: ', triggerBody()?['LastModified'], decodeUriComponent('%0A'), 'Permission complexity: ', triggerBody()?['PermissionComplexity']?['Value'], decodeUriComponent('%0A'), 'Target site: ', triggerBody()?['TargetSiteUrl'], decodeUriComponent('%0A%0A'), 'File shares move to SharePoint Online case by case only (PID v3.1, 2.3.1).')}",
+                    "WebhookApprovalCreationInput/details": "@{concat('Share: ', triggerBody()?['Title'], decodeUriComponent('%0A'), 'Size (GB): ', string(triggerBody()?['SizeGB']), decodeUriComponent('%0A'), 'Last modified: ', triggerBody()?['LastModified'], decodeUriComponent('%0A'), 'Permission complexity: ', triggerBody()?['PermissionComplexity']?['Value'], decodeUriComponent('%0A'), 'Target site: ', triggerBody()?['TargetSiteUrl'], decodeUriComponent('%0A%0A'), 'File shares move to SharePoint Online case by case only (PID v4.2, 2.3.1).')}",
                     "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
                     "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
                     "WebhookApprovalCreationInput/enableNotifications": true,
