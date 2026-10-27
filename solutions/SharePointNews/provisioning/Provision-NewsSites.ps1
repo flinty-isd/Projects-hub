@@ -123,7 +123,7 @@ function Restrict-List($conn, [string] $listTitle, [string[]] $editors, [string[
 
 # Sections of the news page template, in order: heading and the prompt a publisher overwrites.
 $templateSections = @(
-    @{ Heading = 'Summary';                       Hint = 'Who is affected and what they need to know.' },
+    @{ Heading = 'Summary';                       Hint = 'One or two sentences: who is affected and what they need to know. Before publishing, open Page details and paste this into Description (emails and Teams show it), then set Department, Category and Port.' },
     @{ Heading = 'Main content';                  Hint = 'The detail. Add pictures with the Image web part and video from News Videos.' },
     @{ Heading = 'Action required and deadline';  Hint = 'What readers must do, and by when. Delete this section if no action is needed.' },
     @{ Heading = 'Attachments';                   Hint = 'Link files from Notices and Attachments. Delete this section if there are none.' },

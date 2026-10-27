@@ -99,7 +99,8 @@ flowchart LR
    URLs, the group object IDs and the flow
    owner's UPN. Add `-CreateTemplates` to build the page templates *HPUK
    News post* and *Other News post* (header, then Summary, Main content,
-   Action required and deadline, Attachments, Contact); run it once per
+   Action required and deadline, Attachments, Contact; the Summary hint
+   reminds publishers to fill in Page details before publishing); run it once per
    site, and use `-RefreshTemplates` to rebuild them after a layout change.
    Afterwards open each template, add a banner image and republish. Then have a Purview compliance admin run
    `provisioning/Set-NewsRetention.ps1` for the 7-year retention.
