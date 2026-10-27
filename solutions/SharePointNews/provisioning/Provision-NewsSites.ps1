@@ -26,6 +26,11 @@
         so a published page is live straight away (turns it off if it was on)
       * creates and publishes Publisher-Guide.aspx on HPUK News from
         pages/Publisher-Guide.html
+      * with -CreateTemplates, adds the news page template to each site
+        ("HPUK News post" / "Other News post"): image and title header, then
+        one-column sections for Summary, Main content, Action required and
+        deadline, Attachments and Contact. Run once per site; an existing
+        template is left alone unless -RefreshTemplates is also given
 
     Not done here (no supported cmdlet; see the README):
       * enabling audience targeting on Site Pages
@@ -52,7 +57,9 @@ param(
     [string] $Tenant,
     [string] $Thumbprint,
     [switch] $Interactive,
-    [switch] $RefreshPublisherGuide
+    [switch] $RefreshPublisherGuide,
+    [switch] $CreateTemplates,
+    [switch] $RefreshTemplates
 )
 
 $ErrorActionPreference = 'Stop'
@@ -114,9 +121,37 @@ function Restrict-List($conn, [string] $listTitle, [string[]] $editors, [string[
     Write-Output "  ~ $listTitle restricted"
 }
 
+# Sections of the news page template, in order: heading and the prompt a publisher overwrites.
+$templateSections = @(
+    @{ Heading = 'Summary';                       Hint = 'Who is affected and what they need to know.' },
+    @{ Heading = 'Main content';                  Hint = 'The detail. Add pictures with the Image web part and video from News Videos.' },
+    @{ Heading = 'Action required and deadline';  Hint = 'What readers must do, and by when. Delete this section if no action is needed.' },
+    @{ Heading = 'Attachments';                   Hint = 'Link files from Notices and Attachments. Delete this section if there are none.' },
+    @{ Heading = 'Contact';                       Hint = 'Named person and how to reach them.' }
+)
+
+function Ensure-NewsTemplate($conn, [string] $title) {
+    $name = $title -replace ' ', '-'
+    $existing = Get-PnPPage -Identity "Templates/$name" -Connection $conn -ErrorAction SilentlyContinue
+    if ($existing -and -not $RefreshTemplates) { return }
+    if ($existing) { Remove-PnPPage -Identity "Templates/$name" -Force -Connection $conn }
+    # Saved as a template: appears under + New > News post > the site's templates.
+    Add-PnPPage -Name $name -Title $title -LayoutType Article -PromoteAs Template -Connection $conn | Out-Null
+    $page = Get-PnPPage -Identity "Templates/$name" -Connection $conn
+    $i = 1
+    foreach ($s in $templateSections) {
+        Add-PnPPageSection -Page $page -SectionTemplate OneColumn -Order $i -Connection $conn | Out-Null
+        Add-PnPPageTextPart -Page $page -Section $i -Column 1 `
+            -Text "<h2>$($s.Heading)</h2><p><em>$($s.Hint)</em></p>" -Connection $conn | Out-Null
+        $i++
+    }
+    Set-PnPPage -Identity "Templates/$name" -Publish -Connection $conn | Out-Null
+    Write-Output "  + template $title"
+}
+
 $sites = @(
-    @{ Key = 'HPUK News';  Url = $HPUKNewsUrl;  Publishers = $HPUKPublisherGroupId },
-    @{ Key = 'Other News'; Url = $OtherNewsUrl; Publishers = $OtherPublisherGroupId }
+    @{ Key = 'HPUK News';  Url = $HPUKNewsUrl;  Publishers = $HPUKPublisherGroupId;  Template = 'HPUK News post' },
+    @{ Key = 'Other News'; Url = $OtherNewsUrl; Publishers = $OtherPublisherGroupId; Template = 'Other News post' }
 )
 
 foreach ($site in $sites) {
@@ -141,6 +176,8 @@ foreach ($site in $sites) {
 
     # Video for news posts: same permissions as the site, plays through Stream.
     Set-PnPList -Identity 'News Videos' -EnableVersioning $true -EnableMinorVersions $false -Connection $conn | Out-Null
+
+    if ($CreateTemplates -or $RefreshTemplates) { Ensure-NewsTemplate $conn $site.Template }
 
     if ($site.Key -eq 'HPUK News') {
         Set-PnPList -Identity 'Notices and Attachments' -EnableVersioning $true -EnableMinorVersions $false -Connection $conn | Out-Null
@@ -194,3 +231,8 @@ Write-Output '  2. IT: associate both sites with the intranet hub; designate HPU
 Write-Output '  3. Home pages: configure the News web parts (Status = Live filter; Safety section = Category Health and Safety).'
 Write-Output '  4. Fill Comms Distribution with one row per port (Enabled = No until destinations are verified).'
 Write-Output '  5. Run Set-NewsRetention.ps1 (7-year retention) as a Purview compliance admin.'
+if (-not ($CreateTemplates -or $RefreshTemplates)) {
+    Write-Output '  6. News page templates: re-run with -CreateTemplates (once per site), or build them by hand.'
+} else {
+    Write-Output '  6. Open each template once, add a banner image to the title area, and republish it.'
+}

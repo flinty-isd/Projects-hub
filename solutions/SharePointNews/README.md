@@ -97,13 +97,18 @@ flowchart LR
    [deployment plan](../POWER-PLATFORM-DEPLOYMENT.md#identities)).
 2. **Provision.** Run `provisioning/Provision-NewsSites.ps1` with the two site
    URLs, the group object IDs and the flow
-   owner's UPN. Then have a Purview compliance admin run
+   owner's UPN. Add `-CreateTemplates` to build the page templates *HPUK
+   News post* and *Other News post* (header, then Summary, Main content,
+   Action required and deadline, Attachments, Contact); run it once per
+   site, and use `-RefreshTemplates` to rebuild them after a layout change.
+   Afterwards open each template, add a banner image and republish. Then have a Purview compliance admin run
    `provisioning/Set-NewsRetention.ps1` for the 7-year retention.
 3. **Manual site settings.** These have no supported cmdlet:
    - Site Pages → *Settings → Audience targeting* → **On**, on both sites.
-   - Create the page templates *HPUK News post* and *Other News post*. Use
-     this reading order: summary (in Description), main content, action
-     required and deadline, attachments, business contact.
+   - Page templates, only if you didn't use `-CreateTemplates`: create
+     *HPUK News post* and *Other News post* by hand (+ New → News post →
+     lay out the sections → *Save as template*) in the order summary,
+     main content, action required and deadline, attachments, contact.
    - Home pages: set up the News web parts as listed below.
 4. **Comms Distribution.** Add one row per port, with its email group, Team ID
    and Channel ID. For a company-wide roundup, add a row with Port **All
