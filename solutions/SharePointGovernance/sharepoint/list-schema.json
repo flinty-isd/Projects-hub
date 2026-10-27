@@ -228,7 +228,7 @@
     },
     {
       "listTitle": "Access Requests",
-      "listDescription": "Requests for access to a SharePoint Online site. Processed by flow 01 against the PID v3.1 Access Method Decision Table.",
+      "listDescription": "Requests for access to a SharePoint Online site. Processed by flow 01 against the PID v4.2 Access Method Decision Table.",
       "fields": [
         {
           "internalName": "Requester",
