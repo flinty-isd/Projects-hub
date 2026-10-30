@@ -7,6 +7,12 @@ decision the flow enforces and who approves it. Green ends are grants or
 approvals, red ends are blocks or rejections. Role names map to people in
 [`../README.md`](../README.md#roles).
 
+## End to end
+
+Who does what, from request to review. Regenerate with `python solutions/SharePointGovernance/tools/draw_workflows.py`.
+
+![SharePoint governance: request to review](governance-workflow.svg)
+
 ## Overview
 
 ```mermaid

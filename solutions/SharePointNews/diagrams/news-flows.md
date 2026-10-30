@@ -8,6 +8,12 @@ stops or follow-ups. The shapes and colours follow the governance diagrams
 Delivery statuses are the *DeliveryStatus* choices of the Delivery Log in
 [`../sharepoint/list-schema.json`](../sharepoint/list-schema.json).
 
+## End to end
+
+Who does what, from request to review. Regenerate with `python solutions/SharePointGovernance/tools/draw_workflows.py`.
+
+![SharePoint News: publish to inbox](news-workflow.svg)
+
 ## Overview
 
 ```mermaid
