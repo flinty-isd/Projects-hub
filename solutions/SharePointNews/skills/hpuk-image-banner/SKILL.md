@@ -51,6 +51,62 @@ If the image is not approved, stop and report **NOT READY**.
 News banner, thumbnail, Hero, header and logo sizes follow Microsoft guidance.
 The others are **good practice**. Say so in the report; don't call them HPUK rules.
 
+## Different kinds of picture
+
+First decide what kind of picture it is. Then follow its rules in the steps below.
+
+**One person on a plain background** (for example, a studio portrait)
+
+- Focal point: the centre of the face.
+- You can cover words and add background (steps 2a and 2b).
+
+**One person in a real setting** (for example, on the quayside)
+
+- Focal point: the centre of the face.
+- Don't cover words or add background: it won't match the photo.
+- Crop only. If the head is more than 40% of the height, the picture is too
+  close-up for a News banner: ask for a wider shot, or use it in the page body
+  instead.
+
+**A group of people**
+
+- Treat all the heads together as the "head": from the highest hair to the lowest chin.
+- Focal point: the middle of the group.
+- Every face must be inside the crop. If the group is too wide for the shape,
+  say so: don't cut anyone off at the edge.
+
+**A place, ship, crane or equipment, with no people in focus**
+
+- Focal point: the main subject (for example, the ship's bow or the crane).
+- Keep the main subject no taller than 40% of the height, the same as a head.
+- Don't add background or cover anything. Crop only.
+- Keep the horizon off the exact middle where you can.
+
+**A tall (portrait) photo for a wide banner**
+
+- Only a slice of it will fit. Crop a wide slice around the subject.
+- If the slice is too small (enlargement over 150%), say it is **NOT READY**
+  for a banner and suggest the page body instead, or ask for a landscape photo.
+
+**A poster, event graphic or anything with words on a photo**
+
+- Not suitable as a banner or thumbnail: the words get cut off and screen
+  readers can't read them. Report **NOT READY**.
+- Ask Communications for a version without words, and put the words in the
+  page. The graphic can go in the page body, with the words in its alt text.
+
+**A logo or icon** (Quick Links icon, site logo)
+
+- Don't make or resize logos in Paint: it loses the transparent background.
+- Use the right size from the HPUK Brand Centre, or ask Communications.
+- Never recolour, stretch or redraw a logo.
+
+**A screenshot, chart or document**
+
+- Not suitable as a banner. Use it in the page body at its own size: never
+  enlarge it.
+- Describe what it shows in the alt text or the page text.
+
 ## Steps
 
 ### 1. Look at the image
@@ -71,8 +127,8 @@ Only cover words on a plain-colour background. If the words sit on a photo or
 pattern, stop: report **manual retouching needed** and **NOT READY**.
 
 **b. Space for the head.** SharePoint shows News banners as a thin strip on wide
-screens. So the head (top of hair to chin) must be no more than **40%** of the
-final height.
+screens. So the head (top of hair to chin), or the main subject in a picture
+without people, must be no more than **40%** of the final height.
 
 - Needed height = head height ÷ 0.4
 - If the image is shorter than that, add the difference as plain background at
@@ -202,3 +258,21 @@ dark suit and striped tie", or empty if the page title already names him.
 
 **READY assessment:** READY WITH WARNINGS (enlarged 126%: check it is sharp, or
 ask for the original photo).
+
+## Example: a photo with no people
+
+**Image:** a 4000 x 3000 photo of a crane at Felixstowe. The crane is 900 high,
+centred at 2600 across, 1400 down. No words.
+
+**Numbers:**
+
+- Nothing to cover. The crane is 900 ÷ 2250 = 40% of the crop height: just fits.
+- Crop: 4000 x 1.78 would need a height of 2250, which fits in 3000. So use the
+  full width, 4000 x 2250. Centred on 1400 down, it runs from (0, 275) to (4000, 2525).
+- Enlargement: 1920 ÷ 4000 = 48%: fine, it gets smaller.
+- Focal point: across 2600 ÷ 4000 = **65%**; down (1400 − 275) ÷ 2250 = **50%**.
+
+**Paint recipe:** save a copy, select from (0, 275) to (4000, 2525) and crop,
+resize to 1920 x 1080, save.
+
+**READY assessment:** READY.
