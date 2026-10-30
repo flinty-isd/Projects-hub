@@ -16,7 +16,7 @@ Who does what, from request to review. Regenerate with `python solutions/SharePo
 ## Overview
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Arial, Helvetica, sans-serif', 'fontSize': '15px', 'primaryColor': '#EEF2F7', 'primaryBorderColor': '#33415C', 'primaryTextColor': '#33415C', 'lineColor': '#33415C', 'clusterBkg': '#F7F8FA', 'clusterBorder': '#002E6D', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
 flowchart LR
   subgraph Access["Access & identity"]
     F1["01 Access request"] --> F2["02 Guest expiry"]
@@ -33,7 +33,7 @@ flowchart LR
 ## 01 — Access request (Access Method Decision Table)
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Arial, Helvetica, sans-serif', 'fontSize': '15px', 'primaryColor': '#EEF2F7', 'primaryBorderColor': '#33415C', 'primaryTextColor': '#33415C', 'lineColor': '#33415C', 'clusterBkg': '#F7F8FA', 'clusterBorder': '#002E6D', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
 flowchart LR
   A([New Access Requests item]) --> T{User type}
   T -->|Service / shared account| X1[/"Rejected - Prohibited"/]:::bad
@@ -65,7 +65,7 @@ flowchart LR
 ## 02 — Guest access expiry (daily)
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Arial, Helvetica, sans-serif', 'fontSize': '15px', 'primaryColor': '#EEF2F7', 'primaryBorderColor': '#33415C', 'primaryTextColor': '#33415C', 'lineColor': '#33415C', 'clusterBkg': '#F7F8FA', 'clusterBorder': '#002E6D', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
 flowchart TD
   A([Daily 06:00]) --> Q["Active guests ending<br/>within 14 days"]
   Q --> E{"End date passed?"}
@@ -84,7 +84,7 @@ flowchart TD
 ## 03 — Site provisioning
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Arial, Helvetica, sans-serif', 'fontSize': '15px', 'primaryColor': '#EEF2F7', 'primaryBorderColor': '#33415C', 'primaryTextColor': '#33415C', 'lineColor': '#33415C', 'clusterBkg': '#F7F8FA', 'clusterBorder': '#002E6D', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
 flowchart TD
   A([New Site Requests item]) --> NM{"Alias follows<br/>[org]-[location]-[dept]-[site]? (G-08)"}
   NM -->|No| XN[/"Returned - naming standard"/]:::bad
@@ -110,7 +110,7 @@ flowchart TD
 ## 05 — File share disposition (selective migration)
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Arial, Helvetica, sans-serif', 'fontSize': '15px', 'primaryColor': '#EEF2F7', 'primaryBorderColor': '#33415C', 'primaryTextColor': '#33415C', 'lineColor': '#33415C', 'clusterBkg': '#F7F8FA', 'clusterBorder': '#002E6D', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
 flowchart TD
   A([New File Share Register item]) --> SD{"Integration marker, app back-end<br/>or generic account?"}
   SD -->|Yes| EX[/"Excluded - system dependent;<br/>IT Ops agrees remediate / archive /<br/>delete / move to non-SPO"/]:::bad
@@ -131,7 +131,7 @@ flowchart TD
 ## 06 — Access recertification (monthly; 90-day cycle per site)
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Arial, Helvetica, sans-serif', 'fontSize': '15px', 'primaryColor': '#EEF2F7', 'primaryBorderColor': '#33415C', 'primaryTextColor': '#33415C', 'lineColor': '#33415C', 'clusterBkg': '#F7F8FA', 'clusterBorder': '#002E6D', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
 flowchart TD
   A([1st of month 07:00]) --> D["Active sites with<br/>review due"]
   D --> O{"Primary owner<br/>account enabled?"}

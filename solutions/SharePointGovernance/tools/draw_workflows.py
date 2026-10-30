@@ -4,9 +4,10 @@ Writes
   solutions/SharePointGovernance/diagrams/governance-workflow.svg
   solutions/SharePointNews/diagrams/news-workflow.svg
 
-Hand-placed layouts (Mermaid can't draw swimlanes) in the Projects Hub
-design system: neutrals from branding/theme, outcome colours from the
-process diagrams, Source Sans 3. The detailed per-flow logic stays in the
+Hand-placed layouts (Mermaid can't draw swimlanes) in the Hutchison Ports
+brand: navy headings, Sky Blue accents only (it fails contrast as text),
+light #F7F8FA / #EEF2F7 grounds, #33415C body, Montserrat headings and
+Arial body. Outcome colours are the ones in the process diagrams. The detailed per-flow logic stays in the
 Mermaid process diagrams; these show who does what, end to end.
 
 Usage: python solutions/SharePointGovernance/tools/draw_workflows.py
@@ -16,23 +17,25 @@ from xml.sax.saxutils import escape
 
 REPO = Path(__file__).resolve().parents[3]
 
-INK, MUTED, LINE, HAIR = "#31333f", "#5e616d", "#5e616d", "#cdd0d8"
-LANE_A, LANE_B, LABEL_BG, AUTO_BG = "#ffffff", "#f8f9fb", "#f0f2f6", "#f0f2f6"
-ACCENT = "#c73a3a"
+NAVY, SKY = "#002E6D", "#009BDE"
+INK, MUTED, LINE, HAIR = "#33415C", "#56627a", "#33415C", "#d2d5db"   # MUTED: #33415C tinted, 5.5:1 on #EEF2F7
+LANE_A, LANE_B, LABEL_BG, AUTO_BG = "#ffffff", "#F7F8FA", "#EEF2F7", "#EEF2F7"
 OUTCOME = {
     "good": ("#dcfce7", "#15803d", "#14532d"),
     "bad": ("#fee2e2", "#b91c1c", "#7f1d1d"),
     "info": ("#e0f2fe", "#0369a1", "#0c4a6e"),
 }
-FONT = "'Source Sans 3', 'Source Sans Pro', 'Segoe UI', Arial, sans-serif"
+FONT = "Arial, Helvetica, sans-serif"
+HEAD = "Montserrat, Arial, sans-serif"
 
 
-def text(cx, cy, lines, size=14, weight=400, color=INK, anchor="middle", lh=1.25):
+def text(cx, cy, lines, size=14, weight=400, color=INK, anchor="middle", lh=1.25, head=False):
     lines = lines if isinstance(lines, list) else [lines]
     y0 = cy - (len(lines) - 1) * size * lh / 2 + size * 0.35
     spans = "".join(
         f'<tspan x="{cx}" dy="{0 if i == 0 else size * lh:.1f}">{escape(ln)}</tspan>' for i, ln in enumerate(lines))
-    return (f'<text x="{cx}" y="{y0:.1f}" font-size="{size}" font-weight="{weight}" '
+    family = f' font-family="{HEAD}"' if head else ""
+    return (f'<text x="{cx}" y="{y0:.1f}"{family} font-size="{size}" font-weight="{weight}" '
             f'fill="{color}" text-anchor="{anchor}">{spans}</text>')
 
 
@@ -87,14 +90,14 @@ class Diagram:
         bw = 16 + 7.5 * len(badge)
         self.nodes.append(
             f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8" fill="{AUTO_BG}" stroke="{LINE}" stroke-width="1.25"/>'
-            f'<rect x="{x + 12}" y="{y + 11}" width="{bw}" height="20" rx="10" fill="{ACCENT}"/>'
+            f'<rect x="{x + 12}" y="{y + 11}" width="{bw}" height="20" rx="10" fill="{NAVY}"/>'
             + text(x + 12 + bw / 2, y + 21, badge, 12, 700, "#ffffff")
             + text(cx, cy + 11, lines))
         return Node(cx, cy, w, h)
 
     def pill(self, cx, cy, label, kind):
         fill, stroke, ink = OUTCOME[kind]
-        w = len(label) * 6.9 + 26
+        w = len(label) * 7.4 + 26
         self.nodes.append(
             f'<rect x="{cx - w / 2:.1f}" y="{cy - 13}" width="{w:.1f}" height="26" rx="8" fill="{fill}" stroke="{stroke}"/>'
             + text(cx, cy, label, 13, 600, ink))
@@ -118,7 +121,7 @@ class Diagram:
         s = f'<path d="{d}" fill="none" stroke="{LINE}" stroke-width="1.5"{dash}{mark}/>'
         if label:
             lx, ly = at or ((pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2)
-            w = len(label) * 6.3 + 12
+            w = len(label) * 6.8 + 12
             s += (f'<rect x="{lx - w / 2:.1f}" y="{ly - 10:.1f}" width="{w:.1f}" height="19" rx="4" fill="#ffffff"/>'
                   + text(lx, ly - 0.5, label, 12, 600, MUTED))
         self.edges.append(s)
@@ -131,20 +134,22 @@ class Diagram:
             '<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" '
             f'orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="{LINE}"/></marker></defs>',
             f'<rect width="{w}" height="{self.h}" fill="#ffffff"/>',
-            f'<rect x="0" y="0" width="{w}" height="6" fill="{ACCENT}"/>',
-            text(32, 46, self.title, 28, 700, INK, "start"),
+            f'<rect x="0" y="0" width="{w}" height="6" fill="{NAVY}"/>',
+            f'<rect x="0" y="6" width="{w}" height="3" fill="{SKY}"/>',
+            text(32, 48, self.title, 26, 700, NAVY, "start", head=True),
             text(32, 76, self.subtitle, 15, 400, MUTED, "start"),
         ]
         for i, (name, sub, y, h) in enumerate(self.lanes):
             out.append(f'<rect x="{lw}" y="{y}" width="{w - lw - 24}" height="{h}" fill="{LANE_A if i % 2 == 0 else LANE_B}"/>')
             out.append(f'<rect x="24" y="{y}" width="{lw - 24}" height="{h}" fill="{LABEL_BG}"/>')
-            out.append(text(40, y + h / 2 - 8, name, 15, 700, INK, "start"))
+            out.append(f'<rect x="24" y="{y}" width="4" height="{h}" fill="{SKY}"/>')
+            out.append(text(40, y + h / 2 - 8, name, 14, 700, NAVY, "start", head=True))
             out.append(text(40, y + h / 2 + 12, sub, 12.5, 400, MUTED, "start"))
             out.append(f'<line x1="24" y1="{y}" x2="{w - 24}" y2="{y}" stroke="{HAIR}"/>')
         out.append(f'<line x1="24" y1="{self.bottom}" x2="{w - 24}" y2="{self.bottom}" stroke="{HAIR}"/>')
         for x0, x1, label in self.sections:
-            out.append(f'<rect x="{x0}" y="{top - 34}" width="{x1 - x0}" height="26" rx="6" fill="{INK}"/>')
-            out.append(text((x0 + x1) / 2, top - 21, label, 13, 600, "#ffffff"))
+            out.append(f'<rect x="{x0}" y="{top - 34}" width="{x1 - x0}" height="26" rx="6" fill="{NAVY}"/>')
+            out.append(text((x0 + x1) / 2, top - 21, label, 12.5, 600, "#ffffff", head=True))
         for x0, _, _ in self.sections[1:]:
             out.append(f'<line x1="{x0 - 20}" y1="{top - 34}" x2="{x0 - 20}" y2="{self.bottom}" stroke="{HAIR}" stroke-dasharray="4 4"/>')
         out += self.edges + self.nodes
@@ -155,13 +160,13 @@ class Diagram:
 
     def _legend(self):
         y, x = self.bottom + 44, 32
-        s = [text(x, y, "Key", 13, 700, INK, "start")]
+        s = [text(x, y, "Key", 13, 700, NAVY, "start", head=True)]
         x += 44
         s.append(f'<rect x="{x}" y="{y - 12}" width="34" height="24" rx="6" fill="#ffffff" stroke="{LINE}"/>')
         s.append(text(x + 44, y, "A person does it", 13, 400, MUTED, "start"))
         x += 170
         s.append(f'<rect x="{x}" y="{y - 12}" width="34" height="24" rx="6" fill="{AUTO_BG}" stroke="{LINE}"/>')
-        s.append(f'<rect x="{x + 5}" y="{y - 7}" width="16" height="14" rx="7" fill="{ACCENT}"/>')
+        s.append(f'<rect x="{x + 5}" y="{y - 7}" width="16" height="14" rx="7" fill="{NAVY}"/>')
         s.append(text(x + 44, y, "Automated, with its flow number", 13, 400, MUTED, "start"))
         x += 250
         for kind, label in (("good", "Granted or done"), ("bad", "Blocked, rejected or needs action"),
@@ -186,7 +191,7 @@ def governance():
         "Business-as-usual controls from SharePoint Migration PID v4.2, enforced by Power Automate flows 01, 02, 03 and 06",
         [("Requester", "staff, site owner, sponsor", 150),
          ("Governance flows", "Power Automate", 210),
-         ("Approvers", "owners, managers, service owner, InfoSec", 170),
+         ("Approvers", "owners, managers, InfoSec", 170),
          ("IT Operations", "and Service Desk", 140),
          ("Registers", "governance site lists", 150)],
         [(220, 1170, "Access to a site  ·  flow 01"),
@@ -272,7 +277,7 @@ def news():
     d = Diagram(
         2000,
         "SharePoint News: publish to inbox",
-        "HPUK SharePoint Online News Design v1.2: HPUK News and Other News, automated by flows C1, C2 and C3a/C3b",
+        "SharePoint Online News Design v1.2: the HPUK News and Other News sites, automated by flows C1, C2 and C3a/C3b",
         [("Publisher", "trained, named publishers", 140),
          ("News sites", "Site Pages, intranet home", 150),
          ("News flows", "Power Automate", 200),

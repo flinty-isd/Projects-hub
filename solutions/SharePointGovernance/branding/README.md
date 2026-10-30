@@ -1,11 +1,14 @@
-# Projects Hub branding and pages for SharePoint Online
+# Hutchison Ports branding and pages for SharePoint Online
 
-The Projects Hub design system applied natively to the governance site, plus
-the site's pages. It uses only built-in SharePoint features: a theme, column
+The Hutchison Ports brand applied natively to the governance site, plus the
+site's pages and the end-to-end workflow diagram. It uses only built-in SharePoint features: a theme, column
 formatting and modern pages with text web parts. There's no SPFx, custom
 script or extra licence.
 
-- **Theme:** the "Projects Hub" palette (`theme/projects-hub-theme.json`).
+- **Theme:** the "Hutchison Ports" palette (`theme/hutchison-ports-theme.json`):
+  navy `#002E6D` as the primary colour, body `#33415C`, light `#F7F8FA` /
+  `#EEF2F7`. Sky Blue `#009BDE` is for accents only (it fails contrast as
+  text), so it isn't a theme slot.
 - **Status columns:** every Status column in the governance lists shows its
   value as a coloured box in the colours of
   [`../diagrams/governance-flows.md`](../diagrams/governance-flows.md): green
@@ -14,7 +17,10 @@ script or extra licence.
   visible, because the green and red differ by hue only.
 - **Pages:** six pages from `pages/pages.json`: Governance overview, Request
   access, Request a site, Access reviews, File shares, and Roles.
-  Each is linked to its lists and added to the left-hand navigation.
+  Each is linked to its lists and added to the left-hand navigation. The
+  overview page shows the governance swimlane diagram
+  (`pages/images/governance-workflow.png`, drawn by
+  `tools/draw_workflows.py`) with an Image web part that opens it full size.
 
 Choose one way to apply it.
 
@@ -31,15 +37,18 @@ your organisation allows.
 4. Check the table it prints: one row per step, `OK` or `FAILED` with the
    reason. Reload the page.
 
-You can run it again safely. It replaces the theme and the column formatting,
-leaves existing pages alone, and doesn't duplicate navigation links. To
-rebuild a page, delete it first.
+You can run it again safely. It replaces the theme, the column formatting and
+the diagram in Site Assets, leaves existing pages alone, and doesn't duplicate
+navigation links. If you already ran an earlier version, change
+`const UPDATE_EXISTING = false;` near the top to `true` before pasting: it
+rewrites the six pages from the script, so any edits made to them on the site
+are lost.
 
 ## Option B: Copilot and the browser UI (no scripts)
 
 1. **Theme.** A SharePoint Administrator opens **SharePoint admin centre →
-   Brand center → Themes → Add theme**, names it *Projects Hub*, and enters
-   `themePrimary` `#c73a3a`. Then, on the governance site, a Site Owner picks
+   Brand center → Themes → Add theme**, names it *Hutchison Ports*, and enters
+   `themePrimary` `#002E6D`. Then, on the governance site, a Site Owner picks
    it under **Settings → Change the look → Theme**. If Brand center isn't
    switched on for your tenant, use the closest built-in theme (Red) until it
    is.
@@ -49,11 +58,16 @@ rebuild a page, delete it first.
 3. **Pages.** Follow [`copilot/page-prompts.md`](copilot/page-prompts.md):
    one Copilot prompt per page, with the facts to check before publishing.
 
-## Font
+## Fonts and logo
 
-Optionally, add Source Sans 3 (SIL Open Font License, from Google Fonts) as a
-font package in Brand center and pick it under **Change the look → Font**.
+The brand uses Montserrat for headings and Arial for body text. To use them on
+the site, add a font package in Brand center (Montserrat is on Google Fonts
+under the SIL Open Font License) and pick it under **Change the look → Font**.
 Without it, SharePoint keeps Segoe UI.
+
+Set the corporate mark as the site logo under **Change the look → Header →
+Site logo**, using the supplied PNG. Place it on a light header only: there is
+no reversed version for navy.
 
 ## Changing things
 
@@ -61,7 +75,8 @@ Without it, SharePoint keeps Segoe UI.
 |-----------|------|----------|
 | A status's colour, or a new status | `status-map.json` | `tools/build_formatters.py`, then `tools/build_site_kit.py` |
 | Page wording or a new page | `pages/pages.json` | `tools/build_site_kit.py` |
-| Theme colours | `theme/projects-hub-theme.json` | `tools/build_site_kit.py` |
+| Theme colours | `theme/hutchison-ports-theme.json` | `tools/build_site_kit.py` |
+| A diagram | `tools/draw_workflows.py`, then re-export `pages/images/*.png` | `tools/build_site_kit.py` |
 
 Never edit `column-formats/`, `browser/` or `copilot/` by hand: they're
 generated. CI runs both tools with `--check`. It fails when a choice in
@@ -74,8 +89,11 @@ PnP.PowerShell, for later if PowerShell becomes available.
 
 ## Notes
 
-- `themePrimary` is `#c73a3a`, a darker shade of the design system's Streamlit
-  red `#ff4b4b`. SharePoint puts white text on `themePrimary` and uses it for
-  links, and `#ff4b4b` only reaches 3.3:1 there; `#c73a3a` reaches 5.1:1.
+- In text for staff, don't abbreviate the company name (brand V6). Site names
+  such as *HPUK News* are the sites' own titles.
 - The browser script calls SharePoint's REST API as the signed-in user. It
-  can't do anything that user couldn't do by hand.
+  can't do anything that user couldn't do by hand. It is about 680 KB because
+  it carries the diagram.
+- The Image web part settings it writes haven't been tried on a live tenant
+  yet. If the diagram doesn't show, the caption's *Open the diagram full size*
+  link still works, and you can add the image by hand from Site Assets.

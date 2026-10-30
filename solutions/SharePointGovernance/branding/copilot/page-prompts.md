@@ -13,6 +13,8 @@ select the text, **Link**, and pick the list.
 
 Save the page as **Governance-overview**, add it to the site navigation as **Governance**.
 
+Diagram: upload `branding/pages/images/governance-workflow.png` to Site Assets, add it with an **Image** web part where the draft marks it, alt text "Swimlane diagram of the SharePoint governance service: access requests (flow 01), new sites (flow 03) and ongoing reviews (flows 06 and 02), showing what the requester, the flows, approvers, IT Operations and the registers each do.", and link the image to itself so readers can open it full size.
+
 ```
 Create a SharePoint page titled "SharePoint governance" for our SharePoint governance site.
 Purpose: What the governance service does and where to start.
@@ -23,6 +25,8 @@ do not add rules or steps that are not listed.
 
 ## What this site is for
 SharePoint Online is governed as a business-as-usual service. The controls in the SharePoint Migration PID v4.2 are enforced by Power Automate flows that run on the lists on this site. You ask for something by adding an item to a list; the flow checks it, asks the right approvers and records the decision.
+
+[Diagram: How the service works: who does what, from request to review. Leave a full-width section here for an Image web part.]
 
 ## Start here
 

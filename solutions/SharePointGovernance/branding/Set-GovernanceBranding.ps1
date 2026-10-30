@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Applies the Projects Hub look to the SharePoint governance site.
+    Applies the Hutchison Ports look to the SharePoint governance site.
 
 .DESCRIPTION
     Uses only native SharePoint Online features, no SPFx or custom script:
 
-      * registers the 'Projects Hub' tenant theme (theme/projects-hub-theme.json)
+      * registers the 'Hutchison Ports' tenant theme (theme/hutchison-ports-theme.json)
         and applies it to the governance site
       * sets column formatting on every governance Status column
         (column-formats/*.json), so each status shows as a good / bad / info /
@@ -36,7 +36,7 @@ $siteUrl = "https://$TenantName.sharepoint.com$GovernanceSitePath"
 
 # --- Tenant theme -------------------------------------------------------------
 if (-not $SkipTheme) {
-    $theme = Get-Content -Raw (Join-Path $here 'theme/projects-hub-theme.json') | ConvertFrom-Json
+    $theme = Get-Content -Raw (Join-Path $here 'theme/hutchison-ports-theme.json') | ConvertFrom-Json
     $palette = @{}
     $theme.palette.PSObject.Properties | ForEach-Object { $palette[$_.Name] = $_.Value }
 

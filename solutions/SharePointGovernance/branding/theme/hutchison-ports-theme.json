@@ -1,0 +1,29 @@
+{
+  "$comment": "SharePoint Online theme in the Hutchison Ports brand: navy #002E6D primary (white text on it 13:1), body #33415C, light grounds #F7F8FA / #EEF2F7. Theme shades are navy mixed with white or black; neutrals are #33415C mixed with white or black. Sky Blue #009BDE is an accent for bars only (3.1:1, fails as text), so it is not a theme slot.",
+  "name": "Hutchison Ports",
+  "isInverted": false,
+  "palette": {
+    "themePrimary": "#002e6d",
+    "themeLighterAlt": "#f5f7f9",
+    "themeLighter": "#d9e0e9",
+    "themeLight": "#b2c0d3",
+    "themeTertiary": "#6682a7",
+    "themeSecondary": "#1a437c",
+    "themeDarkAlt": "#002962",
+    "themeDark": "#002353",
+    "themeDarker": "#001a3d",
+    "neutralLighterAlt": "#f7f8fa",
+    "neutralLighter": "#eef2f7",
+    "neutralLight": "#e0e2e7",
+    "neutralQuaternaryAlt": "#ccd0d6",
+    "neutralQuaternary": "#babec8",
+    "neutralTertiaryAlt": "#adb3be",
+    "neutralTertiary": "#81899a",
+    "neutralSecondary": "#56627a",
+    "neutralPrimaryAlt": "#47546c",
+    "neutralPrimary": "#33415c",
+    "neutralDark": "#242e40",
+    "black": "#171d29",
+    "white": "#ffffff"
+  }
+}
