@@ -10,8 +10,8 @@ makes the derivative.
 
 | File | What it is |
 |---|---|
-| [`SKILL.md`](SKILL.md) | Skill instructions (Claude skill format: upload the folder, or the zip built below) |
-| [`scripts/make_banner.py`](scripts/make_banner.py) | The image engine (Python 3, Pillow, numpy) |
+| [`SKILL.md`](SKILL.md) | The skill. **Self-contained**: instructions, sizes and the image code in one file, so it works where only the instructions can be loaded (for example a SharePoint/Copilot skill with code interpreter) |
+| [`scripts/make_banner.py`](scripts/make_banner.py) | Optional fuller version for running locally: preview sheets, file-size limits, Markdown/JSON reports |
 | [`references/presets.json`](references/presets.json) | Target sizes, file-size limits, responsive previews and thresholds. Edit sizes here |
 | [`copilot-handoff.md`](copilot-handoff.md) | Text to add to the Copilot assessment skill so its output feeds this skill |
 
