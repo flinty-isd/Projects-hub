@@ -29,8 +29,6 @@ SharePoint skill does not use it.
 ## Sizes to confirm
 
 Sizes marked as Microsoft guidance weren't rechecked against Microsoft's live
-page. Good-practice sizes need Communications sign-off. Check the menu names in
-the steps against the current SharePoint and Stream screens; Microsoft renames
-them from time to time. The desktop strip rule
+page. Good-practice sizes need Communications sign-off. The desktop strip rule
 (head no more than 40% of the height) is an approximation; always preview the
 page before publishing.
