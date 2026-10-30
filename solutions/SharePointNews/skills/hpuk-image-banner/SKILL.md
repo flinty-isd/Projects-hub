@@ -1,138 +1,168 @@
 ---
 name: hpuk-image-banner
-description: Create correctly sized HPUK images for SharePoint and Microsoft 365 from an authorised source image - News banners and page-title images, News thumbnails, Hero tiles, Quick Links, wide strips, supporting images, site header and logo images. Removes embedded text from flat backgrounds, recomposes around the subject with headroom, sets the focal point, checks every responsive crop, and returns a READY assessment. Use when the user says "create a SharePoint banner", "resize this for SharePoint News", "fix this banner crop", "prepare this image for SharePoint", "make a thumbnail / hero image", or "is this image suitable for a news banner".
+description: Create correctly sized HPUK images for SharePoint News banners, page-title images, thumbnails, Hero, Quick Links and site images, with focal point and READY checks. Use when the user says "create a SharePoint banner", "resize this for SharePoint News", "fix this banner crop" or "prepare this image for SharePoint".
 ---
 
 # HPUK SharePoint Image Creator
 
-Turns one authorised source image into publish-ready derivatives at the right
-size for each SharePoint placement, and proves each one with a preview sheet
-and checks. The source file is never changed.
+## When to use
+
+Use this skill to turn an authorised HPUK image into a new image at the right
+size for SharePoint. For example:
+
+- a News banner or page-title image
+- a News thumbnail
+- a Hero web part tile
+- a Quick Links image or icon
+- a site header or site logo
+
+The original image is never changed. The skill always makes a new file.
 
 ## Inputs
 
-Collect only what is needed:
+Ask only for what is missing:
 
-- **Source image**, and whether it is an authorised HPUK image (Brand Centre,
-  approved libraries, or supplied by the owner). Don't proceed on unapproved
-  sources: report NOT READY.
-- **Placement(s)**, mapped to presets below. Default: `news-banner`.
-- **Alt text**, or that the image is decorative.
+1. **The image**, and whether it is approved (Brand Centre, an approved
+   library, or supplied by its owner).
+2. **Where it will go** (for example, News banner).
+3. **Alt text**, or confirmation that the image is decorative.
 
-Don't delay when the placement and the problem are clear from the request.
+If the image is not approved, stop and report **NOT READY**.
 
-## Presets
+## Sizes
 
-Sizes live in `references/presets.json` (change them there, not in the script).
-Each preset says its basis: *Microsoft* guidance or *HPUK good practice*.
-Label good-practice sizes as such in the report; don't present them as HPUK rules.
+Choose the size from where the image will go.
 
-| Preset | Size | Use |
-|---|---|---|
-| `news-banner` | 1920x1080 (16:9) | News post / page title area; also the News thumbnail |
-| `news-thumbnail` | 1280x720 | Separate thumbnail, when different from the banner |
-| `hero` | 1920x1080 | Hero web part tile |
-| `quick-links` | 1280x720 | Quick Links filmstrip/grid |
-| `quick-links-icon` | 300x300 | Quick Links compact/list icon |
-| `image-wide-strip` | 2560x640 (4:1) | Image web part as a strip in a full-width section |
-| `supporting-image` | 1600x900 | Image web part in the page body |
-| `site-header-background` | 2560x164 | Extended site header |
-| `site-logo-thumbnail` | 64x64 PNG | Site logo thumbnail |
+- **News banner or page title**: 1920 x 1080 (preset `news-banner`). This is also the News thumbnail.
+- **Separate News thumbnail**: 1280 x 720 (`news-thumbnail`).
+- **Hero tile**: 1920 x 1080 (`hero`).
+- **Quick Links image**: 1280 x 720 (`quick-links`).
+- **Quick Links icon**: 300 x 300 (`quick-links-icon`).
+- **Wide strip in a full-width section**: 2560 x 640 (`image-wide-strip`).
+- **Picture in the body of a page**: 1600 x 900 (`supporting-image`).
+- **Site header background**: 2560 x 164 (`site-header-background`).
+- **Site logo thumbnail**: 64 x 64 PNG (`site-logo-thumbnail`).
 
-The title area is cropped differently on desktop, tablet and mobile around the
-focal point. `news-banner` checks the face in each view (approximate ratios).
+The sizes are kept in `references/presets.json`. Each one says whether it comes
+from Microsoft guidance or is HPUK good practice. Call good-practice sizes
+**good practice** in the report, not HPUK rules.
 
 ## Steps
 
-1. **Classify and assess.** Name the placement and preset. Look at the source and
-   note: embedded text or logos, how close the subject is to the edges,
-   resolution against the target, background (flat or textured).
-2. **Locate the regions** in source pixels (state the source size; if the
-   displayed image is scaled, convert):
-   - `--focal x,y`: centre of the face (or main subject).
-   - `--face x0,y0,x1,y1`: the whole head including hair.
-   - `--subject x0,y0,x1,y1`: the full visible subject.
-   - `--erase x0,y0,x1,y1`: each block of embedded text (repeatable), with a
-     margin. Only on flat backgrounds.
-3. **Check the boxes** before rendering, then look at the overlay and correct:
-   ```bash
-   python scripts/make_banner.py SOURCE --focal .. --face .. --subject .. --erase .. --check-boxes --out OUT
-   ```
-4. **Create the derivatives:**
-   ```bash
-   python scripts/make_banner.py SOURCE --preset news-banner [--preset ...] \
-     --focal .. --face .. --subject .. [--erase ..] \
-     --allow-extend --fit-previews \
-     --alt "..." --source-approved --out OUT
-   ```
-   - `--allow-extend` adds background (headroom, width) by repeating a flat edge.
-     The script fails the check if the edge is textured.
-   - `--fit-previews` zooms out until the face fits every responsive view.
-   - `--zoom 1.2` crops tighter when the subject is too small.
-   - Exit code 2 means NOT READY.
-5. **Review visually.** Open each `*_preview.png` (coloured boxes are the
-   responsive crops, the cross is the focal point) and the derivative itself.
-   Look for: visible seams or leftover text where text was erased, stretched
-   background, awkward cuts at joints or the top of the head, and softness when
-   upscaled. If anything is wrong, adjust the boxes or zoom and re-run. Never
-   report a result you haven't looked at.
-6. **Report** using `*_report.md` (format below), and attach the derivatives.
+### 1. Look at the image
+
+Note:
+
+- any words, names or logos inside the image
+- how close the person's head is to the edges
+- whether the image is big enough for the target size
+- whether the background is plain colour or a photo or pattern
+
+### 2. Mark the areas
+
+Give each area in pixels of the original image:
+
+- **Focal point**: the centre of the face.
+- **Face**: a box around the whole head, including hair.
+- **Subject**: a box around the whole person.
+- **Text to remove**: a box around each block of words. Only on a plain-colour background.
+
+A box is written `left,top,right,bottom`, for example `1395,49,1630,391`.
+
+### 3. Check the areas
+
+Draw the boxes on a copy and look at it. Fix any box that is wrong.
+
+```
+python scripts/make_banner.py <image> --check-boxes --focal <x,y> --face <box> --subject <box> --erase <box> --out <folder>
+```
+
+### 4. Make the new image
+
+```
+python scripts/make_banner.py <image> --preset news-banner --focal <x,y> --face <box> --subject <box> --erase <box> --allow-extend --fit-previews --alt "<alt text>" --source-approved --out <folder>
+```
+
+What the options do:
+
+- `--preset`: the size. Repeat it to make more than one size.
+- `--erase`: removes words on a plain background. Repeat it for each block.
+- `--allow-extend`: adds plain background, for example space above the head.
+- `--fit-previews`: zooms out until the face shows in every desktop and mobile view.
+- `--zoom 1.2`: crops in closer when the person is too small.
+
+### 5. Check the result yourself
+
+Open the new image and its `_preview.png` file. The coloured boxes show what
+SharePoint shows on desktop, tablet and mobile. The cross is the focal point.
+
+Look for:
+
+- traces of removed words
+- a visible join or stretched background
+- the top of the head or chin cut off
+- a blurred picture (when the original was too small)
+
+If something is wrong, change the boxes or zoom and make it again. Don't report
+a result you haven't looked at.
+
+### 6. Report
+
+Use the `_report.md` file. Give the new image to the user.
 
 ## Rules
 
-- Keep the authorised source unchanged; create new files only.
-- Don't create, recreate, recolour or move logos, the Corporate Mark or other
-  branding. Don't add text to images: headlines such as "Update from ..." go in
-  the page title or text.
-- Text removal is a flat colour fill. On photos, gradients or textures, don't
-  attempt it: report "manual retouching needed" and NOT READY.
-- Don't use generative fill or AI to alter people.
-- Don't invent HPUK brand rules. Sources in order: Hutchison Ports Brand
-  Guidelines, HPUK Brand Centre, approved HPUK brand assets and photography
-  libraries, approved SharePoint standards, approved News publishing guidance,
-  authorised images supplied by the user. Anything else is labelled
-  **good practice**.
-- Upscaling above 100% is a warning, above 150% a failure (ask for a larger
-  original).
+- Never change the original image.
+- Never add, recreate, recolour or move logos or the Corporate Mark.
+- Never put words in the image. Headlines such as "Update from ..." go in the page title.
+- Only remove words from a plain-colour background. On a photo or pattern, report **manual retouching needed** and **NOT READY**.
+- Never use AI to change how a person looks.
+- Enlarging above 100% is a warning. Above 150% is NOT READY: ask for a bigger original.
+- Don't invent HPUK brand rules. Use these sources, in this order:
+  1. Hutchison Ports Brand Guidelines
+  2. HPUK Brand Centre
+  3. Approved HPUK brand assets and photography libraries
+  4. Approved HPUK SharePoint standards
+  5. Approved HPUK News publishing guidance
+  6. Authorised images supplied by the user
 
-## Report format
+## Report
 
-```
-Image assessment
-Intended use:
-Source: (name, size, approval status)
-Image action selected: e.g. REMOVE EMBEDDED TEXT + RECOMPOSE + RESIZE
-Action actually performed: derivatives created; source unchanged
-Target dimensions: (per derivative, with basis)
-Focal point: % across, % down (set in SharePoint: select image > Set focal point)
-Accessibility: alt text, or empty alt if decorative beside a title naming the person
-Brand/source check:
-READY assessment: READY | READY WITH WARNINGS | NOT READY
-Publication decision: next steps (upload, set focal point, preview desktop and mobile)
-```
+Return:
+
+- **Intended use**
+- **Source**: file name, size, and whether it is approved
+- **Image action selected**: for example, remove embedded text, recompose, resize
+- **Action actually performed**: new image created; original unchanged
+- **Target size**, and whether it is Microsoft guidance or good practice
+- **Focal point**: % across and % down
+- **Accessibility**: the alt text. Use empty alt text if the image is decorative beside a title that names the person.
+- **Brand/source check**
+- **READY assessment**: READY, READY WITH WARNINGS, or NOT READY
+- **Publication decision**: what to do next
 
 ## Publishing in SharePoint
 
-1. Edit the page, select the title area image, choose **Change image** and
-   upload the `news-banner` file.
-2. Select **Set focal point** and place it at the reported percentages.
-3. Add alt text (or mark decorative).
-4. **Preview** on desktop, then with a narrow window or the mobile app, before
-   publishing.
+1. Edit the page. Select the title-area image and choose **Change image**.
+2. Upload the new image.
+3. Select **Set focal point** and place it at the reported position.
+4. Add the alt text, or mark the image as decorative.
+5. Preview on desktop and on a narrow window or phone before you publish.
 
 ## Example
 
-Source: a 2172x724 "Update from Adam Ramsey" banner with the name as text on a
-flat navy panel, and limited headroom above the head.
+The "Update from Adam Ramsey" banner is 2172 x 724, with the name written on a
+plain navy panel and little space above his head.
 
-```bash
-python scripts/make_banner.py adam-ramsey-banner.png --preset news-banner \
-  --focal 1510,228 --face 1395,49,1630,391 --subject 1195,49,1835,724 \
-  --erase 250,150,960,580 --allow-extend --fit-previews \
-  --alt "Adam Ramsey in a dark suit and striped tie" --source-approved --out out
+```
+python scripts/make_banner.py adam-ramsey-banner.png --preset news-banner --focal 1510,228 --face 1395,49,1630,391 --subject 1195,49,1835,724 --erase 250,150,960,580 --allow-extend --fit-previews --alt "Adam Ramsey in a dark suit and striped tie" --source-approved --out out
 ```
 
-Result: text removed cleanly (flat navy); background extended 170px above;
-zoomed out to 0.81 so the face fits even the wide desktop title strip; focal point
-58% across, 45% down; 1920x1080, 102 KB; READY WITH WARNINGS (upscaled 121%:
-check sharpness, or ask for the original photo).
+Result:
+
+- The words were removed cleanly.
+- Plain background was added above his head.
+- His face shows in every desktop and mobile view.
+- The focal point is 58% across and 45% down.
+- The image is 1920 x 1080 and 102 KB.
+- **READY WITH WARNINGS**: the original was enlarged to 121%, so check it is sharp, or ask for the original photo.
