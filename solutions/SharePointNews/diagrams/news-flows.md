@@ -36,11 +36,11 @@ flowchart TD
 flowchart TD
   A([Daily 06:00 UK time]) --> Q["Both sites: published Live pages<br/>with ExpiryDate before today (UK date)"]
   Q --> W{"ExpiryWritesEnabled = Yes?"}
-  W -->|No| DRY[/"Dry run: email support owner<br/>the pages that would expire"/]:::info
+  W -->|No| DRY[/"Dry run: email Comms shared mailbox<br/>the pages that would expire"/]:::info
   W -->|Yes| U["Status = Expired via ValidateUpdateListItem<br/>(no new version, no draft)"]
   U --> OK{"Update succeeded?"}
   OK -->|Yes| EX[/"Expired - drops off News web parts"/]:::good
-  OK -->|No| F[/"Failure listed -> support owner alerted"/]:::bad
+  OK -->|No| F[/"Failure listed -> Comms shared mailbox alerted"/]:::bad
   classDef good fill:#dcfce7,stroke:#15803d,color:#14532d
   classDef bad fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
   classDef info fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e

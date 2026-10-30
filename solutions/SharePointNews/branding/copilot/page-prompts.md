@@ -12,7 +12,7 @@ After publishing, add any links to lists by hand: select the text, **Link**, and
 
 Save the page as **Publisher-Guide**.
 
-Diagram: upload `branding/pages/images/news-workflow.png` to Site Assets, add it with an **Image** web part where the draft marks it, alt text "Swimlane diagram of SharePoint News: a publisher publishes a post; flow C3 checks urgent posts and sends email and Teams alerts per port; flow C2 sends the Monday roundup; flow C1 expires posts daily; every send is recorded in the Delivery Log and failures go to the support owner.", and link the image to itself so readers can open it full size.
+Diagram: upload `branding/pages/images/news-workflow.png` to Site Assets, add it with an **Image** web part where the draft marks it, alt text "Swimlane diagram of SharePoint News: a publisher publishes a post; flow C3 checks urgent posts and sends email and Teams alerts per port; flow C2 sends the Monday roundup; flow C1 expires posts daily; every send is recorded in the Delivery Log and failures go to the Communications shared mailbox.", and link the image to itself so readers can open it full size.
 
 ```
 Create a SharePoint page titled "Publisher Guide" for the HPUK News or Other News site.
@@ -84,5 +84,5 @@ All news content is kept for 7 years, including deleted pages and files.
 
 ## Help
 
-For publishing questions, contact Communications. If an alert or roundup did not arrive, contact Nigel Bell, the news support owner. Every delivery is recorded in the Delivery Log.
+For publishing questions, contact Communications. If an alert or roundup did not arrive, email the Communications shared mailbox. Every delivery is recorded in the Delivery Log.
 ```

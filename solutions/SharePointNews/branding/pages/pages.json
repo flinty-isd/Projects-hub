@@ -11,7 +11,7 @@
       "sections": [
         {
           "image": "news-workflow.png",
-          "alt": "Swimlane diagram of SharePoint News: a publisher publishes a post; flow C3 checks urgent posts and sends email and Teams alerts per port; flow C2 sends the Monday roundup; flow C1 expires posts daily; every send is recorded in the Delivery Log and failures go to the support owner.",
+          "alt": "Swimlane diagram of SharePoint News: a publisher publishes a post; flow C3 checks urgent posts and sends email and Teams alerts per port; flow C2 sends the Monday roundup; flow C1 expires posts daily; every send is recorded in the Delivery Log and failures go to the Communications shared mailbox.",
           "caption": "How news reaches people: publishing, urgent notices, the Monday roundup and expiry."
         },
         {"include": "pages/Publisher-Guide.html"}

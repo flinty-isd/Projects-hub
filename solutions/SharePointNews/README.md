@@ -44,7 +44,7 @@ if Communications or IT decide otherwise.
 | Who can send urgent notices | **Chloe, Rachel and Toby** | `UrgentPublisherEmails` environment variable. C3 sends only when the post's author or last editor is on the list; anything else is logged as *Skipped - not an urgent publisher* and Communications is told |
 | Page approval | **None. Publishers are pre-approved** (changed 23 October 2026; this replaces HR approving every page) | Content approval stays off on Site Pages (the provisioning script turns it off if it was on). A published page is live straight away, and an urgent post by Chloe, Rachel or Toby alerts as soon as it is published. Membership of the publisher groups is the control, so keep them to trained, named publishers |
 | Retention | **7 years** from creation, on both sites | `provisioning/Set-NewsRetention.ps1`: a Purview retention policy. Nothing is deleted automatically at the end unless the records owner asks for `-DeleteAfterRetention` |
-| Support owner | **Nigel Bell** | `SupportOwnerEmail` environment variable: receives all flow failure alerts |
+| Support | **The Communications shared mailbox** (changed 30/10/2026; replaces Nigel Bell as support owner) | `SupportOwnerEmail` environment variable: set to the Communications shared mailbox, which receives all flow failure alerts and the C1 dry-run lists |
 | Urgent notices for staff without a licence | **Updated separately in each area** (26 October 2026). About 1,500 operational staff use the Base8 CMS in the Employee App and receive no email or Teams alert | Outside these flows: C3 alerts licensed staff by email and Teams only. Each area posts its own urgent notices for unlicensed staff through its local route (Base8 CMS, noticeboards, supervisor briefings). Nothing in the build changes |
 | Images and video | Pictures added in the page (banner image and Image or Image gallery web parts) with alt text; video uploaded to a **News Videos** library on each site and shown with the File and media web part, playing through Stream. No external video embeds (G-06). Emails, Teams alerts and the roundup carry text and a link only | `list-schema.json` and `Provision-NewsSites.ps1`: the News Videos library (major versions, site permissions, a Captions checked column). Publisher Guide: Images and video section |
 | Strategy themes | **Option A** (26 October 2026): an optional **Strategy theme** label with Our People, Our Business, Our Environment and One TEAM, separate from Department and Category. A post can carry more than one | `taxonomy/TermSet-StrategyTheme.csv` and a multi-value `StrategyTheme` column on Site Pages. Theme sections on the intranet home filter on it. C2 groups the Monday roundup by theme when `RoundupGroupByTheme` = Yes (default No). Communications supplies each theme's wording, including the One TEAM principles |
@@ -62,7 +62,7 @@ all ports (decision 1).
 | Safeguard | How it works |
 |-----------|--------------|
 | **Reserve before sending** | The Delivery Log Title (the dispatch key) is unique and indexed. Before each email or Teams post the flow writes a *Reserved* row, and sends only if that succeeds. The send has no automatic retry. The row then becomes *Sent*; *Failed* if the provider definitely rejected it (a 4xx other than 408/429); or *Reconcile* if the outcome is unknown (a timeout, 5xx or throttling). Only *Failed* rows are ever retried. A person checks *Reconcile* rows (the **Needs checking** view) with the recipient and sets *Failed* to allow a resend |
-| **Master switches, off by default** | `DispatchEnabled` = No: C2 and C3 send nothing (runs show as Cancelled). `ExpiryWritesEnabled` = No: C1 changes nothing and emails the support owner the pages it would have expired. Turn each on only after it has been proven, and set `DispatchEnabled` back to No to stop all sending at once |
+| **Master switches, off by default** | `DispatchEnabled` = No: C2 and C3 send nothing (runs show as Cancelled). `ExpiryWritesEnabled` = No: C1 changes nothing and emails the Communications shared mailbox the pages it would have expired. Turn each on only after it has been proven, and set `DispatchEnabled` back to No to stop all sending at once |
 | **Urgent go-live date** | `UrgentGoLiveDate`: C3 ignores posts first published before it, so editing an old or migrated post never sends an alert. Set it once at go-live and don't move it |
 | **Fixed roundup week** | C2 covers Monday 00:00 to Monday 00:00 UK time, the week before the run. A late or repeated run covers the same posts and reuses the same dispatch keys, so nothing is sent twice |
 
@@ -126,7 +126,7 @@ flowchart LR
    ```
    It needs three connections (SharePoint, Office 365 Outlook, Microsoft
    Teams), signed in as the named news flow owner, and ten environment variables,
-   including Nigel's address (`SupportOwnerEmail`) and the urgent publishers'
+   including the Communications shared mailbox address (`SupportOwnerEmail`) and the urgent publishers'
    addresses, separated by semicolons (`UrgentPublisherEmails`). None is
    mandatory at import: after importing, open the solution → **Environment
    variables** and set the six whose description starts "Set after import".

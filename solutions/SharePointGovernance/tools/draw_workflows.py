@@ -282,7 +282,7 @@ def news():
          ("News sites", "Site Pages, intranet home", 150),
          ("News flows", "Power Automate", 200),
          ("Recipients", "port email groups, Teams", 120),
-         ("Communications", "and support owner", 130),
+         ("Communications", "shared mailbox", 130),
          ("Delivery Log", "one row per send", 120)],
         [(220, 690, "Publish"),
          (730, 1270, "Urgent notice  ·  C3a / C3b, on publish"),
@@ -325,7 +325,7 @@ def news():
 
     # Delivery Log and support
     dl = d.store(1300, y(5), ["Reserved → Sent / Failed / Reconcile"], w=330)
-    sup = d.step(1810, y(4), ["Support owner: failures", "and Reconcile rows to check"], w=230)
+    sup = d.step(1810, y(4), ["Comms shared mailbox: failures", "and Reconcile rows to check"], w=250)
     d.edge(urg.b, (1140, y(4, 0.7)), (1220, y(4, 0.7)), (1220, dl.t[1] - 2))
     d.edge(dig.b, (1460, y(4, 0.7)), (1380, y(4, 0.7)), (1380, dl.t[1] - 2))
     d.edge(dl.r, (sup.cx, dl.cy), sup.b, label="Failed or Reconcile", at=(1640, dl.cy))
