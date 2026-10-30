@@ -1,0 +1,17 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
+  "elmType": "div",
+  "txtContent": "@currentField",
+  "style": {
+    "display": "=if(@currentField == '', 'none', 'inline-block')",
+    "box-sizing": "border-box",
+    "padding": "1px 10px",
+    "border-radius": "8px",
+    "font-size": "13px",
+    "line-height": "20px",
+    "white-space": "nowrap",
+    "background-color": "=if(indexOf('|Sent|', '|' + @currentField + '|') >= 0, '#dcfce7', if(indexOf('|Failed|Skipped - not an urgent publisher|Skipped - no destinations|', '|' + @currentField + '|') >= 0, '#fee2e2', if(indexOf('|Reconcile|Skipped - audience targeted|', '|' + @currentField + '|') >= 0, '#e0f2fe', '#eef2f7')))",
+    "color": "=if(indexOf('|Sent|', '|' + @currentField + '|') >= 0, '#14532d', if(indexOf('|Failed|Skipped - not an urgent publisher|Skipped - no destinations|', '|' + @currentField + '|') >= 0, '#7f1d1d', if(indexOf('|Reconcile|Skipped - audience targeted|', '|' + @currentField + '|') >= 0, '#0c4a6e', '#33415c')))",
+    "border": "='1px solid ' + if(indexOf('|Sent|', '|' + @currentField + '|') >= 0, '#15803d', if(indexOf('|Failed|Skipped - not an urgent publisher|Skipped - no destinations|', '|' + @currentField + '|') >= 0, '#b91c1c', if(indexOf('|Reconcile|Skipped - audience targeted|', '|' + @currentField + '|') >= 0, '#0369a1', '#eef2f7')))"
+  }
+}

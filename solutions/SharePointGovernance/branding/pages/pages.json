@@ -1,5 +1,8 @@
 {
   "$comment": "Pages for the governance site. tools/build_site_kit.py turns this into browser/apply-governance-site.js and copilot/page-prompts.md. Each section becomes one full-width text web part. Allowed HTML is what the SharePoint text web part keeps: h2-h4, p, ul, ol, li, a, strong, em, table/tbody/tr/td. An {\"image\", \"alt\", \"caption\"} section is a diagram from images/, shown with an Image web part that opens full size. {{list:<List title>}} becomes a link to that list and {{new:<List title>|<label>}} a link to its new-item form; a list that doesn't exist yet becomes plain text. Content follows ../README.md and ../diagrams/governance-flows.md (PID v4.2).",
+  "site": "the IT Enterprise Governance site",
+  "script": "apply-governance-site.js",
+  "audience": "staff and site owners; name roles, never people",
   "pages": [
     {
       "name": "Governance-overview",

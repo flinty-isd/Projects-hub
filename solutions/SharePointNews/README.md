@@ -12,6 +12,7 @@ It uses standard modern pages only, with no SPFx.
 | [`provisioning/Set-NewsRetention.ps1`](provisioning/Set-NewsRetention.ps1) | Purview retention policy: 7 years on both sites |
 | [`pages/Publisher-Guide.html`](pages/Publisher-Guide.html) | Content of Publisher-Guide.aspx on HPUK News |
 | [`powerautomate/flows/`](powerautomate/flows) | C1 expiry, C2 weekly port roundup, C3a/C3b urgent notice (one per site) |
+| [`branding/`](branding/README.md) | No-PowerShell kit: Hutchison Ports theme, status colours and the Publisher Guide page with the News diagram, from one browser script or Copilot prompts |
 | [`diagrams/news-flows.md`](diagrams/news-flows.md) | Process diagrams for every flow, including the reserve-then-send safeguard |
 | [`taxonomy/`](taxonomy) | Department and Category term sets (term-store import files) |
 | [`solution-config.json`](solution-config.json) | Solution package settings: environment variables and connection references |

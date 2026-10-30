@@ -1,0 +1,34 @@
+{
+  "$comment": "Which outcome colour each News status choice shows in SharePoint. Generates column-formats/*.json with ../SharePointGovernance/tools/build_formatters.py --root solutions/SharePointNews, which checks it against sharepoint/list-schema.json. Colours match diagrams/news-flows.md: green done, red needs someone to act, blue a deliberate stop or a person checking, grey in progress.",
+  "outcomes": {
+    "good": {"fill": "#dcfce7", "stroke": "#15803d", "ink": "#14532d"},
+    "bad": {"fill": "#fee2e2", "stroke": "#b91c1c", "ink": "#7f1d1d"},
+    "info": {"fill": "#e0f2fe", "stroke": "#0369a1", "ink": "#0c4a6e"},
+    "neutral": {"fill": "#eef2f7", "stroke": "#eef2f7", "ink": "#33415c"}
+  },
+  "columns": [
+    {
+      "list": "Site Pages",
+      "field": "Status",
+      "map": {"Live": "good", "Expired": "info"}
+    },
+    {
+      "list": "Notices and Attachments",
+      "field": "Status",
+      "map": {"Live": "good", "Expired": "info"}
+    },
+    {
+      "list": "Delivery Log",
+      "field": "DeliveryStatus",
+      "map": {
+        "Reserved": "neutral",
+        "Sent": "good",
+        "Failed": "bad",
+        "Reconcile": "info",
+        "Skipped - not an urgent publisher": "bad",
+        "Skipped - audience targeted": "info",
+        "Skipped - no destinations": "bad"
+      }
+    }
+  ]
+}

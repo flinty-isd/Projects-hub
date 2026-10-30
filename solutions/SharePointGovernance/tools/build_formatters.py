@@ -6,14 +6,23 @@ formatting JSON per list to branding/column-formats/. With --check it writes
 nothing and fails if a generated file is missing or out of date, so a renamed
 status or a hand edit fails CI.
 
-Usage: python solutions/SharePointGovernance/tools/build_formatters.py [--check]
+Usage: python solutions/SharePointGovernance/tools/build_formatters.py [--check] [--root SOLUTION_DIR]
+
+--root points it at another solution with the same branding/ layout
+(solutions/SharePointNews).
 """
 import json
 import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+def _root():
+    if "--root" in sys.argv:
+        return Path(sys.argv[sys.argv.index("--root") + 1]).resolve()
+    return Path(__file__).resolve().parent.parent
+
+
+ROOT = _root()
 BRANDING = ROOT / "branding"
 OUT = BRANDING / "column-formats"
 SCHEMA = json.loads((ROOT / "sharepoint" / "list-schema.json").read_text())

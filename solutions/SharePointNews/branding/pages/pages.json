@@ -1,0 +1,21 @@
+{
+  "$comment": "Pages for the News sites. ../SharePointGovernance/tools/build_site_kit.py --root solutions/SharePointNews turns this into browser/apply-news-site.js and copilot/page-prompts.md. A string section is a text web part; {\"include\": \"pages/x.html\"} adds one text web part per <h2> section of that file, so pages/Publisher-Guide.html stays the single source; {\"image\", \"alt\", \"caption\"} is a diagram from images/, shown with an Image web part that opens full size.",
+  "site": "the HPUK News or Other News site",
+  "script": "apply-news-site.js",
+  "audience": "news publishers",
+  "pages": [
+    {
+      "name": "Publisher-Guide",
+      "title": "Publisher Guide",
+      "summary": "How to publish news and notices, and what happens after you publish.",
+      "sections": [
+        {
+          "image": "news-workflow.png",
+          "alt": "Swimlane diagram of SharePoint News: a publisher publishes a post; flow C3 checks urgent posts and sends email and Teams alerts per port; flow C2 sends the Monday roundup; flow C1 expires posts daily; every send is recorded in the Delivery Log and failures go to the support owner.",
+          "caption": "How news reaches people: publishing, urgent notices, the Monday roundup and expiry."
+        },
+        {"include": "pages/Publisher-Guide.html"}
+      ]
+    }
+  ]
+}

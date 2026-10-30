@@ -5,11 +5,13 @@ on:
     paths:
       - "solutions/SharePointNews/**"
       - "solutions/SharePointGovernance/tools/**"
+      - "solutions/SharePointGovernance/branding/theme/**"
   push:
     branches: [main]
     paths:
       - "solutions/SharePointNews/**"
       - "solutions/SharePointGovernance/tools/**"
+      - "solutions/SharePointGovernance/branding/theme/**"
   workflow_dispatch:
 
 jobs:
@@ -22,6 +24,10 @@ jobs:
           python-version: "3.12"
       - name: Validate flow definitions against the list schema
         run: python solutions/SharePointGovernance/tools/validate_flows.py --root solutions/SharePointNews
+      - name: Check status column formats against the list schema
+        run: python solutions/SharePointGovernance/tools/build_formatters.py --root solutions/SharePointNews --check
+      - name: Check the site kit (browser script, Copilot prompts) is up to date
+        run: python solutions/SharePointGovernance/tools/build_site_kit.py --root solutions/SharePointNews --check
       - name: Build the importable solution package
         run: python solutions/SharePointGovernance/tools/build_solution.py --root solutions/SharePointNews --out dist
       - name: Upload solution package
