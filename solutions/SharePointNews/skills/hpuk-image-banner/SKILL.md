@@ -1,14 +1,13 @@
 ---
 name: hpuk-image-banner
-description: Create correctly sized HPUK images for SharePoint News banners, page-title images, thumbnails, Hero, Quick Links and site images, with focal point and READY checks. Use when the user says "create a SharePoint banner", "resize this for SharePoint News", "fix this banner crop" or "prepare this image for SharePoint".
+description: Prepare correctly sized HPUK images for SharePoint News banners, page-title images, thumbnails, Hero, Quick Links and site images. Works out the exact crop, sizes and focal point, and gives the publisher step-by-step instructions to make the image in Paint and set it up in SharePoint. Use when the user says "create a SharePoint banner", "resize this for SharePoint News", "fix this banner crop" or "prepare this image for SharePoint".
 ---
 
 # HPUK SharePoint Image Creator
 
 ## When to use
 
-Use this skill to turn an authorised HPUK image into a new image at the right
-size for SharePoint. For example:
+Use this skill when someone needs an image at the right size for SharePoint:
 
 - a News banner or page-title image
 - a News thumbnail
@@ -16,17 +15,22 @@ size for SharePoint. For example:
 - a Quick Links image or icon
 - a site header or site logo
 
-The original image is never changed. The skill always makes a new file.
+## How it works
 
-Everything the skill needs is in this file. The image code is at the end, in
-**Image code**. Run it with your code tool (code interpreter).
+This skill can't edit image files itself. Instead it:
+
+1. looks at the image and finds what needs fixing
+2. works out the exact numbers: what to cover, what to add, where to crop, and the final size
+3. gives the publisher a short recipe to make the new image in **Paint** (built into Windows)
+4. gives the SharePoint steps, including where to set the focal point
+
+The original image is never changed. The publisher saves a new copy first.
 
 ## Inputs
 
 Ask only for what is missing:
 
-1. **The image**, and whether it is approved (Brand Centre, an approved
-   library, or supplied by its owner).
+1. **The image**, and whether it is approved (Brand Centre, an approved library, or supplied by its owner).
 2. **Where it will go** (for example, News banner).
 3. **Alt text**, or confirmation that the image is decorative.
 
@@ -34,21 +38,18 @@ If the image is not approved, stop and report **NOT READY**.
 
 ## Sizes
 
-Choose the size from where the image will go.
-
-- **News banner or page title**: 1920 x 1080. This is also the News thumbnail.
-- **Separate News thumbnail**: 1280 x 720.
-- **Hero tile**: 1920 x 1080.
-- **Quick Links image**: 1280 x 720.
-- **Quick Links icon**: 300 x 300.
-- **Wide strip in a full-width section**: 2560 x 640.
-- **Picture in the body of a page**: 1600 x 900.
+- **News banner or page title**: 1920 x 1080 (16:9). This is also the News thumbnail.
+- **Separate News thumbnail**: 1280 x 720 (16:9).
+- **Hero tile**: 1920 x 1080 (16:9).
+- **Quick Links image**: 1280 x 720 (16:9).
+- **Quick Links icon**: 300 x 300 (square).
+- **Wide strip in a full-width section**: 2560 x 640 (4:1).
+- **Picture in the body of a page**: 1600 x 900 (16:9).
 - **Site header background**: 2560 x 164.
-- **Site logo thumbnail**: 64 x 64.
+- **Site logo thumbnail**: 64 x 64 (square).
 
 News banner, thumbnail, Hero, header and logo sizes follow Microsoft guidance.
-The others are **good practice**. Call them good practice in the report, not
-HPUK rules.
+The others are **good practice**. Say so in the report; don't call them HPUK rules.
 
 ## Steps
 
@@ -56,74 +57,110 @@ HPUK rules.
 
 Note:
 
-- the image size in pixels
+- the image width and height in pixels
 - any words, names or logos inside the image
-- how close the person's head is to the edges
-- whether the image is big enough for the target size
+- where the person's head is: the top of the hair, the chin, and the centre of the face
 - whether the background is plain colour or a photo or pattern
 
-### 2. Mark the areas
+### 2. Work out the numbers
 
-Give each area in pixels of the original image:
+Use pixels of the original image. Positions are from the top-left corner.
 
-- **Focal point**: the centre of the face, as (x, y).
-- **Face**: a box around the whole head, including hair.
-- **Subject**: a box around the whole person.
-- **Words to remove**: a box around each block of words. Only on a plain-colour background.
+**a. Words to cover.** Give a box around each block of words, with a small margin.
+Only cover words on a plain-colour background. If the words sit on a photo or
+pattern, stop: report **manual retouching needed** and **NOT READY**.
 
-A box is written (left, top, right, bottom), for example (1395, 49, 1630, 391).
+**b. Space for the head.** SharePoint shows News banners as a thin strip on wide
+screens. So the head (top of hair to chin) must be no more than **40%** of the
+final height.
 
-Draw the boxes on a copy of the image and look at it. Fix any box that is wrong.
+- Needed height = head height ÷ 0.4
+- If the image is shorter than that, add the difference as plain background at
+  the **top** (only if the top edge is plain colour).
+- Also keep at least **10%** of the height as space above the hair.
 
-### 3. Make the new image
+**c. Crop box.** For the target shape (16:9 = width is 1.78 x height):
 
-Run the **Image code** with the image, the size and the areas. For example:
+- Crop height = the image height (after step b).
+- Crop width = crop height x 1.78. If that is wider than the image, use the full
+  width and work out the height instead (width ÷ 1.78).
+- Centre the crop across on the face, then move it so it stays inside the image.
+- Check the crop doesn't include any words you didn't cover.
 
-```
-make_image("banner.png", "banner_1920x1080.jpg", 1920, 1080,
-           focal=(1510, 228), face=(1395, 49, 1630, 391),
-           subject=(1195, 49, 1835, 724), erase=[(250, 150, 960, 580)])
-```
+**d. Size check.** Enlargement = final width ÷ crop width.
 
-The code:
+- 100% or less: fine.
+- Over 100%: warning, check it is sharp.
+- Over 150%: **NOT READY**. Ask for a bigger original.
 
-- removes the words by filling them with the background colour
-- adds plain background above the head if it is too close to the top
-- zooms out until the face shows in the desktop, tablet, card and mobile views
-- crops, resizes and saves the new image
-- returns the focal point and any warnings
+**e. Focal point.** Where the centre of the face lands in the crop:
 
-For a size other than the News banner, change the width and height. For a
-square icon, use `views=(1.0,)`.
+- across = (face centre x − crop left) ÷ crop width, as a %
+- down = (face centre y + space added at the top) ÷ crop height, as a %
 
-If you can't run code, don't make up a result. Report the size, the areas from
-step 2 and **Action actually performed: not performed**, so someone else can make it.
+Your positions are estimates from looking at the image. Tell the publisher they
+can check them by hovering in Paint: the position shows at the bottom left.
 
-### 4. Check the result yourself
+### 3. Give the Paint recipe
 
-Look at the new image. Look for:
+Fill in the numbers. Leave out steps that aren't needed.
 
-- traces of removed words
-- a visible join or stretched background
-- the top of the head or chin cut off
-- a blurred picture (when the original was too small)
+1. Open the image in **Paint**. Choose **File > Save as > JPEG** and save a copy
+   called `<name>_<use>_<width>x<height>.jpg`. Work on the copy only.
+2. **Cover the words** (for each box):
+   - Choose the **Colour picker** and click the background just next to the words.
+   - Choose **Shapes > Rectangle**, set **Fill** to **Solid colour** and
+     **Outline** to **No outline**.
+   - Drag from (x, y) to (x, y). Watch the position at the bottom left.
+3. **Add space at the top** (N pixels):
+   - Choose **Image > Flip > Flip vertical**.
+   - Drag the handle in the middle of the bottom edge down until the size at
+     the bottom shows <width> x <new height>.
+   - Fill the new white area with the background colour: pick the colour from
+     just inside the old edge, then draw solid rectangles over the white area.
+     Where the background has two colours, draw one rectangle for each, matching
+     where the colours meet.
+   - Choose **Image > Flip > Flip vertical** again.
+4. **Crop**: choose **Select > Rectangle**, drag from (x, y) to (x, y) until the
+   selection size at the bottom shows about <width> x <height>, then choose
+   **Crop**. A few pixels out doesn't matter.
+5. **Resize**: choose **Image > Resize and skew**, choose **Pixels**, untick
+   **Maintain aspect ratio**, and enter <final width> x <final height>.
+6. **Save** (Ctrl+S).
 
-If something is wrong, change the boxes and make it again. Don't report a result
-you haven't looked at.
+### 4. Give the SharePoint steps
+
+1. Edit the page. Select the title-area image and choose **Change image**.
+2. Upload the new image.
+3. Select **Set focal point** and place it <across>% across and <down>% down
+   (on the face).
+4. Add the alt text, or mark the image as decorative.
+5. Preview on desktop and on a narrow window or phone before you publish.
 
 ### 5. Report
 
-Use the report format below. Give the new image to the user.
+Return:
+
+- **Intended use**
+- **Source**: file name, size, and whether it is approved
+- **Image action selected**: for example, cover embedded text, add space, crop, resize
+- **Action actually performed**: recipe provided; the publisher makes the image. Original unchanged.
+- **Target size**, and whether it is Microsoft guidance or good practice
+- **Focal point**: % across and % down
+- **Accessibility**: the alt text. Use empty alt text if the image is decorative beside a title that names the person.
+- **Brand/source check**
+- **READY assessment**: READY, READY WITH WARNINGS, or NOT READY
+- **Publication decision**: what to do next
+- The **Paint recipe** and **SharePoint steps** from steps 3 and 4
 
 ## Rules
 
-- Never change the original image.
+- Never change the original image. Always save a copy first.
 - Never add, recreate, recolour or move logos or the Corporate Mark.
 - Never put words in the image. Headlines such as "Update from ..." go in the page title.
-- Only remove words from a plain-colour background. On a photo or pattern, report **manual retouching needed** and **NOT READY**.
-- Never use AI to change how a person looks.
-- Enlarging above 100% is a warning. Above 150% is NOT READY: ask for a bigger original.
-- Any note starting "NOT READY" from the code means the result is NOT READY.
+- Only cover words or add background on plain colour. On a photo or pattern, report **manual retouching needed** and **NOT READY**.
+- Never use AI tools (such as generative erase) to change how a person looks.
+- Don't claim an image was made: the publisher makes it from the recipe.
 - Don't invent HPUK brand rules. Use these sources, in this order:
   1. Hutchison Ports Brand Guidelines
   2. HPUK Brand Centre
@@ -132,120 +169,36 @@ Use the report format below. Give the new image to the user.
   5. Approved HPUK News publishing guidance
   6. Authorised images supplied by the user
 
-## Report
-
-Return:
-
-- **Intended use**
-- **Source**: file name, size, and whether it is approved
-- **Image action selected**: for example, remove embedded text, recompose, resize
-- **Action actually performed**: new image created; original unchanged
-- **Target size**, and whether it is Microsoft guidance or good practice
-- **Focal point**: % across and % down (from the code)
-- **Accessibility**: the alt text. Use empty alt text if the image is decorative beside a title that names the person.
-- **Brand/source check**
-- **READY assessment**: READY, READY WITH WARNINGS, or NOT READY
-- **Publication decision**: what to do next
-
-## Publishing in SharePoint
-
-1. Edit the page. Select the title-area image and choose **Change image**.
-2. Upload the new image.
-3. Select **Set focal point** and place it at the reported position.
-4. Add the alt text, or mark the image as decorative.
-5. Preview on desktop and on a narrow window or phone before you publish.
-
 ## Example
 
-The "Update from Adam Ramsey" banner is 2172 x 724, with the name written on a
-plain navy panel and little space above his head. Running the example in step 3
-gives:
+**Image:** "Update from Adam Ramsey" banner, 2172 x 724. The name is written on a
+plain navy panel on the left (0 to 1351 across). Light blue on the right
+(1352 to 2172). Head: hair top at 49, chin at 391 (342 high); face centre at
+1510 across, 228 down.
 
-- The words removed cleanly.
-- 170 pixels of plain background added above his head.
-- His face showing in every desktop and mobile view.
-- Focal point 58% across and 45% down.
-- A 1920 x 1080 image.
-- **READY WITH WARNINGS**: the original was enlarged to 121%, so check it is sharp, or ask for the original photo.
+**Numbers:**
 
-## Image code
+- Cover words: box from (250, 150) to (960, 580), navy.
+- Needed height: 342 ÷ 0.4 = 855. Add 855 − 724 = **131 pixels** at the top.
+- Crop: height 855, width 855 x 1.78 = 1520. Centred on 1510 it would end past
+  2172, so it moves left: from (652, 0) to (2172, 855).
+- Enlargement: 1920 ÷ 1520 = 126%: **warning**, check it is sharp.
+- Focal point: across (1510 − 652) ÷ 1520 = **56%**; down (228 + 131) ÷ 855 = **42%**.
 
-Python, using Pillow and numpy.
+**Paint recipe:**
 
-```python
-from PIL import Image
-import numpy as np
+1. Save a copy as `adam-ramsey_news-banner_1920x1080.jpg`.
+2. Pick the navy next to the words. Draw a solid rectangle from (250, 150) to (960, 580).
+3. Flip vertical. Drag the bottom edge down until the size shows 2172 x 855.
+   Pick the navy just above the join and draw a solid rectangle from (0, 724) to
+   (1351, 855). Pick the light blue just above the join and draw one from
+   (1352, 724) to (2172, 855). Flip vertical again.
+4. Select from (652, 0) to (2172, 855) (about 1520 x 855) and crop.
+5. Resize to 1920 x 1080 in pixels, with **Maintain aspect ratio** unticked.
+6. Save.
 
-def make_image(source, output, width, height, focal, face, subject,
-               erase=(), headroom=0.12, views=(4.0, 2.0, 16/9, 4/3)):
-    """Make a width x height image. Boxes are (left, top, right, bottom) in source pixels."""
-    img = np.array(Image.open(source).convert("RGB"))
-    H, W = img.shape[:2]
-    notes = []
+**SharePoint:** focal point 56% across, 42% down. Alt text: "Adam Ramsey in a
+dark suit and striped tie", or empty if the page title already names him.
 
-    # 1. Remove words: fill each box with the colour just around it.
-    for x0, y0, x1, y1 in erase:
-        ring = np.concatenate([img[max(0, y0-8):y0, x0:x1].reshape(-1, 3), img[y1:y1+8, x0:x1].reshape(-1, 3),
-                               img[y0:y1, max(0, x0-8):x0].reshape(-1, 3), img[y0:y1, x1:x1+8].reshape(-1, 3)])
-        if ring.std(axis=0).max() > 6:
-            notes.append("NOT READY: background behind the words is not plain; retouch by hand")
-        img[y0:y1, x0:x1] = np.median(ring, axis=0)
-
-    ratio = width / height
-    def boxes_for(zoom):
-        ch = H / zoom
-        cw = ch * ratio
-        if cw > W / zoom:
-            cw = W / zoom; ch = cw / ratio
-        left = min(max(focal[0] - cw/2, 0), W - cw) if cw <= W else focal[0] - cw/2
-        top = min(max(focal[1] - ch/2, 0), H - ch) if ch <= H else H - ch
-        top = min(top, subject[1] - headroom * ch)          # space above the head
-        return left, top, cw, ch
-
-    def face_fits(left, top, cw, ch):
-        s = width / cw
-        fx, fy = (focal[0]-left)*s, (focal[1]-top)*s
-        fb = [(face[0]-left)*s, (face[1]-top)*s, (face[2]-left)*s, (face[3]-top)*s]
-        for r in views:  # SharePoint crops each view around the focal point
-            pw, ph = (height*r, height) if width/height > r else (width, width/r)
-            vx = min(max(fx-pw/2, 0), width-pw); vy = min(max(fy-ph/2, 0), height-ph)
-            if fb[0] < vx or fb[1] < vy or fb[2] > vx+pw or fb[3] > vy+ph:
-                return False
-        return True
-
-    # 2. Zoom out until the face shows in every view.
-    zoom = 1.0
-    while not face_fits(*boxes_for(zoom)) and zoom > 0.4:
-        zoom *= 0.9
-    left, top, cw, ch = boxes_for(zoom)
-
-    # 3. Add plain background where the crop goes past the edge.
-    pad = [int(np.ceil(max(0, v))) for v in (-left, -top, left+cw-W, top+ch-H)]
-    for side, p in zip("ltrb", pad):
-        if not p:
-            continue
-        edge = {"l": img[:, :8], "t": img[:8], "r": img[:, -8:], "b": img[-8:]}[side]
-        axis = 1 if side in "lr" else 0
-        if edge.std(axis=axis).mean() > 6:
-            notes.append("NOT READY: edge is not plain, so extra background would look stretched")
-        line = np.expand_dims(np.median(edge, axis=axis), axis)
-        fill = np.repeat(line, p, axis=axis).astype(np.uint8)
-        img = np.concatenate([fill, img] if side in "lt" else [img, fill], axis=axis)
-    left, top = left + pad[0], top + pad[1]
-
-    # 4. Crop, resize and save.
-    out = Image.fromarray(img).crop((round(left), round(top), round(left+cw), round(top+ch)))
-    out = out.resize((width, height), Image.LANCZOS)
-    out.save(output, quality=85, optimize=True, progressive=True)
-
-    scale = width / cw
-    if scale > 1.5: notes.append(f"NOT READY: enlarged {scale:.0%}; ask for a bigger original")
-    elif scale > 1.0: notes.append(f"WARNING: enlarged {scale:.0%}; check it is sharp")
-    if not face_fits(left - pad[0], top - pad[1], cw, ch):
-        notes.append("NOT READY: face is cut off in at least one view")
-    fx = round((focal[0] - left + pad[0]) * scale / width * 100)
-    fy = round((focal[1] - top + pad[1]) * scale / height * 100)
-    return {"file": output, "size": f"{width}x{height}", "focal_point": f"{fx}% across, {fy}% down",
-            "zoom": round(zoom, 2), "added_background_px": dict(zip(["left", "top", "right", "bottom"], pad)),
-            "notes": notes}
-```
+**READY assessment:** READY WITH WARNINGS (enlarged 126%: check it is sharp, or
+ask for the original photo).

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Make correctly sized SharePoint images from an authorised source image.
 
-Creates one derivative per preset (see references/presets.json): removes
+Creates one derivative per preset (see presets.json): removes
 embedded text from flat backgrounds, recomposes around a focal point with
 headroom, resizes, compresses, and validates the result against READY checks.
 The source file is never changed.
@@ -23,7 +23,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageOps
 
 HERE = Path(__file__).resolve().parent
-PRESETS = HERE.parent / "references" / "presets.json"
+PRESETS = HERE / "presets.json"
 
 
 def parse_nums(text, n, name):
