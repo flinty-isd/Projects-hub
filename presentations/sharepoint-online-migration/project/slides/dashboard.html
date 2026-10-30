@@ -16,7 +16,7 @@ var L=236,R=1656,DAYS=37,XS=(R-L)/DAYS;function X(d){return L+d*XS}
 var TOP=222,LH=90,INK='#14233B',SOFT='#3E4A5A';
 var LANES=['Decisions','Cyber Security','PFL HR','Closure & BAU'],COL=['#B85613','#1F66A6','#0E7C6B','#5A6676'];
 /* KPI tiles */
-var tiles=[[0,280,'Date'],[296,300,'Working day'],[612,736,'Phase'],[1364,300,'Go-lives done']],K=[];
+var tiles=[[0,280,'Date'],[296,300,'Working day'],[612,736,'Phase'],[1364,300,'Go-lives (plan)']],K=[];
 tiles.forEach(function(t){el('rect',{x:t[0],y:0,width:t[1],height:108,rx:12,fill:'#FDFDFB',stroke:'#DCDDD6'});
 tx(t[0]+22,36,t[2],{'font-size':24,fill:SOFT});K.push(tx(t[0]+22,88,'',{'font-size':t[2]=='Phase'?32:42,'font-weight':600,fill:'#1F66A6'}))});
 /* week bands */
@@ -40,13 +40,14 @@ var M=[[3,0,'28/09 closure'],[0,1,''],[0,.4,''],[2,3,''],[1,4,''],[1,16,'14/10 g
 M.forEach(function(m){var cx=X(m[1])+XS/2,cy=TOP+m[0]*LH+36,g=el('g',{'class':'m'});
 el('path',{d:'M'+cx+' '+(cy-18)+'l18 18l-18 18l-18-18z',fill:m[2]?'#E0873F':'#FDFDFB',stroke:m[2]?INK:COL[m[0]],'stroke-width':3},g);
 if(m[2])tx(cx+(m[1]>28?-24:24),cy+46,m[2],{'font-size':24,'font-weight':600,fill:INK,'text-anchor':m[1]>28?'end':'start'},g);MG.push([m[1],g])});
-/* today marker (28/09) */
-el('line',{x1:X(0)+1,x2:X(0)+1,y1:128,y2:TOP+4*LH,stroke:INK,'stroke-width':2,'stroke-dasharray':'6 6'});
+/* today marker, from the viewer's clock */
+var D0=Date.UTC(2026,8,28),TODAY=Math.min(DAYS,Math.max(.5,Math.floor((Date.now()-D0)/864e5)+.5));
+el('line',{x1:X(TODAY),x2:X(TODAY),y1:128,y2:TOP+4*LH,stroke:INK,'stroke-width':3,'stroke-dasharray':'6 6'});
 /* cursor */
 var CUR=el('g',{});el('line',{x1:0,x2:0,y1:204,y2:TOP+4*LH,stroke:'#E0873F','stroke-width':4},CUR);el('circle',{cx:0,cy:204,r:9,fill:'#E0873F'},CUR);
 /* ticker */
-el('rect',{x:0,y:600,width:1664,height:104,rx:12,fill:INK});tx(28,662,'NOW',{'font-size':26,'font-weight':700,fill:'#E0873F'});
-var TK=tx(112,662,'',{'font-size':28,fill:'#F5F4EF'});
+el('rect',{x:0,y:600,width:1664,height:104,rx:12,fill:INK});var NW=tx(28,662,'PLAN',{'font-size':26,'font-weight':700,fill:'#E0873F'});
+var TK=tx(136,662,'',{'font-size':28,fill:'#F5F4EF'});
 var E=[[0,'28/09 · Programme closure: 220 sites signed off, BAU handover, final training'],[.4,'28/09 · Control Board: D-GSA-08 build vs buy · D-PR-05 InfoPath stage 2 owner'],
 [1,'29/09 · D-CS-03 named InfoSec content owner: the only red risk (hard gate)'],[1.5,'29/09 · D-52 T&P delta date · R0-06 reconcile 220 vs the 232 baseline'],
 [2,'30/09 · Sites.Selected grants ×3 · R0-04 InfoPath count · SPFx 1.18'],[3,'01/10 · RB-15/16/17 published to Azure Automation · PFL T&P delta cutover'],
@@ -61,11 +62,11 @@ var E=[[0,'28/09 · Programme closure: 220 sites signed off, BAU handover, final
 [31,'29/10 · Verification and go / no-go: eight criteria, six hard'],[32,'30/10 · PFL HR GO-LIVE · residual plan complete'],
 [33,'Nov → · Cyber Security Tier 3 assurance layer · InfoPath rebuild in stage 2']];
 var PH=[[5,'Wk 0 · Decisions & prerequisites'],[14,'Wk 1 · Cyber Security build'],[16,'Wk 2 · Test, freeze, go-live'],[21,'Wk 3 · Protected hypercare'],[28,'Wk 4 · PFL HR preparation'],[32,'Wk 5 · Freeze, delta, verify'],[33,'Wk 6 · Final cutover'],[99,'Beyond · BAU change control']];
-var D0=Date.UTC(2026,8,28);
 function fmt(d){var t=new Date(D0+Math.floor(d)*864e5);return('0'+t.getUTCDate()).slice(-2)+'/'+('0'+(t.getUTCMonth()+1)).slice(-2)}
 function wd(d){var n=0;for(var i=0;i<=Math.floor(d)&&i<33;i++)if(i%7<5)n++;return n}
-var SWEEP=18000,HOLD=4000,st=null,last='';
-function f(ts){if(st===null)st=ts;var t=(ts-st)%(SWEEP+HOLD),d=Math.min(t/SWEEP,1)*DAYS,x=X(d);
+var SWEEP=Math.max(4000,18000*TODAY/DAYS),HOLD=6000,st=null,last='';
+function f(ts){if(st===null)st=ts;var t=(ts-st)%(SWEEP+HOLD),d=Math.min(t/SWEEP,1)*TODAY,x=X(d);
+NW.textContent=t>=SWEEP?'TODAY':'PLAN';
 CR.setAttribute('width',Math.max(0,x-L));CUR.setAttribute('transform','translate('+x+',0)');
 MG.forEach(function(m){m[1].setAttribute('class',d>=m[0]?'m on':'m')});
 var ev=E[0][1];for(var i=0;i<E.length;i++)if(d>=E[i][0])ev=E[i][1];if(ev!==last){TK.textContent=ev;last=ev}
@@ -74,5 +75,5 @@ for(var j=0;j<PH.length;j++)if(d<PH[j][0]){K[2].textContent=PH[j][1];break}
 K[3].textContent=(d>=32?2:d>=16?1:0)+' / 2';requestAnimationFrame(f)}
 requestAnimationFrame(f);
 </script></body></html></x-embed>
-<aside>This is the animated residual timeline. The orange cursor walks the plan from programme closure today, 28/09, through to final cutover on 30/10 and into November. The tiles at the top show the date, working day out of 25, the current phase and go-lives completed; the dark bar at the bottom names what happens on each day. Week 0 is decisions and prerequisites and is high load. Week 1 is the Cyber Security build peak. Week 2 is test, freeze and go-live on 14/10, followed by three protected hypercare days. Week 4 is PFL HR preparation including the HR content classification review on 20/10. Week 5 is freeze, delta run and verification, and week 6 is the PFL HR go-live on 30/10. Beyond the plan, Cyber Security Tier 3 and the InfoPath rebuild move to BAU change control. The loop restarts every 22 seconds. In a PDF or PowerPoint export this slide shows a still frame.</aside>
+<aside>This is the animated residual timeline, and it follows the real date. The orange cursor walks the plan from programme closure on 28/09 up to today, then holds there for six seconds with the bottom bar labelled TODAY; the dashed line marks today's date. The tiles show the date, the working day out of 25, the phase, and how many go-lives the plan had scheduled by that date. These are planned dates, not confirmed outcomes. Week 0 was decisions and prerequisites. Week 1 was the Cyber Security build peak. Week 2 was test, freeze and the go-live on 14/10, then three protected hypercare days. Week 4 was PFL HR preparation, including the HR content classification review on 20/10. Week 5 was freeze, delta run and verification, and week 6 is the PFL HR go-live on 30/10. After that, Cyber Security Tier 3 and the InfoPath rebuild move to BAU change control. In a PDF or PowerPoint export this slide shows a still frame.</aside>
 </section>
