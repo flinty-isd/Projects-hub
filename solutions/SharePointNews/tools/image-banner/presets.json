@@ -1,5 +1,5 @@
 {
-  "_note": "Target sizes for HPUK SharePoint News post images. 'basis' says where each size comes from: 'Microsoft' sizes follow Microsoft's published SharePoint image guidance; 'HPUK good practice' sizes are this skill's working standard until the HPUK Brand Centre or News publishing guidance sets one. Change a size here, not in the script.",
+  "_note": "Target sizes for images in an HPUK SharePoint News post. 'basis' says where each size comes from: 'Microsoft' sizes follow Microsoft's published SharePoint image guidance; 'HPUK good practice' sizes are this skill's working standard until the HPUK Brand Centre or News publishing guidance sets one. Change a size here, not in the script.",
   "presets": {
     "news-banner": {
       "label": "SharePoint News banner / page title image",
@@ -27,12 +27,107 @@
       "max_kb": 400
     },
     "supporting-image": {
-      "label": "Picture in the body of a News post (Image web part)",
+      "label": "Image web part in a one-column section",
       "width": 1600,
       "height": 900,
       "ratio": "16:9",
       "basis": "HPUK good practice",
       "previews": {},
+      "max_kb": 500
+    },
+    "image-full-width": {
+      "label": "Image web part in a full-width section",
+      "width": 2560,
+      "height": 1440,
+      "ratio": "16:9",
+      "basis": "HPUK good practice",
+      "previews": {
+        "Mobile (approx.)": 1.3333
+      },
+      "max_kb": 900
+    },
+    "image-two-column": {
+      "label": "Image web part in a two-column or two-thirds section",
+      "width": 1200,
+      "height": 675,
+      "ratio": "16:9",
+      "basis": "HPUK good practice",
+      "previews": {},
+      "max_kb": 400
+    },
+    "image-one-third": {
+      "label": "Image web part in a three-column or one-third section",
+      "width": 800,
+      "height": 450,
+      "ratio": "16:9",
+      "basis": "HPUK good practice",
+      "previews": {},
+      "max_kb": 250
+    },
+    "gallery": {
+      "label": "Image gallery picture (Grid or Carousel layout)",
+      "width": 1600,
+      "height": 900,
+      "ratio": "16:9",
+      "basis": "HPUK good practice",
+      "previews": {
+        "Grid tile": 1.7778
+      },
+      "max_kb": 500
+    },
+    "hero": {
+      "label": "Hero web part tile",
+      "width": 1920,
+      "height": 1080,
+      "ratio": "16:9",
+      "basis": "Microsoft (16:9 hero tiles)",
+      "previews": {
+        "Hero tile": 1.7778,
+        "Hero tile, narrow layout (approx.)": 1.3333,
+        "Hero layers strip (approx.)": 3.0
+      },
+      "max_kb": 800
+    },
+    "quick-links": {
+      "label": "Quick Links filmstrip / grid image",
+      "width": 1280,
+      "height": 720,
+      "ratio": "16:9",
+      "basis": "HPUK good practice",
+      "previews": {
+        "Filmstrip tile": 1.7778
+      },
+      "max_kb": 300
+    },
+    "cta-background": {
+      "label": "Call to action web part background",
+      "width": 1920,
+      "height": 640,
+      "ratio": "3:1",
+      "basis": "HPUK good practice",
+      "previews": {
+        "Mobile (approx.)": 2.0
+      },
+      "max_kb": 500
+    },
+    "section-background": {
+      "label": "Section background image",
+      "width": 2560,
+      "height": 1440,
+      "ratio": "16:9",
+      "basis": "HPUK good practice",
+      "previews": {},
+      "max_kb": 900
+    },
+    "video-thumbnail": {
+      "label": "Stream video thumbnail (News Videos)",
+      "width": 1920,
+      "height": 1080,
+      "ratio": "16:9",
+      "basis": "HPUK good practice",
+      "previews": {
+        "Video card": 1.7778
+      },
       "max_kb": 500
     }
   },

@@ -1,20 +1,18 @@
 ---
 name: hpuk-image-banner
-description: Prepare correctly sized images for HPUK SharePoint News posts - the News banner (which is also the thumbnail), a separate thumbnail, and pictures in the body of the post. Works out the exact crop, size and focal point, and gives the publisher step-by-step instructions to make the image in Paint and add it to the News post. Use when the user says "create a News banner", "resize this for SharePoint News", "fix this banner crop" or "is this image suitable for a News post".
+description: Prepare correctly sized images for every part of an HPUK SharePoint News post - the title-area banner in any layout, the thumbnail, and images in the body (Image, Text, Image gallery, Hero, Quick Links, Call to action, section backgrounds and video thumbnails). Works out the exact crop, size and focal point, and gives the publisher step-by-step instructions to make the image in Paint and add it to the post. Use when the user says "create a News banner", "resize this for a SharePoint post", "fix this image crop" or "is this image suitable for my post".
 ---
 
 # HPUK News Post Image Creator
 
 ## When to use
 
-Use this skill for images in an HPUK SharePoint **News post**:
+Use this skill for **any image in an HPUK SharePoint News post**: the banner at
+the top, the thumbnail, and every image in the body. The list of places is in
+**Images in a News post** below.
 
-- the **News banner** at the top of the post (the title-area image)
-- the **News thumbnail**, when it should differ from the banner
-- **pictures in the body** of the post (Image or Image gallery web part)
-
-It isn't for other pages or site images (Hero, Quick Links, site logo or header).
-For those, say the skill doesn't cover them.
+It isn't for images outside a post, such as the site logo or site header. For
+those, say the skill doesn't cover them.
 
 ## How it works
 
@@ -23,7 +21,7 @@ This skill can't edit image files itself. Instead it:
 1. looks at the image and finds what needs fixing
 2. works out the exact numbers: what to cover, what to add, where to crop, and the final size
 3. gives the publisher a short recipe to make the new image in **Paint** (built into Windows)
-4. gives the News post steps, including where to set the focal point
+4. gives the steps to add it to the post, including where to set the focal point
 
 The original image is never changed. The publisher saves a new copy first.
 
@@ -32,25 +30,96 @@ The original image is never changed. The publisher saves a new copy first.
 Ask only for what is missing:
 
 1. **The image**, and whether it is approved (Brand Centre, an approved library, or supplied by its owner).
-2. **Where it goes in the post**: the banner, the thumbnail, or the body. If not
-   said, assume the banner.
+2. **Where it goes in the post** (see the list below). If not said, assume the banner.
 3. **Alt text**, or confirmation that the image is decorative.
 
 If the image is not approved, stop and report **NOT READY**.
 
-## Sizes
+## Images in a News post
 
-- **News banner**: 1920 x 1080 (16:9). It is also the thumbnail on HPUK News
-  and the intranet home, so it must work small as well as large.
-- **Separate News thumbnail**: 1280 x 720 (16:9). Only when the banner doesn't
-  work as a thumbnail.
-- **Picture in the body of the post**: 1600 x 900 (16:9) for a wide picture.
-  Other shapes are fine in the body: keep the picture's own shape and make it no
-  wider than 1600.
+Each place has a size and a shape. **Shape** tells you how to crop (step 2c):
 
-The banner and thumbnail sizes follow Microsoft guidance and the HPUK Publisher
-Guide (16:9). The body size is **good practice**. Say so in the report; don't
-call it an HPUK rule.
+- 16:9: width is 1.78 x height
+- 3:1: width is 3 x height
+- own shape: don't crop, just make it no wider than the width given
+
+Sizes marked **(Microsoft)** follow Microsoft guidance and the HPUK Publisher
+Guide. The others are **good practice**: say so in the report, and don't call
+them HPUK rules.
+
+### At the top of the post
+
+**1. Banner (title-area image)**: 1920 x 1080, 16:9 **(Microsoft)**
+
+How it shows depends on the post's title layout:
+
+- **Full-width image**: a thin strip across wide screens. The head or main
+  subject must be no more than 40% of the height (step 2b).
+- **Image and title** and **Colour block**: a smaller, cropped picture beside the title.
+- **Plain**: no picture at the top, but the banner is **still the thumbnail**,
+  so the post still needs one.
+
+Always set the focal point.
+
+**2. Thumbnail**: the banner is the thumbnail unless you change it **(Microsoft)**
+
+The thumbnail is the card on HPUK News, the intranet home, News web parts, and
+when the post is shared in Teams or email. Only make a separate one, at
+1280 x 720 (16:9), when the banner doesn't work small (for example, the face
+gets too small to recognise).
+
+### In the body of the post
+
+**3. Image web part**: own shape, width by the column it sits in
+
+- full-width section: up to 2560 wide
+- one column: up to 1600 wide
+- two columns, or the two-thirds column: up to 1200 wide
+- three columns, or the one-third column: up to 800 wide
+
+If the picture needs a particular shape, crop it in Paint. Don't stretch it by
+resizing the web part.
+
+**4. Image inside a Text web part**: own shape, same widths as the Image web part
+
+Keep it small and simple. Give it alt text.
+
+**5. Image gallery**: depends on the gallery layout
+
+- **Grid** and **Carousel** show every picture at the same shape. Crop every
+  picture to 1600 x 900 (16:9), each with its own focal subject in the middle.
+- **Brick** keeps each picture's own shape. Don't crop: make each no wider than 1600.
+
+Every picture in the gallery needs its own alt text.
+
+**6. Hero web part**: 1920 x 1080 per tile, 16:9 **(Microsoft)**
+
+Tiles can be small or thin, so use the 40% rule as for the banner, and set the
+focal point on each tile.
+
+**7. Quick Links**: depends on the layout
+
+- **Filmstrip** and **Grid**: 1280 x 720 (16:9) photos.
+- **Compact**, **List** and **Button**: use the built-in icons, not photos.
+
+**8. Call to action web part background**: 1920 x 640, 3:1
+
+Words and a button sit on top. Use a calm picture with nothing important in the
+middle. Never put a face behind the words. Check the words stay readable.
+
+**9. Section background image**: 2560 x 1440, 16:9
+
+Text sits on top of it. Only use a pale, calm picture or texture, never people.
+Check all the text in the section stays readable. Often it's better without one.
+
+**10. Video thumbnail** (a video from the News Videos library, shown with the
+File and media web part): 1920 x 1080, 16:9
+
+Set it in Stream: open the video, choose **Video settings > Thumbnail > Upload**.
+No words in the image: the video title shows beside it.
+
+**Not covered:** photos in the People web part come from each person's
+Microsoft 365 profile and can't be changed in the post.
 
 ## Different kinds of picture
 
@@ -128,24 +197,26 @@ Use pixels of the original image. Positions are from the top-left corner.
 Only cover words on a plain-colour background. If the words sit on a photo or
 pattern, stop: report **manual retouching needed** and **NOT READY**.
 
-**b. Space for the head.** SharePoint shows News banners as a thin strip on wide
-screens. So the head (top of hair to chin), or the main subject in a picture
-without people, must be no more than **40%** of the final height.
+**b. Space for the head.** The banner (Full-width image layout), Hero tiles and
+Call to action backgrounds show as thin strips on wide screens. For those, the
+head (top of hair to chin), or the main subject in a picture without people,
+must be no more than **40%** of the final height. Everywhere else, just keep
+the subject comfortably inside the picture.
 
 - Needed height = head height ÷ 0.4
 - If the image is shorter than that, add the difference as plain background at
   the **top** (only if the top edge is plain colour).
 - Also keep at least **10%** of the height as space above the hair.
 
-**c. Crop box.** For the target shape (16:9 = width is 1.78 x height):
+**c. Crop box.** For the target shape (16:9: x 1.78; 3:1: x 3):
 
 - Crop height = the image height (after step b).
-- Crop width = crop height x 1.78. If that is wider than the image, use the full
-  width and work out the height instead (width ÷ 1.78).
+- Crop width = crop height x the shape number. If that is wider than the image,
+  use the full width and work out the height instead (width ÷ the shape number).
 - Centre the crop across on the face, then move it so it stays inside the image.
 - Check the crop doesn't include any words you didn't cover.
-- For a picture in the body that keeps its own shape, skip the crop: just
-  resize it to no wider than 1600.
+- For a place that keeps its own shape, skip the crop: just resize it to no
+  wider than the width for that place (tick **Maintain aspect ratio** in Paint).
 
 **d. Size check.** Enlargement = final width ÷ crop width.
 
@@ -188,35 +259,35 @@ Fill in the numbers. Leave out steps that aren't needed.
    **Maintain aspect ratio**, and enter <final width> x <final height>.
 6. **Save** (Ctrl+S).
 
-### 4. Give the News post steps
+### 4. Give the steps to add it to the post
 
-**News banner**
+Give only the steps for the place the image goes.
 
-1. Edit the News post. Select the image at the top and choose **Change image**.
-2. Upload the new image.
-3. Select **Set focal point** and place it <across>% across and <down>% down
-   (on the face or main subject).
-4. Add the alt text, or mark the image as decorative.
+- **Banner**: edit the post, select the image at the top, choose **Change image**
+  and upload. Select **Set focal point** and place it <across>% across and
+  <down>% down. Add alt text, or mark it decorative.
+- **Thumbnail**: open **Page details**. Under **Thumbnail**, choose **Change** and upload.
+- **Image web part**: add an **Image** web part, upload, add alt text.
+- **Image in a Text web part**: in the text, choose **Insert > Image**, upload, add alt text.
+- **Image gallery**: add an **Image gallery** web part, choose the layout,
+  upload the pictures, and add alt text to each.
+- **Hero**: in the Hero web part, select the tile, choose **Change**, upload,
+  and set the focal point.
+- **Quick Links**: edit the link, choose **Change** under the thumbnail, and upload.
+- **Call to action**: in the web part's settings, choose **Change** under
+  **Background image** and upload.
+- **Section background**: select **Edit section**, choose **Section background
+  > Image**, and upload.
+- **Video thumbnail**: in Stream, choose **Video settings > Thumbnail > Upload**.
 
-**Separate thumbnail** (only if needed)
-
-1. Open **Page details**. Under **Thumbnail**, choose **Change** and upload it.
-
-**Picture in the body**
-
-1. Add an **Image** web part (or **Image gallery** for several), upload the
-   picture and add alt text.
-
-**Before publishing**
-
-1. Preview on desktop and on a narrow window or phone.
-2. Check the post's card on HPUK News looks right.
+**Before publishing:** preview on desktop and on a narrow window or phone, and
+check the post's card on HPUK News looks right.
 
 ### 5. Report
 
 Return:
 
-- **Intended use**
+- **Where it goes**: the place in the post (and the title layout, for the banner)
 - **Source**: file name, size, and whether it is approved
 - **Image action selected**: for example, cover embedded text, add space, crop, resize
 - **Action actually performed**: recipe provided; the publisher makes the image. Original unchanged.
@@ -226,7 +297,7 @@ Return:
 - **Brand/source check**
 - **READY assessment**: READY, READY WITH WARNINGS, or NOT READY
 - **Publication decision**: what to do next
-- The **Paint recipe** and **News post steps** from steps 3 and 4
+- The **Paint recipe** and the **steps to add it** from steps 3 and 4
 
 ## Rules
 

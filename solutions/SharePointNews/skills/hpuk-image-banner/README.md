@@ -1,16 +1,17 @@
 # HPUK SharePoint Image Creator (skill)
 
 A SharePoint site skill for Copilot. It prepares correctly sized images for
-HPUK **News posts**: the News banner (also the thumbnail), a separate
-thumbnail, and pictures in the body of the post. It doesn't cover other pages
-or site images.
+every part of an HPUK **News post**: the title-area banner in any layout, the
+thumbnail, and images in the body (Image, Text, Image gallery, Hero, Quick
+Links, Call to action, section backgrounds and video thumbnails). It doesn't
+cover site images such as the logo or header.
 
 SharePoint skills are instructions only and can't run scripts or edit image
 files. So the skill works out the exact numbers (what to cover, what to add,
 where to crop, the final size and the focal point) and gives the publisher:
 
 - a short recipe to make the image in **Paint** (built into Windows)
-- the News post steps, including where to set the focal point
+- the steps to add it to the post, including where to set the focal point
 - a READY assessment
 
 ## Add it to the site
@@ -28,6 +29,8 @@ SharePoint skill does not use it.
 ## Sizes to confirm
 
 Sizes marked as Microsoft guidance weren't rechecked against Microsoft's live
-page. Good-practice sizes need Communications sign-off. The desktop strip rule
+page. Good-practice sizes need Communications sign-off. Check the menu names in
+the steps against the current SharePoint and Stream screens; Microsoft renames
+them from time to time. The desktop strip rule
 (head no more than 40% of the height) is an approximation; always preview the
 page before publishing.
