@@ -13,7 +13,8 @@
         "News card / thumbnail": 1.7778,
         "Mobile (approx.)": 1.3333
       },
-      "max_kb": 800
+      "max_kb": 800,
+      "strip": true
     },
     "news-thumbnail": {
       "label": "News thumbnail (when different from the banner)",
@@ -30,39 +31,41 @@
       "label": "Image web part in a one-column section",
       "width": 1600,
       "height": 900,
-      "ratio": "16:9",
+      "ratio": "own shape",
       "basis": "HPUK good practice",
       "previews": {},
-      "max_kb": 500
+      "max_kb": 500,
+      "keep_shape": true
     },
     "image-full-width": {
       "label": "Image web part in a full-width section",
       "width": 2560,
       "height": 1440,
-      "ratio": "16:9",
+      "ratio": "own shape",
       "basis": "HPUK good practice",
-      "previews": {
-        "Mobile (approx.)": 1.3333
-      },
-      "max_kb": 900
+      "previews": {},
+      "max_kb": 900,
+      "keep_shape": true
     },
     "image-two-column": {
       "label": "Image web part in a two-column or two-thirds section",
       "width": 1200,
       "height": 675,
-      "ratio": "16:9",
+      "ratio": "own shape",
       "basis": "HPUK good practice",
       "previews": {},
-      "max_kb": 400
+      "max_kb": 400,
+      "keep_shape": true
     },
     "image-one-third": {
       "label": "Image web part in a three-column or one-third section",
       "width": 800,
       "height": 450,
-      "ratio": "16:9",
+      "ratio": "own shape",
       "basis": "HPUK good practice",
       "previews": {},
-      "max_kb": 250
+      "max_kb": 250,
+      "keep_shape": true
     },
     "gallery": {
       "label": "Image gallery picture (Grid or Carousel layout)",
@@ -86,7 +89,8 @@
         "Hero tile, narrow layout (approx.)": 1.3333,
         "Hero layers strip (approx.)": 3.0
       },
-      "max_kb": 800
+      "max_kb": 800,
+      "strip": true
     },
     "quick-links": {
       "label": "Quick Links filmstrip / grid image",
@@ -108,7 +112,8 @@
       "previews": {
         "Mobile (approx.)": 2.0
       },
-      "max_kb": 500
+      "max_kb": 500,
+      "strip": true
     },
     "section-background": {
       "label": "Section background image",
@@ -134,7 +139,8 @@
   "thresholds": {
     "upscale_warn": 1.0,
     "upscale_fail": 1.5,
-    "headroom": 0.12,
-    "edge_uniform_std": 6.0
+    "headroom": 0.1,
+    "edge_uniform_std": 6.0,
+    "head_max": 0.4
   }
 }

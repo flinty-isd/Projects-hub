@@ -204,8 +204,13 @@ must be no more than **40%** of the final height. Everywhere else, just keep
 the subject comfortably inside the picture.
 
 - Needed height = head height ÷ 0.4
-- If the image is shorter than that, add the difference as plain background at
-  the **top** (only if the top edge is plain colour).
+- Needed width = needed height x the shape number (see step 2c)
+- If the image is shorter than the needed height, add the difference as plain
+  background at the **top**.
+- If the image is narrower than the needed width, add the difference as plain
+  background at the **sides**, half on each side.
+- Only add background where that edge is plain colour. If it isn't, the picture
+  is too close-up for this place: report **NOT READY** and ask for a wider shot.
 - Also keep at least **10%** of the height as space above the hair.
 
 **c. Crop box.** For the target shape (16:9: x 1.78; 3:1: x 3):
@@ -227,7 +232,9 @@ the subject comfortably inside the picture.
 **e. Focal point.** Where the centre of the face lands in the crop:
 
 - across = (face centre x − crop left) ÷ crop width, as a %
-- down = (face centre y + space added at the top) ÷ crop height, as a %
+- down = (face centre y + space added at the top − crop top) ÷ crop height, as a %
+
+If you added space on the left, add it to the face centre x as well.
 
 Your positions are estimates from looking at the image. Tell the publisher they
 can check them by hovering in Paint: the position shows at the bottom left.
@@ -252,12 +259,17 @@ Fill in the numbers. Leave out steps that aren't needed.
      Where the background has two colours, draw one rectangle for each, matching
      where the colours meet.
    - Choose **Image > Flip > Flip vertical** again.
-4. **Crop**: choose **Select > Rectangle**, drag from (x, y) to (x, y) until the
+4. **Add space at the sides** (N pixels each side), only if step 2b needs it:
+   - Right side: drag the handle in the middle of the right edge until the size
+     shows the new width, then fill the white area as above.
+   - Left side: choose **Image > Flip > Flip horizontal**, add and fill the
+     space on the right in the same way, then flip horizontal again.
+5. **Crop**: choose **Select > Rectangle**, drag from (x, y) to (x, y) until the
    selection size at the bottom shows about <width> x <height>, then choose
    **Crop**. A few pixels out doesn't matter.
-5. **Resize**: choose **Image > Resize and skew**, choose **Pixels**, untick
+6. **Resize**: choose **Image > Resize and skew**, choose **Pixels**, untick
    **Maintain aspect ratio**, and enter <final width> x <final height>.
-6. **Save** (Ctrl+S).
+7. **Save** (Ctrl+S).
 
 ### 4. Give the steps to add it to the post
 

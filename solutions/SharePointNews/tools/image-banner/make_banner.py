@@ -61,6 +61,9 @@ def erase(arr, b, ring=8):
     mask[oy0:oy1, ox0:ox1] = True
     mask[y0:y1, x0:x1] = False
     ring_px = arr[mask].astype(float)
+    if not len(ring_px):
+        # Box covers the whole image or lies outside it: nothing to sample, so leave it alone.
+        return {"box": [x0, y0, x1, y1], "fill_rgb": None, "background_std": float("inf")}
     colour = np.median(ring_px, axis=0)
     spread = float(ring_px.std(axis=0).max())
     arr[y0:y1, x0:x1] = colour.astype(arr.dtype)
@@ -155,7 +158,28 @@ def save(img, path, fmt, max_kb):
     return q
 
 
+def make_keep_shape(src_arr, name, preset, out_dir, stem):
+    """Places that keep the picture's own shape: no crop, just no wider than the preset width."""
+    H, W = src_arr.shape[:2]
+    tw = min(W, preset["width"])
+    th = round(H * tw / W)
+    out = Image.fromarray(src_arr).resize((tw, th), Image.LANCZOS)
+    out_path = out_dir / f"{stem}_{name}_{tw}x{th}.jpg"
+    quality = save(out, out_path, "jpg", preset["max_kb"])
+    kb = out_path.stat().st_size / 1024
+    checks = [("pass", f"Own shape kept: {tw}x{th}, no wider than {preset['width']} ({preset['basis']})."),
+              ("pass" if kb <= preset["max_kb"] else "warn",
+               f"File size {kb:.0f} KB (limit {preset['max_kb']} KB), JPEG quality {quality}.")]
+    return {"preset": name, "label": preset["label"], "basis": preset["basis"], "file": out_path.name,
+            "preview_sheet": None, "width": tw, "height": th, "kb": round(kb), "source_crop": [0, 0, W, H],
+            "extended_px": dict.fromkeys(("left", "top", "right", "bottom"), 0), "scale": round(tw / W, 3),
+            "focal_point_px": None, "focal_point_pct": None, "previews": [],
+            "checks": [{"result": r, "detail": d} for r, d in checks]}
+
+
 def make(src_arr, name, preset, args, thresholds, out_dir, stem):
+    if preset.get("keep_shape"):
+        return make_keep_shape(src_arr, name, preset, out_dir, stem)
     H, W = src_arr.shape[:2]
     tw, th = preset["width"], preset["height"]
     ratio = tw / th
@@ -168,11 +192,18 @@ def make(src_arr, name, preset, args, thresholds, out_dir, stem):
     arr = src_arr
     if any(pad):
         if not args.allow_extend:
-            # Without extension, pull the crop back inside the image (less headroom).
+            # Without extension, shrink the crop to fit and pull it back inside the image.
+            sides = [n for n, p in zip(("left", "top", "right", "bottom"), pad) if p]
+            if cw > W or ch > H:
+                k = min(W / cw, H / ch)
+                cx, cy = left + cw / 2, top + ch / 2
+                cw, ch = cw * k, ch * k
+                left, top = cx - cw / 2, cy - ch / 2
             left = min(max(left, 0), W - cw)
             top = min(max(top, 0), H - ch)
             pad = [0, 0, 0, 0]
-            checks.append(("warn", "Limited headroom: the subject is close to the top edge. Re-run with --allow-extend to add background above, or choose another source."))
+            checks.append(("warn", f"The framing needs background beyond the {', '.join(sides)} edge, so the subject is "
+                           "tighter than planned. Re-run with --allow-extend (plain backgrounds only) or choose another source."))
         else:
             for side, p in zip(("left", "top", "right", "bottom"), pad):
                 if p:
@@ -206,6 +237,11 @@ def make(src_arr, name, preset, args, thresholds, out_dir, stem):
         hr = subj_out[1] / th
         checks.append(("pass" if hr >= args.headroom * 0.9 else "warn",
                        f"Headroom above subject: {hr:.0%} of the height (target {args.headroom:.0%})."))
+
+    if preset.get("strip") and face_out:
+        share = (face_out[3] - face_out[1]) / th
+        checks.append(("pass" if share <= thresholds["head_max"] else "fail",
+                       f"Head is {share:.0%} of the height (no more than {thresholds['head_max']:.0%} where it shows as a strip)."))
 
     previews = []
     for label, r in preset.get("previews", {}).items():
@@ -268,7 +304,10 @@ def fit(arr, name, preset, args, th, stem):
     base = args.zoom
     result = make(arr, name, preset, args, th, args.out, stem)
     if args.fit_previews and args.face and args.allow_extend:
-        while any(p["face_fully_visible"] is False for p in result["previews"]) and args.zoom > 0.35:
+        def face_cut(r):
+            return (any(p["face_fully_visible"] is False for p in r["previews"])
+                    or any(c["result"] == "fail" and c["detail"].startswith("Head is") for c in r["checks"]))
+        while face_cut(result) and args.zoom > 0.35:
             args.zoom = round(args.zoom * 0.9, 3)
             result = make(arr, name, preset, args, th, args.out, stem)
         result["zoom"] = args.zoom
@@ -283,6 +322,8 @@ def decision(results, args):
     if not args.source_approved:
         levels.append("fail")
     if not args.alt:
+        levels.append("warn")
+    if args.transparent:
         levels.append("warn")
     if "fail" in levels:
         return "NOT READY"
@@ -311,6 +352,9 @@ def report_md(results, args, src_size, verdict):
         lines.append("**Embedded text removed:**")
         for e in args.erase_results:
             flat = e["background_std"] <= args.thresholds["edge_uniform_std"]
+            if e["fill_rgb"] is None:
+                lines.append(f"- Box {e['box']}: **covers the whole image or lies outside it; nothing removed**")
+                continue
             lines.append(f"- Box {e['box']} filled with RGB{tuple(e['fill_rgb'])} "
                          + ("(flat background, clean result)" if flat else
                             f"(**textured background, std {e['background_std']}: needs manual retouching**)"))
@@ -319,12 +363,13 @@ def report_md(results, args, src_size, verdict):
         lines += [
             f"### {r['label']}: `{r['file']}`",
             f"- **Target dimensions:** {r['width']}x{r['height']} ({r['basis']})",
-            f"- **Focal point:** {r['focal_point_pct'][0]}% across, {r['focal_point_pct'][1]}% down "
-            "(set this in SharePoint: select the image, then *Set focal point*)",
+            (f"- **Focal point:** {r['focal_point_pct'][0]}% across, {r['focal_point_pct'][1]}% down "
+             "(set this in SharePoint: select the image, then *Set focal point*)") if r["focal_point_pct"] else
+            "- **Focal point:** not needed (own shape kept)",
             f"- **Source crop:** {r['source_crop']}, scale {r['scale']:.0%}"
             + (f", background extended {', '.join(f'{k} {v}px' for k, v in r['extended_px'].items() if v)}"
                if any(r['extended_px'].values()) else ""),
-            f"- **Preview sheet:** `{r['preview_sheet']}`",
+            f"- **Preview sheet:** `{r['preview_sheet']}`" if r["preview_sheet"] else "- **Preview sheet:** none (not cropped)",
             "",
             "| Check | Result |", "|---|---|",
         ]
@@ -335,6 +380,8 @@ def report_md(results, args, src_size, verdict):
         + (f"Alt text: \"{args.alt}\". If the image is decorative beside a page title that already names the person, use empty alt text."
            if args.alt else "**No alt text supplied.** Write alt text describing the picture, or mark it decorative."),
         "Keep any message (for example \"Update from ...\") as page text, not in the image.",
+        *(["**Transparency:** the source had a transparent background; it was flattened onto white. "
+           "Use the Brand Centre version for logos."] if args.transparent else []),
         "**Brand/source check:** The source's branding is preserved and nothing was recreated. "
         "Check against the Hutchison Ports Brand Guidelines before publishing.",
         f"**READY assessment:** {verdict}",
@@ -377,7 +424,16 @@ def main():
     # Derivative names always add a preset suffix, so the source is never overwritten.
     args.out.mkdir(parents=True, exist_ok=True)
 
-    src = ImageOps.exif_transpose(Image.open(args.source)).convert("RGB")
+    src = ImageOps.exif_transpose(Image.open(args.source))
+    transparent = src.mode in ("RGBA", "LA") or (src.mode == "P" and "transparency" in src.info)
+    if transparent:
+        # Flatten onto white so transparent areas don't turn black.
+        src = src.convert("RGBA")
+        flat = Image.new("RGB", src.size, (255, 255, 255))
+        flat.paste(src, mask=src.getchannel("A"))
+        src = flat
+    else:
+        src = src.convert("RGB")
     if args.check_boxes:
         overlay = src.copy()
         d = ImageDraw.Draw(overlay)
@@ -396,6 +452,7 @@ def main():
         return 0
     arr = np.array(src)
     args.erase_results = [erase(arr, b) for b in args.erase]
+    args.transparent = transparent
 
     stem = args.source.stem
     results = [fit(arr, n, presets[n], args, th, stem) for n in (args.preset or ["news-banner"])]
