@@ -1,0 +1,3 @@
+﻿Title,SiteTitle,SiteUrl,Department,PrimaryOwner,SecondaryOwner,OwnersGroupId,MembersGroupId,VisitorsGroupId,GuestsGroupId,SharingCapability,Sensitivity,Status,LastAccessReview,NextAccessReview
+HPUK News,HPUK News,https://hpneu.sharepoint.com/teams/hpuk-pof-HPUKNEWS,Communications,,,,,,,Disabled,,Active,,
+Other News,Other News,https://hpneu.sharepoint.com/teams/hpuk-pof-OTHERNEWS,Communications,,,,,,,Disabled,,Active,,

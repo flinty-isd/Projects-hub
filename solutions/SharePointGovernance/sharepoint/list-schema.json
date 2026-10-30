@@ -228,7 +228,7 @@
     },
     {
       "listTitle": "Access Requests",
-      "listDescription": "Requests for access to a SharePoint Online site. Processed by flow 01 against the PID v3.1 Access Method Decision Table.",
+      "listDescription": "Requests for access to a SharePoint Online site. Processed by flow 01 against the PID v4.2 Access Method Decision Table (Appendix A).",
       "fields": [
         {
           "internalName": "Requester",
@@ -530,7 +530,7 @@
     },
     {
       "listTitle": "Decision Log",
-      "listDescription": "Audit trail of governance decisions written by flow 04 (and available for access and file share decisions).",
+      "listDescription": "Audit trail of governance decisions (access, file share, InfoPath), recorded by hand since flow 04 was retired.",
       "fields": [
         {
           "internalName": "Category",
