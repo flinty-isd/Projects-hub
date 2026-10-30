@@ -13,6 +13,7 @@ It uses standard modern pages only, with no SPFx.
 | [`pages/Publisher-Guide.html`](pages/Publisher-Guide.html) | Content of Publisher-Guide.aspx on HPUK News |
 | [`powerautomate/flows/`](powerautomate/flows) | C1 expiry, C2 weekly port roundup, C3a/C3b urgent notice (one per site) |
 | [`taxonomy/`](taxonomy) | Department and Category term sets (term-store import files) |
+| [`skills/hpuk-image-banner/`](skills/hpuk-image-banner) | Image creator skill: correctly sized News banners, thumbnails, Hero, Quick Links and site images, with focal point and READY checks |
 | [`solution-config.json`](solution-config.json) | Solution package settings: environment variables and connection references |
 
 ## Design decisions
