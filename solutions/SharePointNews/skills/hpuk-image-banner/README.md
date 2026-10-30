@@ -1,14 +1,16 @@
 # HPUK SharePoint Image Creator (skill)
 
 A SharePoint site skill for Copilot. It prepares correctly sized images for
-News banners, page titles, thumbnails, Hero, Quick Links and site images.
+HPUK **News posts**: the News banner (also the thumbnail), a separate
+thumbnail, and pictures in the body of the post. It doesn't cover other pages
+or site images.
 
 SharePoint skills are instructions only and can't run scripts or edit image
 files. So the skill works out the exact numbers (what to cover, what to add,
 where to crop, the final size and the focal point) and gives the publisher:
 
 - a short recipe to make the image in **Paint** (built into Windows)
-- the SharePoint steps, including where to set the focal point
+- the News post steps, including where to set the focal point
 - a READY assessment
 
 ## Add it to the site

@@ -13,7 +13,7 @@ It uses standard modern pages only, with no SPFx.
 | [`pages/Publisher-Guide.html`](pages/Publisher-Guide.html) | Content of Publisher-Guide.aspx on HPUK News |
 | [`powerautomate/flows/`](powerautomate/flows) | C1 expiry, C2 weekly port roundup, C3a/C3b urgent notice (one per site) |
 | [`taxonomy/`](taxonomy) | Department and Category term sets (term-store import files) |
-| [`skills/hpuk-image-banner/`](skills/hpuk-image-banner) | SharePoint site skill: works out correctly sized News banners, thumbnails, Hero, Quick Links and site images, with a Paint recipe, focal point and READY checks. Optional Python version in [`tools/image-banner/`](tools/image-banner) |
+| [`skills/hpuk-image-banner/`](skills/hpuk-image-banner) | SharePoint site skill for News post images: works out the correctly sized banner, thumbnail and body pictures, with a Paint recipe, focal point and READY checks. Optional Python version in [`tools/image-banner/`](tools/image-banner) |
 | [`solution-config.json`](solution-config.json) | Solution package settings: environment variables and connection references |
 
 ## Design decisions

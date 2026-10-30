@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Make correctly sized SharePoint images from an authorised source image.
+"""Make correctly sized SharePoint News post images from an authorised source image.
 
 Creates one derivative per preset (see presets.json): removes
 embedded text from flat backgrounds, recomposes around a focal point with

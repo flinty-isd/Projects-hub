@@ -1,69 +1,39 @@
 {
-  "_note": "Target sizes for HPUK SharePoint images. 'basis' says where each size comes from: 'Microsoft' sizes follow Microsoft's published SharePoint image guidance; 'HPUK good practice' sizes are this skill's working standard until the HPUK Brand Centre or News publishing guidance sets one. Change a size here, not in the script.",
+  "_note": "Target sizes for HPUK SharePoint News post images. 'basis' says where each size comes from: 'Microsoft' sizes follow Microsoft's published SharePoint image guidance; 'HPUK good practice' sizes are this skill's working standard until the HPUK Brand Centre or News publishing guidance sets one. Change a size here, not in the script.",
   "presets": {
     "news-banner": {
       "label": "SharePoint News banner / page title image",
-      "width": 1920, "height": 1080, "ratio": "16:9",
+      "width": 1920,
+      "height": 1080,
+      "ratio": "16:9",
       "basis": "Microsoft (16:9 title area, also used as the News thumbnail)",
-      "previews": {"Desktop title strip (approx.)": 4.0, "Tablet (approx.)": 2.0, "News card / thumbnail": 1.7778, "Mobile (approx.)": 1.3333},
-      "max_kb": 800
-    },
-    "hero": {
-      "label": "Hero web part tile",
-      "width": 1920, "height": 1080, "ratio": "16:9",
-      "basis": "Microsoft (16:9 hero tiles)",
-      "previews": {"Hero tile": 1.7778, "Hero tile, narrow layout (approx.)": 1.3333},
+      "previews": {
+        "Desktop title strip (approx.)": 4.0,
+        "Tablet (approx.)": 2.0,
+        "News card / thumbnail": 1.7778,
+        "Mobile (approx.)": 1.3333
+      },
       "max_kb": 800
     },
     "news-thumbnail": {
       "label": "News thumbnail (when different from the banner)",
-      "width": 1280, "height": 720, "ratio": "16:9",
+      "width": 1280,
+      "height": 720,
+      "ratio": "16:9",
       "basis": "Microsoft (16:9 news cards)",
-      "previews": {"News card": 1.7778},
+      "previews": {
+        "News card": 1.7778
+      },
       "max_kb": 400
     },
-    "quick-links": {
-      "label": "Quick Links filmstrip / grid image",
-      "width": 1280, "height": 720, "ratio": "16:9",
-      "basis": "HPUK good practice",
-      "previews": {"Filmstrip tile": 1.7778},
-      "max_kb": 300
-    },
-    "quick-links-icon": {
-      "label": "Quick Links compact / list icon",
-      "width": 300, "height": 300, "ratio": "1:1",
-      "basis": "HPUK good practice",
-      "previews": {},
-      "max_kb": 100
-    },
-    "image-wide-strip": {
-      "label": "Image web part as a wide strip in a full-width section",
-      "width": 2560, "height": 640, "ratio": "4:1",
-      "basis": "HPUK good practice",
-      "previews": {"Mobile (approx.)": 2.0},
-      "max_kb": 900
-    },
     "supporting-image": {
-      "label": "Supporting image in the page body (Image web part)",
-      "width": 1600, "height": 900, "ratio": "16:9",
+      "label": "Picture in the body of a News post (Image web part)",
+      "width": 1600,
+      "height": 900,
+      "ratio": "16:9",
       "basis": "HPUK good practice",
       "previews": {},
       "max_kb": 500
-    },
-    "site-header-background": {
-      "label": "Site header background (extended header layout)",
-      "width": 2560, "height": 164, "ratio": "~15.6:1",
-      "basis": "Microsoft",
-      "previews": {},
-      "max_kb": 300
-    },
-    "site-logo-thumbnail": {
-      "label": "Site logo thumbnail",
-      "width": 64, "height": 64, "ratio": "1:1",
-      "basis": "Microsoft",
-      "previews": {},
-      "max_kb": 50,
-      "format": "png"
     }
   },
   "thresholds": {

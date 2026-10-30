@@ -1,19 +1,20 @@
 ---
 name: hpuk-image-banner
-description: Prepare correctly sized HPUK images for SharePoint News banners, page-title images, thumbnails, Hero, Quick Links and site images. Works out the exact crop, sizes and focal point, and gives the publisher step-by-step instructions to make the image in Paint and set it up in SharePoint. Use when the user says "create a SharePoint banner", "resize this for SharePoint News", "fix this banner crop" or "prepare this image for SharePoint".
+description: Prepare correctly sized images for HPUK SharePoint News posts - the News banner (which is also the thumbnail), a separate thumbnail, and pictures in the body of the post. Works out the exact crop, size and focal point, and gives the publisher step-by-step instructions to make the image in Paint and add it to the News post. Use when the user says "create a News banner", "resize this for SharePoint News", "fix this banner crop" or "is this image suitable for a News post".
 ---
 
-# HPUK SharePoint Image Creator
+# HPUK News Post Image Creator
 
 ## When to use
 
-Use this skill when someone needs an image at the right size for SharePoint:
+Use this skill for images in an HPUK SharePoint **News post**:
 
-- a News banner or page-title image
-- a News thumbnail
-- a Hero web part tile
-- a Quick Links image or icon
-- a site header or site logo
+- the **News banner** at the top of the post (the title-area image)
+- the **News thumbnail**, when it should differ from the banner
+- **pictures in the body** of the post (Image or Image gallery web part)
+
+It isn't for other pages or site images (Hero, Quick Links, site logo or header).
+For those, say the skill doesn't cover them.
 
 ## How it works
 
@@ -22,7 +23,7 @@ This skill can't edit image files itself. Instead it:
 1. looks at the image and finds what needs fixing
 2. works out the exact numbers: what to cover, what to add, where to crop, and the final size
 3. gives the publisher a short recipe to make the new image in **Paint** (built into Windows)
-4. gives the SharePoint steps, including where to set the focal point
+4. gives the News post steps, including where to set the focal point
 
 The original image is never changed. The publisher saves a new copy first.
 
@@ -31,25 +32,25 @@ The original image is never changed. The publisher saves a new copy first.
 Ask only for what is missing:
 
 1. **The image**, and whether it is approved (Brand Centre, an approved library, or supplied by its owner).
-2. **Where it will go** (for example, News banner).
+2. **Where it goes in the post**: the banner, the thumbnail, or the body. If not
+   said, assume the banner.
 3. **Alt text**, or confirmation that the image is decorative.
 
 If the image is not approved, stop and report **NOT READY**.
 
 ## Sizes
 
-- **News banner or page title**: 1920 x 1080 (16:9). This is also the News thumbnail.
-- **Separate News thumbnail**: 1280 x 720 (16:9).
-- **Hero tile**: 1920 x 1080 (16:9).
-- **Quick Links image**: 1280 x 720 (16:9).
-- **Quick Links icon**: 300 x 300 (square).
-- **Wide strip in a full-width section**: 2560 x 640 (4:1).
-- **Picture in the body of a page**: 1600 x 900 (16:9).
-- **Site header background**: 2560 x 164.
-- **Site logo thumbnail**: 64 x 64 (square).
+- **News banner**: 1920 x 1080 (16:9). It is also the thumbnail on HPUK News
+  and the intranet home, so it must work small as well as large.
+- **Separate News thumbnail**: 1280 x 720 (16:9). Only when the banner doesn't
+  work as a thumbnail.
+- **Picture in the body of the post**: 1600 x 900 (16:9) for a wide picture.
+  Other shapes are fine in the body: keep the picture's own shape and make it no
+  wider than 1600.
 
-News banner, thumbnail, Hero, header and logo sizes follow Microsoft guidance.
-The others are **good practice**. Say so in the report; don't call them HPUK rules.
+The banner and thumbnail sizes follow Microsoft guidance and the HPUK Publisher
+Guide (16:9). The body size is **good practice**. Say so in the report; don't
+call it an HPUK rule.
 
 ## Different kinds of picture
 
@@ -95,10 +96,11 @@ First decide what kind of picture it is. Then follow its rules in the steps belo
 - Ask Communications for a version without words, and put the words in the
   page. The graphic can go in the page body, with the words in its alt text.
 
-**A logo or icon** (Quick Links icon, site logo)
+**A logo on its own**
 
-- Don't make or resize logos in Paint: it loses the transparent background.
-- Use the right size from the HPUK Brand Centre, or ask Communications.
+- Not suitable as a banner. A logo in a post goes in the body.
+- Use the version from the HPUK Brand Centre. Don't make or resize logos in
+  Paint: it loses the transparent background.
 - Never recolour, stretch or redraw a logo.
 
 **A screenshot, chart or document**
@@ -142,6 +144,8 @@ without people, must be no more than **40%** of the final height.
   width and work out the height instead (width ÷ 1.78).
 - Centre the crop across on the face, then move it so it stays inside the image.
 - Check the crop doesn't include any words you didn't cover.
+- For a picture in the body that keeps its own shape, skip the crop: just
+  resize it to no wider than 1600.
 
 **d. Size check.** Enlargement = final width ÷ crop width.
 
@@ -184,14 +188,29 @@ Fill in the numbers. Leave out steps that aren't needed.
    **Maintain aspect ratio**, and enter <final width> x <final height>.
 6. **Save** (Ctrl+S).
 
-### 4. Give the SharePoint steps
+### 4. Give the News post steps
 
-1. Edit the page. Select the title-area image and choose **Change image**.
+**News banner**
+
+1. Edit the News post. Select the image at the top and choose **Change image**.
 2. Upload the new image.
 3. Select **Set focal point** and place it <across>% across and <down>% down
-   (on the face).
+   (on the face or main subject).
 4. Add the alt text, or mark the image as decorative.
-5. Preview on desktop and on a narrow window or phone before you publish.
+
+**Separate thumbnail** (only if needed)
+
+1. Open **Page details**. Under **Thumbnail**, choose **Change** and upload it.
+
+**Picture in the body**
+
+1. Add an **Image** web part (or **Image gallery** for several), upload the
+   picture and add alt text.
+
+**Before publishing**
+
+1. Preview on desktop and on a narrow window or phone.
+2. Check the post's card on HPUK News looks right.
 
 ### 5. Report
 
@@ -207,7 +226,7 @@ Return:
 - **Brand/source check**
 - **READY assessment**: READY, READY WITH WARNINGS, or NOT READY
 - **Publication decision**: what to do next
-- The **Paint recipe** and **SharePoint steps** from steps 3 and 4
+- The **Paint recipe** and **News post steps** from steps 3 and 4
 
 ## Rules
 
