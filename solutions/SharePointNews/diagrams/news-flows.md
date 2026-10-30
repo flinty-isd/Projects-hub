@@ -11,7 +11,8 @@ Delivery statuses are the *DeliveryStatus* choices of the Delivery Log in
 ## Overview
 
 ```mermaid
-flowchart LR
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
+flowchart TD
   P([Publisher publishes a post]) --> SP[("Site Pages<br/>HPUK News + Other News")]
   SP -- "daily 06:00: ExpiryDate passed" --> C1["C1 Expiry"] -- "Status = Expired" --> SP
   SP -- "Mondays 07:00: Live, InRoundup, last week" --> C2["C2 Port roundup"]
@@ -25,6 +26,7 @@ flowchart LR
 ## C1 — News expiry (daily 06:00 UK)
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
 flowchart TD
   A([Daily 06:00 UK time]) --> Q["Both sites: published Live pages<br/>with ExpiryDate before today (UK date)"]
   Q --> W{"ExpiryWritesEnabled = Yes?"}
@@ -41,6 +43,7 @@ flowchart TD
 ## C2 — Weekly port roundup (Mondays 07:00 UK)
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
 flowchart TD
   A([Mondays 07:00 UK time]) --> DE{"DispatchEnabled = Yes?"}
   DE -->|No| CX[/"Cancelled - nothing sent"/]:::info
@@ -61,6 +64,7 @@ flowchart TD
 ## C3a / C3b — Urgent notice (on publish)
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
 flowchart TD
   A([Site Pages item changed:<br/>HPUK News - C3a, Other News - C3b]) --> TC{"Published major version (x.0), Live,<br/>Urgent = Yes, UrgentSent = No?"}
   TC -->|No| Z([Flow doesn't run])
@@ -90,6 +94,7 @@ back to No, then republishing: the new round gives new keys.
 ## Reserve then send (C2 and C3, per email or Teams destination)
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
 flowchart TD
   A([Destination with an email group or Teams channel]) --> K{"Delivery Log row<br/>for this key?"}
   K -->|None| R1["Write Reserved row<br/>(key is unique and indexed)"]

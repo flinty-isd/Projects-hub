@@ -10,6 +10,7 @@ approvals, red ends are blocks or rejections. Role names map to people in
 ## Overview
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
 flowchart LR
   subgraph Access["Access & identity"]
     F1["01 Access request"] --> F2["02 Guest expiry"]
@@ -26,7 +27,8 @@ flowchart LR
 ## 01 — Access request (Access Method Decision Table)
 
 ```mermaid
-flowchart TD
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
+flowchart LR
   A([New Access Requests item]) --> T{User type}
   T -->|Service / shared account| X1[/"Rejected - Prohibited"/]:::bad
   T -->|No Microsoft licence| V[/"Closed - use Base8 CMS<br/>in the Employee App"/]:::info
@@ -57,6 +59,7 @@ flowchart TD
 ## 02 — Guest access expiry (daily)
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
 flowchart TD
   A([Daily 06:00]) --> Q["Active guests ending<br/>within 14 days"]
   Q --> E{"End date passed?"}
@@ -75,6 +78,7 @@ flowchart TD
 ## 03 — Site provisioning
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
 flowchart TD
   A([New Site Requests item]) --> NM{"Alias follows<br/>[org]-[location]-[dept]-[site]? (G-08)"}
   NM -->|No| XN[/"Returned - naming standard"/]:::bad
@@ -91,7 +95,7 @@ flowchart TD
   OK -->|No| F[/"Provisioning failed -> service owner"/]:::bad
   OK -->|Yes| GT{"IT Ops applies + registers<br/>Sites.Selected grant? (G-04)"}
   GT -->|No| F2[/"Provisioning failed - no grant,<br/>baseline not applied"/]:::bad
-  GT -->|Yes| RB["Runbook (managed identity): groups only,<br/>secondary admin, sharing off unless approved,<br/>no custom script, sensitivity label; ###RESULT###"]
+  GT -->|Yes| RB["Runbook (managed identity): groups only,<br/>secondary admin, sharing off unless approved,<br/>no custom script, sensitivity label"]
   RB --> REG[/"Add to Site Register<br/>(next access review +90 days), notify owners"/]:::good
   classDef good fill:#dcfce7,stroke:#15803d,color:#14532d
   classDef bad fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
@@ -100,6 +104,7 @@ flowchart TD
 ## 05 — File share disposition (selective migration)
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
 flowchart TD
   A([New File Share Register item]) --> SD{"Integration marker, app back-end<br/>or generic account?"}
   SD -->|Yes| EX[/"Excluded - system dependent;<br/>IT Ops agrees remediate / archive /<br/>delete / move to non-SPO"/]:::bad
@@ -120,6 +125,7 @@ flowchart TD
 ## 06 — Access recertification (monthly; 90-day cycle per site)
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Source Sans 3, Source Sans Pro, Segoe UI, sans-serif', 'fontSize': '15px', 'primaryColor': '#f0f2f6', 'primaryBorderColor': '#5e616d', 'primaryTextColor': '#31333f', 'lineColor': '#5e616d', 'clusterBkg': '#f8f9fb', 'clusterBorder': '#cdd0d8', 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff'}}}%%
 flowchart TD
   A([1st of month 07:00]) --> D["Active sites with<br/>review due"]
   D --> O{"Primary owner<br/>account enabled?"}
