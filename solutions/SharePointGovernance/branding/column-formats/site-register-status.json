@@ -1,0 +1,17 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
+  "elmType": "div",
+  "txtContent": "@currentField",
+  "style": {
+    "display": "=if(@currentField == '', 'none', 'inline-block')",
+    "box-sizing": "border-box",
+    "padding": "1px 10px",
+    "border-radius": "8px",
+    "font-size": "13px",
+    "line-height": "20px",
+    "white-space": "nowrap",
+    "background-color": "=if(indexOf('|Active|', '|' + @currentField + '|') >= 0, '#dcfce7', if(indexOf('|Orphaned - owner inactive|', '|' + @currentField + '|') >= 0, '#fee2e2', if(indexOf('|Read-only|Archived|', '|' + @currentField + '|') >= 0, '#e0f2fe', '#f0f2f6')))",
+    "color": "=if(indexOf('|Active|', '|' + @currentField + '|') >= 0, '#14532d', if(indexOf('|Orphaned - owner inactive|', '|' + @currentField + '|') >= 0, '#7f1d1d', if(indexOf('|Read-only|Archived|', '|' + @currentField + '|') >= 0, '#0c4a6e', '#31333f')))",
+    "border": "='1px solid ' + if(indexOf('|Active|', '|' + @currentField + '|') >= 0, '#15803d', if(indexOf('|Orphaned - owner inactive|', '|' + @currentField + '|') >= 0, '#b91c1c', if(indexOf('|Read-only|Archived|', '|' + @currentField + '|') >= 0, '#0369a1', '#f0f2f6')))"
+  }
+}

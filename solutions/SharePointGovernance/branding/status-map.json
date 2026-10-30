@@ -1,0 +1,91 @@
+{
+  "$comment": "Which outcome colour each governance Status choice shows in SharePoint. Source of truth for column-formats/*.json, which tools/build_formatters.py generates from this file and checks against sharepoint/list-schema.json: every choice must be mapped, and every mapped value must be a choice. Outcome colours are the good / bad / info classDefs in diagrams/governance-flows.md; neutral is for items not yet decided.",
+  "outcomes": {
+    "good": {
+      "fill": "#dcfce7",
+      "stroke": "#15803d",
+      "ink": "#14532d"
+    },
+    "bad": {
+      "fill": "#fee2e2",
+      "stroke": "#b91c1c",
+      "ink": "#7f1d1d"
+    },
+    "info": {
+      "fill": "#e0f2fe",
+      "stroke": "#0369a1",
+      "ink": "#0c4a6e"
+    },
+    "neutral": {
+      "fill": "#f0f2f6",
+      "stroke": "#f0f2f6",
+      "ink": "#31333f"
+    }
+  },
+  "columns": [
+    {
+      "list": "Access Requests",
+      "field": "Status",
+      "map": {
+        "Submitted": "neutral",
+        "Granted": "good",
+        "Approved - awaiting AD group change": "good",
+        "Approved - PIM eligible assignment pending": "good",
+        "Blocked - Licence required": "bad",
+        "Blocked - Entra ID P2 required": "bad",
+        "Closed - Use Employee App": "info",
+        "Closed - Use published display page": "info",
+        "Rejected": "bad",
+        "Rejected - Not time-bound": "bad",
+        "Rejected - Prohibited": "bad",
+        "Rejected - Unknown access type": "bad"
+      }
+    },
+    {
+      "list": "Site Requests",
+      "field": "Status",
+      "map": {
+        "Submitted": "neutral",
+        "Provisioned": "good",
+        "Provisioning failed": "bad",
+        "Rejected": "bad",
+        "Returned - Ownership invalid": "bad",
+        "Returned - Naming standard": "bad"
+      }
+    },
+    {
+      "list": "Site Register",
+      "field": "Status",
+      "map": {
+        "Active": "good",
+        "Orphaned - owner inactive": "bad",
+        "Read-only": "info",
+        "Archived": "info"
+      }
+    },
+    {
+      "list": "Guest Access Register",
+      "field": "Status",
+      "map": {
+        "Active": "good",
+        "Removal pending owner decision": "neutral",
+        "Kept - owner decision": "info",
+        "Expired - access removed": "bad",
+        "Revoked": "bad"
+      }
+    },
+    {
+      "list": "File Share Register",
+      "field": "Status",
+      "map": {
+        "Registered": "neutral",
+        "Awaiting owner decision": "neutral",
+        "Disposition required": "bad",
+        "Disposition agreed": "info",
+        "Approved - permissions remediation before migration": "info",
+        "Ready for migration": "good",
+        "Migrated": "good"
+      }
+    }
+  ]
+}

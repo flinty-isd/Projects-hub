@@ -20,6 +20,10 @@ jobs:
           python-version: "3.12"
       - name: Validate flow definitions against the list schema
         run: python solutions/SharePointGovernance/tools/validate_flows.py
+      - name: Check Status column formats against the list schema
+        run: python solutions/SharePointGovernance/tools/build_formatters.py --check
+      - name: Check the site kit (browser script, Copilot prompts) is up to date
+        run: python solutions/SharePointGovernance/tools/build_site_kit.py --check
       - name: Build the importable solution package
         run: python solutions/SharePointGovernance/tools/build_solution.py --out dist
       - name: Upload solution package

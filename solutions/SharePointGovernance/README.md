@@ -38,8 +38,10 @@ SharePointGovernance/
 ├── sharepoint/            list-schema.json: the 7 governance lists; csv/ holds import templates
 ├── runbooks/              Set-SiteGovernanceBaseline.ps1 (Azure Automation, called by flow 03)
 ├── diagrams/              Mermaid process diagrams
+├── branding/              theme, Status column formatting, site pages: browser script or Copilot prompts
 ├── solution-config.json   solution name, version, publisher, environment variables
-└── tools/                 validate_flows.py (static checks) and build_solution.py (packager)
+└── tools/                 validate_flows.py (static checks), build_solution.py (packager),
+                           build_formatters.py + build_site_kit.py (branding generators)
 ```
 
 ## Roles
