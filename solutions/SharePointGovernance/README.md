@@ -35,7 +35,7 @@ GitHub).
 ```
 SharePointGovernance/
 ├── powerautomate/flows/   flow definitions (Workflow Definition Language JSON)
-├── sharepoint/            list-schema.json: the 8 governance lists the flows use
+├── sharepoint/            list-schema.json: the 7 governance lists; csv/ holds import templates
 ├── runbooks/              Set-SiteGovernanceBaseline.ps1 (Azure Automation, called by flow 03)
 ├── diagrams/              Mermaid process diagrams
 ├── solution-config.json   solution name, version, publisher, environment variables
@@ -63,7 +63,8 @@ one person's address: approvals still reach someone during absences.
 1. **Lists**: create the lists in `sharepoint/list-schema.json` on the
    **IT Enterprise Governance** site, where PID v4.2 holds the governance and
    security lists (D-GSA-07, Option A). Use PnP.PowerShell.
-   Bulk-load *Site Register* with every existing site (owners, security
+   Bulk-load *Site Register* (templates and column guide in
+   [`sharepoint/csv/`](sharepoint/csv/README.md)) with every existing site (owners, security
    groups, and a `NextAccessReview` date spread over the next 90 days so
    reviews don't all land in one month). Load only the file shares still
    outstanding after migration into *File Share Register*. Each loaded item

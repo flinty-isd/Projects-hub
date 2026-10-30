@@ -2,7 +2,7 @@
   "$comment": "Settings for tools/build_solution.py. Bump 'version' for every release you import: Power Platform only upgrades a solution to a higher version.",
   "uniqueName": "SharePointGovernance",
   "displayName": "SharePoint Governance (BAU)",
-  "description": "Power Automate flows that enforce SharePoint Online governance controls (PID v3.1) in BAU.",
+  "description": "Power Automate flows that enforce SharePoint Online governance controls (PID v4.2) in BAU.",
   "version": "1.1.1.0",
   "publisher": {
     "uniqueName": "HPUKIT",
