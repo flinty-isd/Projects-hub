@@ -29,7 +29,7 @@
       * with -CreateTemplates, adds the news page template to each site
         ("HPUK News post" / "Other News post"): image and title header, then
         one-column sections for Summary, Main content, Action required and
-        deadline, Attachments and Contact. Run once per site; an existing
+        deadline, Attachments and Contact, and no author byline. Run once per site; an existing
         template is left alone unless -RefreshTemplates is also given
 
     Not done here (no supported cmdlet; see the README):
@@ -145,6 +145,17 @@ function Ensure-NewsTemplate($conn, [string] $title) {
             -Text "<h2>$($s.Heading)</h2><p><em>$($s.Hint)</em></p>" -Connection $conn | Out-Null
         $i++
     }
+    # No author byline: posts read as from the site ("HPUK News"), not the publisher.
+    # Who published each post stays in Page details and version history.
+    try {
+        $page = Get-PnPPage -Identity "Templates/$name" -Connection $conn
+        $page.PageHeader.Authors = '[]'
+        $page.PageHeader.AuthorByLine = ''
+        $page.PageHeader.AuthorByLineId = -1
+        $page.Save() | Out-Null
+    } catch {
+        Write-Warning "  Couldn't clear the author byline on '$title': remove it by hand in the template's title area."
+    }
     Set-PnPPage -Identity "Templates/$name" -Publish -Connection $conn | Out-Null
     Write-Output "  + template $title"
 }
@@ -234,5 +245,5 @@ Write-Output '  5. Run Set-NewsRetention.ps1 (7-year retention) as a Purview com
 if (-not ($CreateTemplates -or $RefreshTemplates)) {
     Write-Output '  6. News page templates: re-run with -CreateTemplates (once per site), or build them by hand.'
 } else {
-    Write-Output '  6. Open each template once, add a banner image to the title area, and republish it.'
+    Write-Output '  6. Open each template once, add a banner image to the title area, check the author byline is empty, and republish it.'
 }
