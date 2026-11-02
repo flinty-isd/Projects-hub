@@ -102,7 +102,10 @@ flowchart LR
    Action required and deadline, Attachments, Contact; the Summary hint
    reminds publishers to fill in Page details before publishing); run it once per
    site, and use `-RefreshTemplates` to rebuild them after a layout change.
-   Afterwards open each template, add a banner image and republish. Then have a Purview compliance admin run
+   The templates have no author byline, so posts read as from the site
+   rather than the publisher (who published stays in version history).
+   Afterwards open each template, add a banner image, check the byline is
+   empty and republish. Then have a Purview compliance admin run
    `provisioning/Set-NewsRetention.ps1` for the 7-year retention.
 3. **Manual site settings.** These have no supported cmdlet:
    - Site Pages → *Settings → Audience targeting* → **On**, on both sites.
