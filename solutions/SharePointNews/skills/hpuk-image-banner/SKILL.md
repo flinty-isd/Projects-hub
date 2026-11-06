@@ -1,9 +1,22 @@
 ---
 name: hpuk-image-banner
-description: Prepare correctly sized images for every part of an HPUK SharePoint News post - the title-area banner in any layout, the thumbnail, and images in the body (Image, Text, Image gallery, Hero, Quick Links, Call to action, section backgrounds and video thumbnails). Works out the exact crop, size and focal point, and gives the publisher step-by-step instructions to make the image in Paint and add it to the post. Use when the user says "create a News banner", "resize this for a SharePoint post", "fix this image crop" or "is this image suitable for my post".
+description: Work out the correct size, crop and focal point for every image in an HPUK SharePoint News post - the title-area banner in any layout, the thumbnail, and images in the body (Image, Text, Image gallery, Hero, Quick Links, Call to action, section backgrounds and video thumbnails). It gives the publisher step-by-step instructions to make the image themselves in Paint and add it to the post. It never generates, redraws or edits images, and never uses AI image tools. Use when the user says "size a News banner", "create a News banner", "resize this for a SharePoint post", "fix this image crop" or "is this image suitable for my post".
 ---
 
-# HPUK News Post Image Creator
+# HPUK News Post Image Sizing
+
+## Most important rule: never make or change the image yourself
+
+- **Never use an AI image tool** to make, redraw, regenerate, extend, resize,
+  crop or "improve" the image, even if one is available to you and even if the
+  user asks. AI tools change people's faces, bodies and clothes, and change
+  logos and backgrounds.
+- **Never return an image.** Your answer is only words: the numbers, the Paint
+  recipe and the steps. The publisher makes the image themselves in Paint,
+  from the original photo.
+- If the user asks you to make the image, say: "I can't make or edit the image,
+  because AI tools can change how people look. Here are the exact steps to do
+  it in Paint." Then give the recipe.
 
 ## When to use
 
@@ -16,7 +29,7 @@ those, say the skill doesn't cover them.
 
 ## How it works
 
-This skill can't edit image files itself. Instead it:
+This skill only gives instructions. It never makes or edits an image. It:
 
 1. looks at the image and finds what needs fixing
 2. works out the exact numbers: what to cover, what to add, where to crop, and the final size
@@ -302,7 +315,7 @@ Return:
 - **Where it goes**: the place in the post (and the title layout, for the banner)
 - **Source**: file name, size, and whether it is approved
 - **Image action selected**: for example, cover embedded text, add space, crop, resize
-- **Action actually performed**: recipe provided; the publisher makes the image. Original unchanged.
+- **Action actually performed**: instructions only. No image was made or changed by Copilot; the publisher makes it in Paint from the original.
 - **Target size**, and whether it is Microsoft guidance or good practice
 - **Focal point**: % across and % down
 - **Accessibility**: the alt text. Use empty alt text if the image is decorative beside a title that names the person.
@@ -317,7 +330,9 @@ Return:
 - Never add, recreate, recolour or move logos or the Corporate Mark.
 - Never put words in the image. Headlines such as "Update from ..." go in the page title.
 - Only cover words or add background on plain colour. On a photo or pattern, report **manual retouching needed** and **NOT READY**.
-- Never use AI tools (such as generative erase) to change how a person looks.
+- Never make, redraw, edit or return an image, and never use AI image tools
+  (image generation, Designer, generative fill, generative erase or background
+  removal). See **Most important rule** at the top.
 - Don't claim an image was made: the publisher makes it from the recipe.
 - Don't invent HPUK brand rules. Use these sources, in this order:
   1. Hutchison Ports Brand Guidelines

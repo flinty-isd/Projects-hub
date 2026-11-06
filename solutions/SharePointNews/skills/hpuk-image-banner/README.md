@@ -1,14 +1,15 @@
-# HPUK SharePoint Image Creator (skill)
+# HPUK News Post Image Sizing (skill)
 
-A SharePoint site skill for Copilot. It prepares correctly sized images for
-every part of an HPUK **News post**: the title-area banner in any layout, the
+A SharePoint site skill for Copilot. It works out the correct size, crop and
+focal point for every image in an HPUK **News post**: the title-area banner in any layout, the
 thumbnail, and images in the body (Image, Text, Image gallery, Hero, Quick
 Links, Call to action, section backgrounds and video thumbnails). It doesn't
 cover site images such as the logo or header.
 
-SharePoint skills are instructions only and can't run scripts or edit image
-files. So the skill works out the exact numbers (what to cover, what to add,
-where to crop, the final size and the focal point) and gives the publisher:
+The skill never makes or edits images and never uses AI image tools, which
+can change how people look. It works out the exact numbers (what to cover,
+what to add, where to crop, the final size and the focal point) and gives the
+publisher:
 
 - a short recipe to make the image in **Paint** (built into Windows)
 - the steps to add it to the post, including where to set the focal point
