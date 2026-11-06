@@ -1,0 +1,146 @@
+{
+  "_note": "Target sizes for images in an HPUK SharePoint News post. 'basis' says where each size comes from: 'Microsoft' sizes follow Microsoft's published SharePoint image guidance; 'HPUK good practice' sizes are this skill's working standard until the HPUK Brand Centre or News publishing guidance sets one. Change a size here, not in the script.",
+  "presets": {
+    "news-banner": {
+      "label": "SharePoint News banner / page title image",
+      "width": 1920,
+      "height": 1080,
+      "ratio": "16:9",
+      "basis": "Microsoft (16:9 title area, also used as the News thumbnail)",
+      "previews": {
+        "Desktop title strip (approx.)": 4.0,
+        "Tablet (approx.)": 2.0,
+        "News card / thumbnail": 1.7778,
+        "Mobile (approx.)": 1.3333
+      },
+      "max_kb": 800,
+      "strip": true
+    },
+    "news-thumbnail": {
+      "label": "News thumbnail (when different from the banner)",
+      "width": 1280,
+      "height": 720,
+      "ratio": "16:9",
+      "basis": "Microsoft (16:9 news cards)",
+      "previews": {
+        "News card": 1.7778
+      },
+      "max_kb": 400
+    },
+    "supporting-image": {
+      "label": "Image web part in a one-column section",
+      "width": 1600,
+      "height": 900,
+      "ratio": "own shape",
+      "basis": "HPUK good practice",
+      "previews": {},
+      "max_kb": 500,
+      "keep_shape": true
+    },
+    "image-full-width": {
+      "label": "Image web part in a full-width section",
+      "width": 2560,
+      "height": 1440,
+      "ratio": "own shape",
+      "basis": "HPUK good practice",
+      "previews": {},
+      "max_kb": 900,
+      "keep_shape": true
+    },
+    "image-two-column": {
+      "label": "Image web part in a two-column or two-thirds section",
+      "width": 1200,
+      "height": 675,
+      "ratio": "own shape",
+      "basis": "HPUK good practice",
+      "previews": {},
+      "max_kb": 400,
+      "keep_shape": true
+    },
+    "image-one-third": {
+      "label": "Image web part in a three-column or one-third section",
+      "width": 800,
+      "height": 450,
+      "ratio": "own shape",
+      "basis": "HPUK good practice",
+      "previews": {},
+      "max_kb": 250,
+      "keep_shape": true
+    },
+    "gallery": {
+      "label": "Image gallery picture (Grid or Carousel layout)",
+      "width": 1600,
+      "height": 900,
+      "ratio": "16:9",
+      "basis": "HPUK good practice",
+      "previews": {
+        "Grid tile": 1.7778
+      },
+      "max_kb": 500
+    },
+    "hero": {
+      "label": "Hero web part tile",
+      "width": 1920,
+      "height": 1080,
+      "ratio": "16:9",
+      "basis": "Microsoft (16:9 hero tiles)",
+      "previews": {
+        "Hero tile": 1.7778,
+        "Hero tile, narrow layout (approx.)": 1.3333,
+        "Hero layers strip (approx.)": 3.0
+      },
+      "max_kb": 800,
+      "strip": true
+    },
+    "quick-links": {
+      "label": "Quick Links filmstrip / grid image",
+      "width": 1280,
+      "height": 720,
+      "ratio": "16:9",
+      "basis": "HPUK good practice",
+      "previews": {
+        "Filmstrip tile": 1.7778
+      },
+      "max_kb": 300
+    },
+    "cta-background": {
+      "label": "Call to action web part background",
+      "width": 1920,
+      "height": 640,
+      "ratio": "3:1",
+      "basis": "HPUK good practice",
+      "previews": {
+        "Mobile (approx.)": 2.0
+      },
+      "max_kb": 500,
+      "strip": true
+    },
+    "section-background": {
+      "label": "Section background image",
+      "width": 2560,
+      "height": 1440,
+      "ratio": "16:9",
+      "basis": "HPUK good practice",
+      "previews": {},
+      "max_kb": 900
+    },
+    "video-thumbnail": {
+      "label": "Stream video thumbnail (News Videos)",
+      "width": 1920,
+      "height": 1080,
+      "ratio": "16:9",
+      "basis": "HPUK good practice",
+      "previews": {
+        "Video card": 1.7778
+      },
+      "max_kb": 500
+    }
+  },
+  "thresholds": {
+    "upscale_warn": 1.0,
+    "upscale_fail": 1.5,
+    "headroom": 0.1,
+    "edge_uniform_std": 6.0,
+    "head_max": 0.4
+  }
+}
