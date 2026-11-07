@@ -3,7 +3,7 @@
   "uniqueName": "SharePointNews",
   "displayName": "SharePoint News and Notices",
   "description": "Expiry, weekly port roundup and urgent notice flows for the HPUK News and Other News sites.",
-  "version": "1.2.1.0",
+  "version": "1.2.2.0",
   "publisher": {
     "uniqueName": "HPUKIT",
     "displayName": "HPUK IT",
@@ -13,11 +13,13 @@
   "environmentVariables": {
     "HPUKNewsSiteUrl": {
       "displayName": "HPUK News site URL",
-      "description": "Full URL of the HPUK News communication site. Comms Distribution and Delivery Log live here."
+      "description": "Full URL of the HPUK News communication site. Comms Distribution and Delivery Log live here. The tenant is hphneu.",
+      "default": "https://hphneu.sharepoint.com/teams/hpuk-pof-HPUKNEWS"
     },
     "OtherNewsSiteUrl": {
       "displayName": "Other News site URL",
-      "description": "Full URL of the Other News communication site."
+      "description": "Full URL of the Other News communication site. The tenant is hphneu.",
+      "default": "https://hphneu.sharepoint.com/teams/hpuk-pof-OTHERNEWS"
     },
     "CommsSenderMailbox": {
       "displayName": "Communications sender mailbox",
