@@ -131,7 +131,12 @@ flowchart LR
    including Nigel's address (`SupportOwnerEmail`) and the urgent publishers'
    addresses, separated by semicolons (`UrgentPublisherEmails`). None is
    mandatory at import: after importing, open the solution → **Environment
-   variables** and set the six whose description starts "Set after import".
+   variables** and set the four whose description starts "Set after import".
+   The two site URLs come preset for the `hphneu` tenant
+   (`https://hphneu.sharepoint.com/teams/hpuk-pof-HPUKNEWS` and
+   `.../hpuk-pof-OTHERNEWS`); only override them in a test environment. If a
+   site URL has a **Current value**, it replaces the preset, so check its
+   spelling or remove it.
    Leave `DispatchEnabled` and `ExpiryWritesEnabled` at No and
    `UrgentGoLiveDate` at its default for now.
    CI also builds it: download the artifact *SharePointNews-solution*.
