@@ -35,8 +35,8 @@
           "notes": "What the post is about: 16 terms, confirmed for UAT (taxonomy/TermSet-Category.csv). The Safety news views filter on Health and Safety."
         },
         {
-          "internalName": "StrategyTheme",
-          "displayName": "Strategy theme",
+          "internalName": "Strategy_x0020_Theme",
+          "displayName": "Strategy Theme",
           "type": "Taxonomy",
           "required": false,
           "multi": true,
@@ -80,8 +80,8 @@
           "notes": "Only authorised urgent publishers (Chloe, Rachel and Toby; the UrgentPublisherEmails environment variable) can trigger an alert. C3 ignores Urgent on anyone else's posts and tells Communications."
         },
         {
-          "internalName": "InRoundup",
-          "displayName": "Include in weekly roundup",
+          "internalName": "Include_x0020_in_x0020_Weekly_x0020_Roundup",
+          "displayName": "Include in Weekly Roundup",
           "type": "Boolean",
           "required": false,
           "default": true

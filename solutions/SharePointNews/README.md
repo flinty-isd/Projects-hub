@@ -30,10 +30,10 @@ if Communications or IT decide otherwise.
 | 4 | Don't assume a metadata update leaves the published page unchanged | C1 and C3 update Show in News and UrgentSent with **ValidateUpdateListItem** (`bNewDocumentUpdate`): no new version, no draft | A normal update leaves a published news page with a pending draft |
 | 5 | UrgentSent is not the sole duplicate control | The trigger runs only for **major versions** (`x.0`) with UrgentSent = No, one at a time. Each port and channel is **reserved** in the Delivery Log before sending (see the safeguards below) | Retries send only definite failures; an unknown outcome waits for a person. Setting UrgentSent cannot re-trigger the flow |
 | 6 | Expiry boundary to confirm | **Expiry Date is the last current day.** C1 runs 06:00 UK time and expires dates before today (UK date, so BST is handled) | Matches the design's proposed rule |
-| 6a | (found in testing) The Site Pages columns were made by hand, not by the provisioning script | The flows use the sites' own columns: **Show in News** (Yes/No, internal `ShowinNews`) instead of Status Live/Expired, and **Expiry Date** (internal `Expiry_x0020_Date`). C1 sets Show in News to No on any published post past its Expiry Date unless it is already No, **blank included**. Set both columns as described under Testing | PowerShell can't be run, so the flows follow the sites. C2 and C3 also need UrgentSent, NotificationRound and the Comms Distribution and Delivery Log lists, which the sites don't have yet |
+| 6a | (found in testing) The Site Pages columns were made by hand, not by the provisioning script | The flows use the sites' own columns: **Show in News** (Yes/No, internal `ShowinNews`) instead of Status Live/Expired, **Expiry Date** (internal `Expiry_x0020_Date`), **Include in Weekly Roundup** (`Include_x0020_in_x0020_Weekly_x0020_Roundup`) and **Strategy Theme** (`Strategy_x0020_Theme`, a Choice column; theme grouping matches Choice values as well as managed metadata labels). **Urgent** and **Port** keep their names; **UrgentSent** and **NotificationRound** are added by hand. C1 sets Show in News to No on any published post past its Expiry Date unless it is already No, **blank included**. Set both columns as described under Testing | PowerShell can't be run, so the flows follow the sites. C2 and C3 also need the Comms Distribution and Delivery Log lists on HPUK News, created by hand with the internal names in `sharepoint/list-schema.json` |
 | 7 | Frontline route for generic accounts | **Out of this build.** PID v3.1 prohibits shared and generic accounts in SharePoint. Its approved routes are the Employee App (view-only staff) and display-mode pages (screens) | Avoids a design that breaks the access model |
 | 8 | Everyone except external users as Visitors, to confirm | **A scoped reader group** is required by the script, and EEEU is never used | The tenant is shared with a peer company |
-| 9 | Compare the built-in news digest with C2 | C2 is built, with **InRoundup** and per-port routing that the built-in digest can't do | Pilot both. If the built-in digest is good enough, turn C2 off |
+| 9 | Compare the built-in news digest with C2 | C2 is built, with **Include in Weekly Roundup** and per-port routing that the built-in digest can't do | Pilot both. If the built-in digest is good enough, turn C2 off |
 | 10 | Classification and governance of the sites | Request both sites through the **governance Site Requests list** (flow 03), Sensitivity *General*, with named primary and secondary owners | Puts the sites in the Site Register, so they get 90-day access reviews |
 
 ### Business decisions (confirmed 22 October 2026)
@@ -72,7 +72,7 @@ all ports (decision 1).
 flowchart LR
   P([Publisher publishes a post]) --> SP[("Site Pages<br/>both sites")]
   SP -- "daily 06:00: Expiry Date passed" --> C1["C1 Expiry"] -- "Show in News = No" --> SP
-  SP -- "Mondays 07:00: Live, InRoundup, last 7 days" --> C2["C2 Port roundup"]
+  SP -- "Mondays 07:00: Show in News, Include in Weekly Roundup, last 7 days" --> C2["C2 Port roundup"]
   SP -- "published major version, Urgent, not yet sent,<br/>by an urgent publisher" --> C3["C3 Urgent notice"]
   CD[("Comms Distribution<br/>port → email group, Teams channel")] --> C2 & C3
   C2 & C3 -- "reserve key, then send" --> OUT[/"Email from Comms mailbox<br/>Teams channel post"/]
