@@ -1036,10 +1036,11 @@
           "inputs": {
             "host": {
               "connectionName": "shared_office365",
-              "operationId": "SendEmailV2",
+              "operationId": "SharedMailboxSendEmailV2",
               "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
             },
             "parameters": {
+              "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
               "emailMessage/To": "@parameters('SupportOwnerEmail')",
               "emailMessage/Subject": "News roundup: some deliveries failed",
               "emailMessage/Body": "<p>These roundup deliveries did not complete:</p><p>@{join(variables('Failures'), '<br>')}</p><p>A row logged as <b>Reconcile</b> may or may not have arrived: check with the recipient. If it didn't arrive, set the row's Delivery status to Failed and resubmit this run. Only Failed rows are ever retried. A row still <b>Reserved</b> was sent but not logged: set it to Sent.</p><p>Destinations already sent for this week are always skipped.</p>",
