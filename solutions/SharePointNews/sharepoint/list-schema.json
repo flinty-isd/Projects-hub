@@ -57,23 +57,19 @@
           "notes": "Required. Choose 'All ports' for a notice that goes everywhere; a blank Port is not allowed, so a forgotten value can never broadcast to every port. Confirmed ports. Must match the Comms Distribution Port values exactly."
         },
         {
-          "internalName": "ExpiryDate",
-          "displayName": "Expiry date",
+          "internalName": "Expiry_x0020_Date",
+          "displayName": "Expiry Date",
           "type": "DateOnly",
           "required": false,
-          "notes": "Last day the notice is current. C1 sets Status to Expired the next morning. Blank means no automatic expiry."
+          "notes": "Last day the notice is current. C1 sets Show in News to No the next morning. Blank means no automatic expiry. Internal name matches the column made by hand on the sites; set its format to Date only."
         },
         {
-          "internalName": "Status",
-          "displayName": "Status",
-          "type": "Choice",
-          "required": true,
-          "choices": [
-            "Live",
-            "Expired"
-          ],
-          "default": "Live",
-          "notes": "Presentation state only (news web parts filter on Live). Not an editorial approval state."
+          "internalName": "Show_x0020_in_x0020_News",
+          "displayName": "Show in News",
+          "type": "Boolean",
+          "required": false,
+          "default": true,
+          "notes": "Presentation state (replaces Status Live/Expired, to match the column made by hand on the sites). News web parts filter on Yes; C1 sets it to No when a post expires. Not an editorial approval state."
         },
         {
           "internalName": "Urgent",
