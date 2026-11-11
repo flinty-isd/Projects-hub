@@ -30,6 +30,7 @@ if Communications or IT decide otherwise.
 | 4 | Don't assume a metadata update leaves the published page unchanged | C1 and C3 update Status and UrgentSent with **ValidateUpdateListItem** (`bNewDocumentUpdate`): no new version, no draft | A normal update leaves a published news page with a pending draft |
 | 5 | UrgentSent is not the sole duplicate control | The trigger runs only for **major versions** (`x.0`) with UrgentSent = No, one at a time. Each port and channel is **reserved** in the Delivery Log before sending (see the safeguards below) | Retries send only definite failures; an unknown outcome waits for a person. Setting UrgentSent cannot re-trigger the flow |
 | 6 | Expiry boundary to confirm | **ExpiryDate is the last current day.** C1 runs 06:00 UK time and expires dates before today (UK date, so BST is handled) | Matches the design's proposed rule |
+| 6a | (found in testing) Posts can have a **blank Status**: SharePoint doesn't always apply the column default to new pages | C1 expires any published post past its ExpiryDate whose Status isn't already Expired, **blank included**. The web parts' *Status = Live* filter hides blank posts, so each site's Status default must work (see the check under Testing) | A blank Status was skipped by C1, so expired posts stayed on show |
 | 7 | Frontline route for generic accounts | **Out of this build.** PID v3.1 prohibits shared and generic accounts in SharePoint. Its approved routes are the Employee App (view-only staff) and display-mode pages (screens) | Avoids a design that breaks the access model |
 | 8 | Everyone except external users as Visitors, to confirm | **A scoped reader group** is required by the script, and EEEU is never used | The tenant is shared with a peer company |
 | 9 | Compare the built-in news digest with C2 | C2 is built, with **InRoundup** and per-port routing that the built-in digest can't do | Pilot both. If the built-in digest is good enough, turn C2 off |
@@ -173,6 +174,7 @@ is not the production permission model.
 | Test | Pass condition |
 |------|----------------|
 | Expiry | A post with yesterday's ExpiryDate shows Expired after the 06:00 run. A blank date stays Live. The page version doesn't change and no draft appears |
+| Status default | A new News post shows Status **Live** in Page details before you publish it. If it's blank, open Site Pages → Library settings → **Status**, check the default is Live and select **OK** to re-save it, then try a new post again. Set any blank posts to Live in the Site Pages grid view |
 | Urgent, happy path | One email and one Teams post per matching port. Delivery Log has one *Sent* row per port and channel. UrgentSent = Yes |
 | Urgent, edit | Editing and republishing a sent urgent post sends nothing |
 | Urgent, correction | Round + 1 and UrgentSent = No, then republish. Exactly one new alert per destination |
