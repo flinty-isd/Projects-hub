@@ -3,7 +3,7 @@
   "uniqueName": "SharePointNews",
   "displayName": "SharePoint News and Notices",
   "description": "Expiry, weekly port roundup and urgent notice flows for the HPUK News and Other News sites.",
-  "version": "1.2.3.0",
+  "version": "1.2.10.0",
   "publisher": {
     "uniqueName": "HPUKIT",
     "displayName": "HPUK IT",
@@ -32,6 +32,11 @@
     "SupportOwnerEmail": {
       "displayName": "News support owner email",
       "description": "Operational support owner for the news flows (Nigel Bell): receives failure alerts."
+    },
+    "ExpiryReportEmail": {
+      "displayName": "Expiry report email",
+      "description": "Optional. Address that gets a report after every C1 expiry run: posts taken out of the news, any that could not be updated, and the dry-run list. Leave empty for no report (failures and dry runs still go to the support owner).",
+      "default": ""
     },
     "UrgentPublisherEmails": {
       "displayName": "Urgent publisher emails",

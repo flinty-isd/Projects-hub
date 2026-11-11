@@ -27,13 +27,13 @@ if Communications or IT decide otherwise.
 | 1 | Port blank means all ports | **Port is required**, with an explicit *All ports* choice | A forgotten Port on an urgent notice would otherwise email every port |
 | 2 | A Managers-targeted post must not be emailed to a whole port; either route or exclude it | **Audience-targeted posts are excluded** from the roundup and from urgent broadcasts. C3 logs *Skipped - audience targeted* and tells Communications | Audience targeting is personalisation, not a distribution list. Port routing can't express "managers at Felixstowe" |
 | 3 | Dispatch key uses an "agreed publication event" | Key = `urgent\|site\|page ID\|r<NotificationRound>\|port\|channel`. **NotificationRound** is a page column (default 1) | Edits never resend. Communications sends a correction by raising the round and resetting UrgentSent |
-| 4 | Don't assume a metadata update leaves the published page unchanged | C1 and C3 update Status and UrgentSent with **ValidateUpdateListItem** (`bNewDocumentUpdate`): no new version, no draft | A normal update leaves a published news page with a pending draft |
+| 4 | Don't assume a metadata update leaves the published page unchanged | C1 and C3 update Show in News and UrgentSent with **ValidateUpdateListItem** (`bNewDocumentUpdate`): no new version, no draft | A normal update leaves a published news page with a pending draft |
 | 5 | UrgentSent is not the sole duplicate control | The trigger runs only for **major versions** (`x.0`) with UrgentSent = No, one at a time. Each port and channel is **reserved** in the Delivery Log before sending (see the safeguards below) | Retries send only definite failures; an unknown outcome waits for a person. Setting UrgentSent cannot re-trigger the flow |
-| 6 | Expiry boundary to confirm | **ExpiryDate is the last current day.** C1 runs 06:00 UK time and expires dates before today (UK date, so BST is handled) | Matches the design's proposed rule |
-| 6a | (found in testing) Posts can have a **blank Status**: SharePoint doesn't always apply the column default to new pages | C1 expires any published post past its ExpiryDate whose Status isn't already Expired, **blank included**. The web parts' *Status = Live* filter hides blank posts, so each site's Status default must work (see the check under Testing) | A blank Status was skipped by C1, so expired posts stayed on show |
+| 6 | Expiry boundary to confirm | **Expiry Date is the last current day.** C1 runs 06:00 UK time and expires dates before today (UK date, so BST is handled) | Matches the design's proposed rule |
+| 6a | (found in testing) The Site Pages columns were made by hand, not by the provisioning script | The flows use the sites' own columns: **Show in News** (Yes/No, internal `ShowinNews`) instead of Status Live/Expired, **Expiry Date** (internal `Expiry_x0020_Date`), **Include in Weekly Roundup** (`Include_x0020_in_x0020_Weekly_x0020_Roundup`) and **Strategy Theme** (`Strategy_x0020_Theme`, a Choice column; theme grouping matches Choice values as well as managed metadata labels). Other News has different internal names for three of these: `ExpiryDate`, `StrategyTheme` and `InRoundup` (added by hand there), and the flows use each site's own names. **Urgent** and **Port** keep their names; **UrgentSent** and **NotificationRound** are added by hand. C1 sets Show in News to No on any published post past its Expiry Date unless it is already No, **blank included**. Set both columns as described under Testing | PowerShell can't be run, so the flows follow the sites. C2 and C3 also need the Comms Distribution and Delivery Log lists on HPUK News, created by hand with the internal names in `sharepoint/list-schema.json` |
 | 7 | Frontline route for generic accounts | **Out of this build.** PID v3.1 prohibits shared and generic accounts in SharePoint. Its approved routes are the Employee App (view-only staff) and display-mode pages (screens) | Avoids a design that breaks the access model |
 | 8 | Everyone except external users as Visitors, to confirm | **A scoped reader group** is required by the script, and EEEU is never used | The tenant is shared with a peer company |
-| 9 | Compare the built-in news digest with C2 | C2 is built, with **InRoundup** and per-port routing that the built-in digest can't do | Pilot both. If the built-in digest is good enough, turn C2 off |
+| 9 | Compare the built-in news digest with C2 | C2 is built, with **Include in Weekly Roundup** and per-port routing that the built-in digest can't do | Pilot both. If the built-in digest is good enough, turn C2 off |
 | 10 | Classification and governance of the sites | Request both sites through the **governance Site Requests list** (flow 03), Sensitivity *General*, with named primary and secondary owners | Puts the sites in the Site Register, so they get 90-day access reviews |
 
 ### Business decisions (confirmed 22 October 2026)
@@ -71,8 +71,8 @@ all ports (decision 1).
 ```mermaid
 flowchart LR
   P([Publisher publishes a post]) --> SP[("Site Pages<br/>both sites")]
-  SP -- "daily 06:00: ExpiryDate passed" --> C1["C1 Expiry"] -- "Status = Expired" --> SP
-  SP -- "Mondays 07:00: Live, InRoundup, last 7 days" --> C2["C2 Port roundup"]
+  SP -- "daily 06:00: Expiry Date passed" --> C1["C1 Expiry"] -- "Show in News = No" --> SP
+  SP -- "Mondays 07:00: Show in News, Include in Weekly Roundup, last 7 days" --> C2["C2 Port roundup"]
   SP -- "published major version, Urgent, not yet sent,<br/>by an urgent publisher" --> C3["C3 Urgent notice"]
   CD[("Comms Distribution<br/>port → email group, Teams channel")] --> C2 & C3
   C2 & C3 -- "reserve key, then send" --> OUT[/"Email from Comms mailbox<br/>Teams channel post"/]
@@ -128,7 +128,7 @@ flowchart LR
    python solutions/SharePointGovernance/tools/build_solution.py --root solutions/SharePointNews
    ```
    It needs three connections (SharePoint, Office 365 Outlook, Microsoft
-   Teams), signed in as the named news flow owner, and ten environment variables,
+   Teams), signed in as the named news flow owner, and eleven environment variables,
    including Nigel's address (`SupportOwnerEmail`) and the urgent publishers'
    addresses, separated by semicolons (`UrgentPublisherEmails`). None is
    mandatory at import: after importing, open the solution → **Environment
@@ -138,6 +138,10 @@ flowchart LR
    `.../hpuk-pof-OTHERNEWS`); only override them in a test environment. If a
    site URL has a **Current value**, it replaces the preset, so check its
    spelling or remove it.
+   To get a report after every expiry run, put your address in
+   `ExpiryReportEmail` (empty means no report). C1's emails, like the
+   roundup and urgent notices, are sent from `CommsSenderMailbox`, so the
+   named flow owner needs **Send As** on that shared mailbox.
    Leave `DispatchEnabled` and `ExpiryWritesEnabled` at No and
    `UrgentGoLiveDate` at its default for now.
    CI also builds it: download the artifact *SharePointNews-solution*.
@@ -155,12 +159,12 @@ flowchart LR
 
 | Page | Web part | Source | Filter | Layout |
 |------|----------|--------|--------|--------|
-| HPUK News home | News | This site | Page properties: Status = Live | Top story |
-| HPUK News home | News (Safety) | This site | Status = Live **and** Category = Health and Safety | List |
-| Other News home | News | This site | Status = Live | Side-by-side |
-| Intranet home | News (main) | HPUK News | Status = Live; audience targeting on | Top story |
-| Intranet home | News (secondary) | Other News | Status = Live; audience targeting on | List, lower on the page |
-| Intranet home (optional) | News, one per theme: Our People, Our Business, Our Environment, One TEAM | HPUK News and Other News | Status = Live **and** Strategy theme = that theme | Side-by-side or carousel |
+| HPUK News home | News | This site | Page properties: Show in News = Yes | Top story |
+| HPUK News home | News (Safety) | This site | Show in News = Yes **and** Category = Health and Safety | List |
+| Other News home | News | This site | Show in News = Yes | Side-by-side |
+| Intranet home | News (main) | HPUK News | Show in News = Yes; audience targeting on | Top story |
+| Intranet home | News (secondary) | Other News | Show in News = Yes; audience targeting on | List, lower on the page |
+| Intranet home (optional) | News, one per theme: Our People, Our Business, Our Environment, One TEAM | HPUK News and Other News | Show in News = Yes **and** Strategy theme = that theme | Side-by-side or carousel |
 
 If the News web part can't filter on the managed metadata Category in your
 tenant, use a Category view of Site Pages in a Highlighted content web part
@@ -173,8 +177,8 @@ is not the production permission model.
 
 | Test | Pass condition |
 |------|----------------|
-| Expiry | A post with yesterday's ExpiryDate shows Expired after the 06:00 run. A blank date stays Live. The page version doesn't change and no draft appears |
-| Status default | A new News post shows Status **Live** in Page details before you publish it. If it's blank, open Site Pages → Library settings → **Status**, check the default is Live and select **OK** to re-save it, then try a new post again. Set any blank posts to Live in the Site Pages grid view |
+| Expiry | A post with yesterday's Expiry Date shows Show in News = No after the 06:00 run. A blank date stays Yes. The page version doesn't change and no draft appears |
+| Site Pages columns | On each site: Library settings → **Show in News**: default **Yes**, then **OK** (re-save even if it already says Yes). **Expiry Date**: Date and Time Format **Date Only**. A new News post must show Show in News = Yes in Page details before you publish it. In grid view, set any blank Show in News to Yes |
 | Urgent, happy path | One email and one Teams post per matching port. Delivery Log has one *Sent* row per port and channel. UrgentSent = Yes |
 | Urgent, edit | Editing and republishing a sent urgent post sends nothing |
 | Urgent, correction | Round + 1 and UrgentSent = No, then republish. Exactly one new alert per destination |
