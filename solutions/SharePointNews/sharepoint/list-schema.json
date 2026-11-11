@@ -64,7 +64,7 @@
           "notes": "Last day the notice is current. C1 sets Show in News to No the next morning. Blank means no automatic expiry. Internal name matches the column made by hand on the sites; set its format to Date only."
         },
         {
-          "internalName": "Show_x0020_in_x0020_News",
+          "internalName": "ShowinNews",
           "displayName": "Show in News",
           "type": "Boolean",
           "required": false,

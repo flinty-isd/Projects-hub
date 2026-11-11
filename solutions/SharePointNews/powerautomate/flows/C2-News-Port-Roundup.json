@@ -189,7 +189,7 @@
         "parameters": {
           "dataset": "@parameters('HPUKNewsSiteUrl')",
           "table": "Site Pages",
-          "$filter": "@{concat('PromotedState eq 2 and Show_x0020_in_x0020_News eq 1 and InRoundup eq 1 and FirstPublishedDate ge ''', outputs('Window_start'), ''' and FirstPublishedDate lt ''', outputs('Window_end'), '''')}"
+          "$filter": "@{concat('PromotedState eq 2 and ShowinNews eq 1 and InRoundup eq 1 and FirstPublishedDate ge ''', outputs('Window_start'), ''' and FirstPublishedDate lt ''', outputs('Window_end'), '''')}"
         }
       },
       "runAfter": {
@@ -209,7 +209,7 @@
         "parameters": {
           "dataset": "@parameters('OtherNewsSiteUrl')",
           "table": "Site Pages",
-          "$filter": "@{concat('PromotedState eq 2 and Show_x0020_in_x0020_News eq 1 and InRoundup eq 1 and FirstPublishedDate ge ''', outputs('Window_start'), ''' and FirstPublishedDate lt ''', outputs('Window_end'), '''')}"
+          "$filter": "@{concat('PromotedState eq 2 and ShowinNews eq 1 and InRoundup eq 1 and FirstPublishedDate ge ''', outputs('Window_start'), ''' and FirstPublishedDate lt ''', outputs('Window_end'), '''')}"
         }
       },
       "runAfter": {

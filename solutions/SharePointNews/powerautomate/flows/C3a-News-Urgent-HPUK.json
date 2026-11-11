@@ -82,7 +82,7 @@
       },
       "conditions": [
         {
-          "expression": "@and(equals(triggerBody()?['PromotedState'], 2), equals(triggerBody()?['Urgent'], true), not(equals(triggerBody()?['UrgentSent'], true)), not(equals(triggerBody()?['Show_x0020_in_x0020_News'], false)), endsWith(string(triggerBody()?['{VersionNumber}']), '.0'))"
+          "expression": "@and(equals(triggerBody()?['PromotedState'], 2), equals(triggerBody()?['Urgent'], true), not(equals(triggerBody()?['UrgentSent'], true)), not(equals(triggerBody()?['ShowinNews'], false)), endsWith(string(triggerBody()?['{VersionNumber}']), '.0'))"
         }
       ]
     }

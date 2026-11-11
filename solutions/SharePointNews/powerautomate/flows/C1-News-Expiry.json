@@ -158,7 +158,7 @@
           "type": "Query",
           "inputs": {
             "from": "@outputs('Get_expired_pages')?['body/value']",
-            "where": "@not(equals(item()?['Show_x0020_in_x0020_News'], false))"
+            "where": "@not(equals(item()?['ShowinNews'], false))"
           },
           "runAfter": {
             "Get_expired_pages": [
@@ -198,7 +198,7 @@
                       "parameters/body": {
                         "formValues": [
                           {
-                            "FieldName": "Show_x0020_in_x0020_News",
+                            "FieldName": "ShowinNews",
                             "FieldValue": "0"
                           }
                         ],
