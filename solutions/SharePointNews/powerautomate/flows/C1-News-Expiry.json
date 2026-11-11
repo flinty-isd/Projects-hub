@@ -144,14 +144,31 @@
             "parameters": {
               "dataset": "@items('For_each_site')?['url']",
               "table": "Site Pages",
-              "$filter": "@{concat('PromotedState eq 2 and Status eq ''Live'' and ExpiryDate lt ''', outputs('Today_UK'), '''')}"
+              "$filter": "@{concat('PromotedState eq 2 and ExpiryDate lt ''', outputs('Today_UK'), '''')}"
             }
           },
-          "runAfter": {}
+          "runAfter": {},
+          "runtimeConfiguration": {
+            "paginationPolicy": {
+              "minimumItemCount": 5000
+            }
+          }
+        },
+        "Filter_not_yet_expired": {
+          "type": "Query",
+          "inputs": {
+            "from": "@outputs('Get_expired_pages')?['body/value']",
+            "where": "@not(equals(item()?['Status']?['Value'], 'Expired'))"
+          },
+          "runAfter": {
+            "Get_expired_pages": [
+              "Succeeded"
+            ]
+          }
         },
         "For_each_expired_page": {
           "type": "Foreach",
-          "foreach": "@outputs('Get_expired_pages')?['body/value']",
+          "foreach": "@body('Filter_not_yet_expired')",
           "actions": {
             "Condition_writes_enabled": {
               "type": "If",
@@ -251,7 +268,7 @@
             }
           },
           "runAfter": {
-            "Get_expired_pages": [
+            "Filter_not_yet_expired": [
               "Succeeded"
             ]
           }
