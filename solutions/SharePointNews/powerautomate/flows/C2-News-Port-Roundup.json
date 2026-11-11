@@ -227,7 +227,7 @@
           "Title": "@item()?['Title']",
           "Link": "@item()?['{Link}']",
           "Summary": "@coalesce(item()?['Description'], '')",
-          "Category": "@coalesce(item()?['Category']?['Label'], '')",
+          "Category": "@coalesce(item()?['Category']?['Label'], item()?['Category']?['Value'], '')",
           "Port": "@item()?['Port']",
           "Audience": "@item()?['_ModernAudienceTargetUserField']",
           "Themes": "@string(coalesce(item()?['StrategyTheme'], json('[]')))"
@@ -248,7 +248,7 @@
           "Title": "@item()?['Title']",
           "Link": "@item()?['{Link}']",
           "Summary": "@coalesce(item()?['Description'], '')",
-          "Category": "@coalesce(item()?['Category']?['Label'], '')",
+          "Category": "@coalesce(item()?['Category']?['Label'], item()?['Category']?['Value'], '')",
           "Port": "@item()?['Port']",
           "Audience": "@item()?['_ModernAudienceTargetUserField']",
           "Themes": "@string(coalesce(item()?['StrategyTheme'], json('[]')))"
