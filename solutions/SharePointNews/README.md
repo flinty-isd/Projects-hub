@@ -128,7 +128,7 @@ flowchart LR
    python solutions/SharePointGovernance/tools/build_solution.py --root solutions/SharePointNews
    ```
    It needs three connections (SharePoint, Office 365 Outlook, Microsoft
-   Teams), signed in as the named news flow owner, and ten environment variables,
+   Teams), signed in as the named news flow owner, and eleven environment variables,
    including Nigel's address (`SupportOwnerEmail`) and the urgent publishers'
    addresses, separated by semicolons (`UrgentPublisherEmails`). None is
    mandatory at import: after importing, open the solution → **Environment
@@ -138,6 +138,8 @@ flowchart LR
    `.../hpuk-pof-OTHERNEWS`); only override them in a test environment. If a
    site URL has a **Current value**, it replaces the preset, so check its
    spelling or remove it.
+   To get a report after every expiry run, put your address in
+   `ExpiryReportEmail` (empty means no report).
    Leave `DispatchEnabled` and `ExpiryWritesEnabled` at No and
    `UrgentGoLiveDate` at its default for now.
    CI also builds it: download the artifact *SharePointNews-solution*.
