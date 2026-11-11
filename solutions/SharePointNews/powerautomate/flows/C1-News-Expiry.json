@@ -334,10 +334,11 @@
           "inputs": {
             "host": {
               "connectionName": "shared_office365",
-              "operationId": "SendEmailV2",
+              "operationId": "SharedMailboxSendEmailV2",
               "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
             },
             "parameters": {
+              "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
               "emailMessage/To": "@parameters('SupportOwnerEmail')",
               "emailMessage/Subject": "News expiry: some pages were not expired",
               "emailMessage/Body": "<p>These news posts passed their expiry date but could not be taken out of the news (Show in News set to No). They still show as current:</p><p>@{join(variables('Failures'), '<br>')}</p><p>Check the flow run history, then set Show in News to No by hand or re-run the flow.</p>",
@@ -368,10 +369,11 @@
           "inputs": {
             "host": {
               "connectionName": "shared_office365",
-              "operationId": "SendEmailV2",
+              "operationId": "SharedMailboxSendEmailV2",
               "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
             },
             "parameters": {
+              "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
               "emailMessage/To": "@parameters('SupportOwnerEmail')",
               "emailMessage/Subject": "News expiry (dry run): pages that would be expired",
               "emailMessage/Body": "<p>Expiry writes are switched off (ExpiryWritesEnabled = No), so nothing was changed. With writes on, these posts would have had Show in News set to No:</p><p>@{join(variables('WouldExpire'), '<br>')}</p><p>Once expiry has been proven on a test page (the reader view, page version and approval state stay as they are), set ExpiryWritesEnabled to Yes.</p>",
@@ -403,10 +405,11 @@
           "inputs": {
             "host": {
               "connectionName": "shared_office365",
-              "operationId": "SendEmailV2",
+              "operationId": "SharedMailboxSendEmailV2",
               "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
             },
             "parameters": {
+              "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
               "emailMessage/To": "@parameters('ExpiryReportEmail')",
               "emailMessage/Subject": "@{concat('News expiry report: ', string(length(variables('Expired'))), ' taken out, ', string(length(variables('Failures'))), ' failed, ', string(length(variables('WouldExpire'))), ' in dry run')}",
               "emailMessage/Body": "<p>News expiry run for @{outputs('Today_UK')} (UK date). Expiry writes are @{if(equals(parameters('ExpiryWritesEnabled'), true), 'on', 'off (dry run: nothing was changed)')}.</p><p><b>Taken out of the news (Show in News set to No):</b><br>@{if(empty(variables('Expired')), 'None', join(variables('Expired'), '<br>'))}</p><p><b>Could not be updated:</b><br>@{if(empty(variables('Failures')), 'None', join(variables('Failures'), '<br>'))}</p><p><b>Would be taken out if expiry writes were on:</b><br>@{if(empty(variables('WouldExpire')), 'None', join(variables('WouldExpire'), '<br>'))}</p><p>Only published posts with Show in News not No and an Expiry Date before today are picked up.</p>",

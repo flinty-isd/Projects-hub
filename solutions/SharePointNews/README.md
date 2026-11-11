@@ -139,7 +139,9 @@ flowchart LR
    site URL has a **Current value**, it replaces the preset, so check its
    spelling or remove it.
    To get a report after every expiry run, put your address in
-   `ExpiryReportEmail` (empty means no report).
+   `ExpiryReportEmail` (empty means no report). C1's emails, like the
+   roundup and urgent notices, are sent from `CommsSenderMailbox`, so the
+   named flow owner needs **Send As** on that shared mailbox.
    Leave `DispatchEnabled` and `ExpiryWritesEnabled` at No and
    `UrgentGoLiveDate` at its default for now.
    CI also builds it: download the artifact *SharePointNews-solution*.
