@@ -116,11 +116,13 @@
       "inputs": [
         {
           "key": "HPUK News",
-          "url": "@parameters('HPUKNewsSiteUrl')"
+          "url": "@parameters('HPUKNewsSiteUrl')",
+          "expiryColumn": "Expiry_x0020_Date"
         },
         {
           "key": "Other News",
-          "url": "@parameters('OtherNewsSiteUrl')"
+          "url": "@parameters('OtherNewsSiteUrl')",
+          "expiryColumn": "ExpiryDate"
         }
       ],
       "runAfter": {
@@ -144,7 +146,7 @@
             "parameters": {
               "dataset": "@items('For_each_site')?['url']",
               "table": "Site Pages",
-              "$filter": "@{concat('PromotedState eq 2 and Expiry_x0020_Date lt ''', outputs('Today_UK'), '''')}"
+              "$filter": "@{concat('PromotedState eq 2 and ', items('For_each_site')?['expiryColumn'], ' lt ''', outputs('Today_UK'), '''')}"
             }
           },
           "runAfter": {},
