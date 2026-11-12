@@ -12,7 +12,7 @@ with the list however the display names are set. Fill one row per item.
 
 ## Which to fill first
 
-1. **Site_Register.csv**: every existing site (migrated sites, the news sites, the governance site). Flows 01, 02 and 06 only see sites listed here. Two news site rows are started: add owners, groups, sensitivity and NextAccessReview. Their URLs use upper case and `/teams/`, which doesn't meet G-08: record an exception in the Decision Log or rename them before launch.
+1. **Site_Register.csv**: every existing site (migrated sites, the news sites, the governance site). Flows 01 and 02 only see sites listed here. Two news site rows are started: add owners, groups, sensitivity and NextAccessReview. Their URLs use upper case and `/teams/`, which doesn't meet G-08: record an exception in the Decision Log or rename them before launch.
 2. **Guest_Access_Register.csv**: any contractor guests who already have access, with an end date no more than 90 days ahead.
 3. **File_Share_Register.csv**: remaining file shares, if that work is still open.
 4. **Decision_Log.csv**: earlier governance decisions you want on record.
@@ -50,8 +50,8 @@ Delete any empty columns from a row before importing; check Yes/No and dates imp
 | SharingCapability | External sharing | Yes | one of: Disabled | ExistingExternalUserSharingOnly |
 | Sensitivity | Sensitivity | Yes | one of: General | Confidential | Highly Confidential |
 | Status | Status | Yes | one of: Active | Orphaned - owner inactive | Read-only | Archived |
-| LastAccessReview | Last access review |  | yyyy-mm-dd |
-| NextAccessReview | Next access review | Yes | yyyy-mm-dd |
+| LastAccessReview | Last access review |  | yyyy-mm-dd — optional: site reviews are SAM attestations from 1.2.0.0 |
+| NextAccessReview | Next access review |  | yyyy-mm-dd — optional: site reviews are SAM attestations from 1.2.0.0 |
 
 ## Site Requests (`Site_Requests.csv`)
 

@@ -3,7 +3,7 @@
   "lists": [
     {
       "listTitle": "Site Register",
-      "listDescription": "One row per SharePoint Online site. Source of truth for owners, security groups, sharing and the 90-day access review schedule. New sites are added by flow 03; sites that existed before these flows were introduced are bulk-loaded once.",
+      "listDescription": "One row per SharePoint Online site. Source of truth for owners, security groups, sharing and sensitivity. Site access reviews are SAM site attestations (D-GSA-08). New sites are added by flow 03; sites that existed before these flows were introduced are bulk-loaded once.",
       "fields": [
         {
           "internalName": "SiteTitle",
@@ -102,13 +102,15 @@
           "internalName": "LastAccessReview",
           "displayName": "Last access review",
           "type": "DateTime",
-          "required": false
+          "required": false,
+          "notes": "Not updated by a flow from 1.2.0.0: site reviews are SAM site attestations (D-GSA-08). Keep for reference or leave blank."
         },
         {
           "internalName": "NextAccessReview",
           "displayName": "Next access review",
           "type": "DateTime",
-          "required": true
+          "required": false,
+          "notes": "Not updated by a flow from 1.2.0.0: site reviews are SAM site attestations (D-GSA-08). Keep for reference or leave blank."
         }
       ]
     },
@@ -394,7 +396,7 @@
     },
     {
       "listTitle": "Access Review Log",
-      "listDescription": "Outcome of each site recertification and quarterly privileged-role review. Written by flow 06.",
+      "listDescription": "Outcome of each quarterly privileged-role review (flow 06). Site access reviews are SAM site attestations from solution 1.2.0.0.",
       "fields": [
         {
           "internalName": "SiteId",
