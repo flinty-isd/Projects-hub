@@ -23,9 +23,10 @@ description: Help set up, test and troubleshoot the HPUK SharePoint News flows (
 ## When to use
 
 Use this skill for the four flows in the **SharePoint News and Notices** solution
-(version 1.2.10.0 or later):
+(version 1.2.11.0 or later):
 
-- **C1 News Expiry**: sets **Show in News** to No on posts past their Expiry Date.
+- **C1 News Expiry**: sets **Status** to Expired and **Show in News** to No on posts
+  past their Expiry Date.
   Runs daily at 06:00 UK time, or on demand.
 - **C2 News Port Roundup**: emails and posts a weekly digest to each port.
   Mondays at 07:00 UK time.
@@ -48,6 +49,7 @@ The tenant is spelled **hphneu**. A site URL spelled `hpneu` is wrong.
 | Column | HPUK News | Other News | Type and setting |
 |---|---|---|---|
 | Show in News | `ShowinNews` | `ShowinNews` | Yes/No, default Yes |
+| Status | `Status` | `Status` | Choice: Live, Expired; default Live |
 | Expiry Date | `Expiry_x0020_Date` | `ExpiryDate` | Date only |
 | Include in Weekly Roundup | `Include_x0020_in_x0020_Weekly_x0020_Roundup` | `InRoundup` | Yes/No, default Yes |
 | Strategy Theme | `Strategy_x0020_Theme` | `StrategyTheme` | Choice: Our People, Our Business, Our Environment, One TEAM |
@@ -93,12 +95,26 @@ A **Current value** always overrides the default.
 C1 takes a post out of the news when all of these are true:
 
 - it is a **published** News post
-- **Show in News** is not already No (blank counts as Yes)
+- it isn't already expired (Status Expired **and** Show in News No); blanks count
+  as live
 - **Expiry Date** is **before today**. The Expiry Date is the last day a post is
   current, so a post dated today goes tomorrow.
 
-C1 only changes **Show in News**. The **News web parts** must filter on
-**Show in News = Yes** to hide the post.
+C1 only changes **Status** and **Show in News**. The **News web parts** must filter
+on **Status** to hide the post. They can't filter on Show in News: the News web part
+filter doesn't list Yes/No columns.
+
+- **News sites' own home pages:** set the web part's **Source** to **This site**, then
+  **Filter > Page properties > Status**, **Doesn't equal**, **Expired** (or
+  **Equals Live**).
+- **Intranet home** (news from other sites): only **Managed property** filters are
+  offered. A SharePoint admin must first map the crawled property `ows_Status` to a
+  spare `RefinableString` (SharePoint admin centre > More features > Search > Manage
+  search schema), then reindex **Site Pages** on both sites (Library settings >
+  Advanced settings > Reindex library). Then filter **Managed property** = that
+  RefinableString, **Doesn't equal**, **Expired**. Never filter on the built-in
+  **Status** managed property: it isn't this column. Until the mapping works, leave
+  the intranet home without a Status filter.
 
 ## Steps
 
@@ -127,11 +143,12 @@ Give these in order, and only the ones still to do:
    Microsoft 365 admin centre. It can take an hour to work.
 7. Turn the flows on: **Cloud flows > select the flow > Turn on**. Turn on C1 first;
    C2 and C3 only once the lists exist and destinations are tested.
-8. News web part filters: **Show in News = Yes** on every News web part.
+8. News web part filters on **Status** (see **The expiry rule** above).
 
 ### 3. Testing expiry
 
-1. Prepare a published post with **Expiry Date** = yesterday and **Show in News** = Yes.
+1. Prepare a published post with **Expiry Date** = yesterday, **Status** = Live and
+   **Show in News** = Yes.
 2. Check **Expiry writes enabled** = Yes.
 3. Run C1: open it, **Run**, **Run flow**.
 4. In the run, for each site (the arrows by **For each site**):
@@ -139,7 +156,7 @@ Give these in order, and only the ones still to do:
    - **Filter not yet expired**: **Outputs** show the post (`[]` = nothing matched).
    - **For each expired page**: **Condition writes enabled** went to **True**, and
      **Expire page** is green.
-5. The post's **Page details** now show **Show in News = No**.
+5. The post's **Page details** now show **Status = Expired** and **Show in News = No**.
 6. If **Expiry report email** is set, the report says how many were taken out.
 
 ### 4. Diagnosing
@@ -149,14 +166,16 @@ Match what the user sees:
 | What the user sees | Cause | Fix |
 |---|---|---|
 | Run succeeded, nothing changed, report or email says "dry run" | Expiry writes enabled is No | Set its Current value to Yes, turn C1 off and on |
-| Report says None everywhere, or Filter not yet expired shows `[]` | No post matched the expiry rule | Check published, Show in News not No, Expiry Date before today |
+| Report says None everywhere, or Filter not yet expired shows `[]` | No post matched the expiry rule | Check published (Promoted State 2), not already expired, Expiry Date before today |
 | Get expired pages red: "column does not exist" | An internal name doesn't match | Check the internal names on that site against the table |
 | Get expired pages can't reach the site | Site URL wrong (often `hpneu`) | Correct the site URL's Current value |
 | Expire page red, or "could not be updated" email | No edit rights, or the page is checked out | Check the flow owner can edit Site Pages; check the page in |
 | An email step red: "not allowed to send as" | No Send As, or granted under an hour ago | Grant Send As, wait an hour, check the mailbox address |
-| Show in News = No but the post still shows | Web part not filtered | Add the Show in News = Yes filter and republish |
+| Status = Expired but the post still shows | Web part not filtered on Status | Add the Status filter (see The expiry rule) and republish |
+| Status isn't offered in the web part's filter | Web part's source isn't this site, or it's the intranet home | Set Source to This site, or use the search mapping |
 | Still shows only on the intranet home | Search not caught up | Wait a few hours |
-| New posts have a blank Show in News | Column default not applied | Open the column, keep default Yes, select OK; set blanks to Yes in grid view |
+| New posts have a blank Show in News or Status | Column default not applied | Open the column, keep the default (Yes / Live), select OK; set blanks in grid view |
+| C1 report: "Could not be updated" for every post on one site | Status column missing on that site | Create Status (Choice, Live/Expired, default Live) on that site |
 | A flow won't turn on | Missing connection | Set the connection references |
 | Flows off after an import | Expected after an upgrade | Turn them on again |
 | "1 environment variable need to be updated" | TextAnywhere Username, another solution | Cancel and ignore |
@@ -182,10 +201,12 @@ Keep it short:
 - **What's happening:** either C1 didn't change the post, or the News web part
   doesn't hide posts that are out of the news.
 - **What to do:**
-  1. Open the post's **Page details**. If **Show in News** is still **Yes**, check
+  1. Open the post's **Page details**. If **Status** is still **Live**, check
      **Expiry writes enabled** is **Yes** and the Expiry Date is before today, then
      run C1 again.
-  2. If **Show in News** is **No**, edit the News page, open the News web part's
-     settings, set **Filter > Page properties > Show in News = Yes**, and republish.
+  2. If **Status** is **Expired**, edit the News page, open the News web part's
+     settings, set **Filter > Page properties > Status**, **Doesn't equal**,
+     **Expired**, and republish. On the intranet home, this needs the search
+     mapping first.
 - **How to check:** after refreshing the page, the post is gone. On the intranet
   home it can take a few hours.

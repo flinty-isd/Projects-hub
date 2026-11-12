@@ -189,7 +189,7 @@
         "parameters": {
           "dataset": "@parameters('HPUKNewsSiteUrl')",
           "table": "Site Pages",
-          "$filter": "@{concat('PromotedState eq 2 and ShowinNews eq 1 and Include_x0020_in_x0020_Weekly_x0020_Roundup eq 1 and FirstPublishedDate ge ''', outputs('Window_start'), ''' and FirstPublishedDate lt ''', outputs('Window_end'), '''')}"
+          "$filter": "@{concat('PromotedState eq 2 and Include_x0020_in_x0020_Weekly_x0020_Roundup eq 1 and FirstPublishedDate ge ''', outputs('Window_start'), ''' and FirstPublishedDate lt ''', outputs('Window_end'), '''')}"
         }
       },
       "runAfter": {
@@ -209,7 +209,7 @@
         "parameters": {
           "dataset": "@parameters('OtherNewsSiteUrl')",
           "table": "Site Pages",
-          "$filter": "@{concat('PromotedState eq 2 and ShowinNews eq 1 and InRoundup eq 1 and FirstPublishedDate ge ''', outputs('Window_start'), ''' and FirstPublishedDate lt ''', outputs('Window_end'), '''')}"
+          "$filter": "@{concat('PromotedState eq 2 and InRoundup eq 1 and FirstPublishedDate ge ''', outputs('Window_start'), ''' and FirstPublishedDate lt ''', outputs('Window_end'), '''')}"
         }
       },
       "runAfter": {
@@ -230,7 +230,8 @@
           "Category": "@coalesce(item()?['Category']?['Label'], item()?['Category']?['Value'], '')",
           "Port": "@item()?['Port']",
           "Audience": "@item()?['_ModernAudienceTargetUserField']",
-          "Themes": "@string(coalesce(item()?['Strategy_x0020_Theme'], json('[]')))"
+          "Themes": "@string(coalesce(item()?['Strategy_x0020_Theme'], json('[]')))",
+          "Live": "@and(not(equals(item()?['ShowinNews'], false)), not(equals(item()?['Status']?['Value'], 'Expired')))"
         }
       },
       "runAfter": {
@@ -251,7 +252,8 @@
           "Category": "@coalesce(item()?['Category']?['Label'], item()?['Category']?['Value'], '')",
           "Port": "@item()?['Port']",
           "Audience": "@item()?['_ModernAudienceTargetUserField']",
-          "Themes": "@string(coalesce(item()?['StrategyTheme'], json('[]')))"
+          "Themes": "@string(coalesce(item()?['StrategyTheme'], json('[]')))",
+          "Live": "@and(not(equals(item()?['ShowinNews'], false)), not(equals(item()?['Status']?['Value'], 'Expired')))"
         }
       },
       "runAfter": {
@@ -264,7 +266,7 @@
       "type": "Query",
       "inputs": {
         "from": "@union(body('Select_HPUK_posts'), body('Select_Other_posts'))",
-        "where": "@equals(length(coalesce(item()?['Audience'], json('[]'))), 0)"
+        "where": "@and(equals(item()?['Live'], true), equals(length(coalesce(item()?['Audience'], json('[]'))), 0))"
       },
       "runAfter": {
         "Select_Other_posts": [

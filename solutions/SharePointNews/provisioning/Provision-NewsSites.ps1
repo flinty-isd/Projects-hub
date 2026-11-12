@@ -239,7 +239,7 @@ Write-Output ''
 Write-Output 'Manual steps left (see README):'
 Write-Output '  1. Site Pages > Settings > Audience targeting: turn on, on both sites.'
 Write-Output '  2. IT: associate both sites with the intranet hub; designate HPUK News as an organisation news site.'
-Write-Output '  3. Home pages: configure the News web parts (Show in News = Yes filter; Safety section = Category Health and Safety).'
+Write-Output '  3. Home pages: configure the News web parts (Status = Live filter; Safety section = Category Health and Safety).'
 Write-Output '  4. Fill Comms Distribution with one row per port (Enabled = No until destinations are verified).'
 Write-Output '  5. Run Set-NewsRetention.ps1 (7-year retention) as a Purview compliance admin.'
 if (-not ($CreateTemplates -or $RefreshTemplates)) {
