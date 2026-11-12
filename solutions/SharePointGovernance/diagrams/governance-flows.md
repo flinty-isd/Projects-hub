@@ -13,7 +13,7 @@ approvals, red ends are blocks or rejections. Role names map to people in
 flowchart LR
   subgraph Access["Access & identity"]
     F1["01 Access request"] --> F2["02 Guest expiry"]
-    F3["03 Site provisioning"] --> F6["06 Access recertification"]
+    F3["03 Site provisioning"] --> F6["SAM attestation + ownership policies"]
     F1 -. grants via .-> SR[("Site Register")]
     F3 --> SR
     F6 --> SR
@@ -117,22 +117,17 @@ flowchart TD
   classDef info fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
 ```
 
-## 06 — Access recertification (monthly; 90-day cycle per site)
+## 06 — Quarterly privileged role review
+
+Site access reviews and ownerless-site detection moved to SharePoint Advanced
+Management (see [`../SAM-POLICIES.md`](../SAM-POLICIES.md)).
 
 ```mermaid
 flowchart TD
-  A([1st of month 07:00]) --> D["Active sites with<br/>review due"]
-  D --> O{"Primary owner<br/>account enabled?"}
-  O -->|No| OR[/"Orphaned -> service owner + IT Ops<br/>promote secondary owner"/]:::bad
-  O -->|Yes| L["List Owners + Members groups,<br/>email owner"]
-  L --> RC{"Owner recertifies?"}
-  RC -->|Yes| OK[/"Logged; next review +90 days"/]:::good
-  RC -->|No| RM[/"Logged; removals -> Service Desk"/]:::info
-  A --> Q{"Jan / Apr / Jul / Oct?"}
-  Q -->|Yes| P{"InfoSec confirms SharePoint Admin<br/>role is PIM-eligible only?"}
+  A([1st of month 07:00]) --> Q{"Jan / Apr / Jul / Oct?"}
+  Q -->|No| X([Nothing to do])
+  Q -->|Yes| G["Get SharePoint Administrator<br/>active + eligible assignments"]
+  G --> P{"InfoSec confirms the role is<br/>PIM-eligible only?"}
   P --> PL[("Access Review Log")]
-  classDef good fill:#dcfce7,stroke:#15803d,color:#14532d
-  classDef bad fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
-  classDef info fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
 ```
 

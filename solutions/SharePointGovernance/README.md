@@ -13,7 +13,7 @@ ended with the migration and are not included.
 | 02 | [Guest access expiry](powerautomate/flows/02-Guest-Access-Expiry.json) | Daily 06:00 | Contractor guest access is time-bound and reviewed; removal decided by the site owner unless the Board makes it automatic (G-11) | PID v4.2 8.4, G-11 |
 | 03 | [Site provisioning](powerautomate/flows/03-Site-Provisioning.json) | New *Site Requests* item | Naming standard (G-08), two named owners, permission groups, external sharing off by default; per-site Sites.Selected grant (G-04) before the baseline runbook | PID v4.2 5.3, 6.4, 8.4 |
 | 05 | [File share disposition](powerautomate/flows/05-FileShare-Disposition.json) | New *File Share Register* item | Remaining file shares move to SharePoint case by case only; integration/system-dependent shares excluded | PID v4.2 2.3.1 |
-| 06 | [Access recertification](powerautomate/flows/06-Access-Recertification.json) | Monthly, 1st, 07:00 | 90-day review of site access, orphaned-site detection, quarterly review of privileged admin roles | PID v4.2 8.4 |
+| 06 | [Quarterly privileged role review](powerautomate/flows/06-Access-Recertification.json) | Monthly, 1st, 07:00 (acts Jan/Apr/Jul/Oct) | Quarterly InfoSec review of SharePoint Administrator assignments: PIM-eligible only. Site access reviews and ownerless sites moved to SAM (below) | PID v4.2 8.4, D-GSA-08 |
 
 **Flow 04 (InfoPath triage) was retired on 25 October 2026.** Microsoft
 removed InfoPath Forms Services on 14/07/2026, and PID v4.2 triages forms
@@ -21,10 +21,20 @@ with the Criticality Decision Tree (Category A/B) through the programme's
 Flow 8. If flow 04 was imported earlier, delete it from the environment by
 hand: an unmanaged upgrade doesn't remove it.
 
+**SharePoint Advanced Management (SAM) does the site reviews (D-GSA-08).**
+From solution 1.2.0.0 the 90-day site access review and ownerless-site
+detection are SAM policies, not flow 06: site attestation every 3 months,
+site ownership (two owners), inactive sites, and data access governance
+reports with site access reviews for oversharing. The policies, their
+settings and the Decision Log entry are in [`SAM-POLICIES.md`](SAM-POLICIES.md).
+The Site Register's `LastAccessReview` and `NextAccessReview` columns are
+no longer updated by a flow; SAM holds the attestation history.
+
 **Overlap with the programme's automation.** PID v4.2 §7 also has Flow 7 +
 RB-3 (site provisioning) and Flows 27–33 (attestation, privileged access,
-guest checks). Flows 03 and 06 overlap them; the Control Board decides which
-owns each control (D-GSA-02, D-GSA-05, D-GSA-08).
+guest checks). With SAM adopted, attestation sits in SAM; flow 03 and the
+privileged-role review in flow 06 still overlap Flow 7 and Flows 27–33, and
+the Control Board decides which owns each (D-GSA-02, D-GSA-05).
 
 Process diagrams for every flow are in
 [`diagrams/governance-flows.md`](diagrams/governance-flows.md) (rendered by
@@ -37,6 +47,8 @@ SharePointGovernance/
 ├── powerautomate/flows/   flow definitions (Workflow Definition Language JSON)
 ├── sharepoint/            list-schema.json: the 7 governance lists; csv/ holds import templates
 ├── runbooks/              Set-SiteGovernanceBaseline.ps1 (Azure Automation, called by flow 03)
+├── skills/                sharepoint-governance: Claude skill that applies these rules and the SAM policies
+├── SAM-POLICIES.md        SharePoint Advanced Management policies, settings and the D-GSA-08 decision
 ├── diagrams/              Mermaid process diagrams
 ├── solution-config.json   solution name, version, publisher, environment variables
 └── tools/                 validate_flows.py (static checks) and build_solution.py (packager)
@@ -65,7 +77,7 @@ one person's address: approvals still reach someone during absences.
    security lists (D-GSA-07, Option A). Use PnP.PowerShell.
    Bulk-load *Site Register* (templates and column guide in
    [`sharepoint/csv/`](sharepoint/csv/README.md)) with every existing site (owners, security
-   groups, and a `NextAccessReview` date spread over the next 90 days so
+   groups, and, optionally, a `NextAccessReview` date spread over the next 90 days so
    reviews don't all land in one month). Load only the file shares still
    outstanding after migration into *File Share Register*. Each loaded item
    triggers flow 05, so load in batches the owners can handle.
