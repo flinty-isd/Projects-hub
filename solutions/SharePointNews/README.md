@@ -31,7 +31,7 @@ if Communications or IT decide otherwise.
 | 4 | Don't assume a metadata update leaves the published page unchanged | C1 and C3 update Show in News and UrgentSent with **ValidateUpdateListItem** (`bNewDocumentUpdate`): no new version, no draft | A normal update leaves a published news page with a pending draft |
 | 5 | UrgentSent is not the sole duplicate control | The trigger runs only for **major versions** (`x.0`) with UrgentSent = No, one at a time. Each port and channel is **reserved** in the Delivery Log before sending (see the safeguards below) | Retries send only definite failures; an unknown outcome waits for a person. Setting UrgentSent cannot re-trigger the flow |
 | 6 | Expiry boundary to confirm | **Expiry Date is the last current day.** C1 runs 06:00 UK time and expires dates before today (UK date, so BST is handled) | Matches the design's proposed rule |
-| 6a | (found in testing) The Site Pages columns were made by hand, not by the provisioning script | The flows use the sites' own columns: **Show in News** (Yes/No, internal `ShowinNews`) instead of Status Live/Expired, **Expiry Date** (internal `Expiry_x0020_Date`), **Include in Weekly Roundup** (`Include_x0020_in_x0020_Weekly_x0020_Roundup`) and **Strategy Theme** (`Strategy_x0020_Theme`, a Choice column; theme grouping matches Choice values as well as managed metadata labels). Other News has different internal names for three of these: `ExpiryDate`, `StrategyTheme` and `InRoundup` (added by hand there), and the flows use each site's own names. **Urgent** and **Port** keep their names; **UrgentSent** and **NotificationRound** are added by hand. C1 sets Show in News to No on any published post past its Expiry Date unless it is already No, **blank included**. Set both columns as described under Testing | PowerShell can't be run, so the flows follow the sites. C2 and C3 also need the Comms Distribution and Delivery Log lists on HPUK News, created by hand with the internal names in `sharepoint/list-schema.json` |
+| 6a | (found in testing) The Site Pages columns were made by hand, not by the provisioning script | The flows use the sites' own columns: **Show in News** (Yes/No, internal `ShowinNews`) instead of Status Live/Expired, **Expiry Date** (internal `Expiry_x0020_Date`), **Include in Weekly Roundup** (`Include_x0020_in_x0020_Weekly_x0020_Roundup`) and **Strategy Theme** (`Strategy_x0020_Theme`, a Choice column; theme grouping matches Choice values as well as managed metadata labels). Other News has different internal names for three of these: `ExpiryDate`, `StrategyTheme` and `InRoundup` (added by hand there), and the flows use each site's own names. **Urgent** and **Port** keep their names; **UrgentSent** and **NotificationRound** are added by hand. C1 sets Show in News to No on any published post past its Expiry Date unless it is already No, **blank included**. Set both columns as described under Testing. The News web part filter can't use Yes/No columns, so a **Status** Choice column (Live, Expired; default Live) is added by hand on both sites for the web parts to filter on; C1 sets it to Expired together with Show in News | PowerShell can't be run, so the flows follow the sites. C2 and C3 also need the Comms Distribution and Delivery Log lists on HPUK News, created by hand with the internal names in `sharepoint/list-schema.json` |
 | 7 | Frontline route for generic accounts | **Out of this build.** PID v3.1 prohibits shared and generic accounts in SharePoint. Its approved routes are the Employee App (view-only staff) and display-mode pages (screens) | Avoids a design that breaks the access model |
 | 8 | Everyone except external users as Visitors, to confirm | **A scoped reader group** is required by the script, and EEEU is never used | The tenant is shared with a peer company |
 | 9 | Compare the built-in news digest with C2 | C2 is built, with **Include in Weekly Roundup** and per-port routing that the built-in digest can't do | Pilot both. If the built-in digest is good enough, turn C2 off |
@@ -160,12 +160,12 @@ flowchart LR
 
 | Page | Web part | Source | Filter | Layout |
 |------|----------|--------|--------|--------|
-| HPUK News home | News | This site | Page properties: Show in News = Yes | Top story |
-| HPUK News home | News (Safety) | This site | Show in News = Yes **and** Category = Health and Safety | List |
-| Other News home | News | This site | Show in News = Yes | Side-by-side |
-| Intranet home | News (main) | HPUK News | Show in News = Yes; audience targeting on | Top story |
-| Intranet home | News (secondary) | Other News | Show in News = Yes; audience targeting on | List, lower on the page |
-| Intranet home (optional) | News, one per theme: Our People, Our Business, Our Environment, One TEAM | HPUK News and Other News | Show in News = Yes **and** Strategy theme = that theme | Side-by-side or carousel |
+| HPUK News home | News | This site | Page properties: Status = Live | Top story |
+| HPUK News home | News (Safety) | This site | Status = Live **and** Category = Health and Safety | List |
+| Other News home | News | This site | Status = Live | Side-by-side |
+| Intranet home | News (main) | HPUK News | Status = Live; audience targeting on | Top story |
+| Intranet home | News (secondary) | Other News | Status = Live; audience targeting on | List, lower on the page |
+| Intranet home (optional) | News, one per theme: Our People, Our Business, Our Environment, One TEAM | HPUK News and Other News | Status = Live **and** Strategy theme = that theme | Side-by-side or carousel |
 
 If the News web part can't filter on the managed metadata Category in your
 tenant, use a Category view of Site Pages in a Highlighted content web part
@@ -179,7 +179,7 @@ is not the production permission model.
 | Test | Pass condition |
 |------|----------------|
 | Expiry | A post with yesterday's Expiry Date shows Show in News = No after the 06:00 run. A blank date stays Yes. The page version doesn't change and no draft appears |
-| Site Pages columns | On each site: Library settings → **Show in News**: default **Yes**, then **OK** (re-save even if it already says Yes). **Expiry Date**: Date and Time Format **Date Only**. A new News post must show Show in News = Yes in Page details before you publish it. In grid view, set any blank Show in News to Yes |
+| Site Pages columns | On each site: Library settings → **Show in News**: default **Yes**, then **OK** (re-save even if it already says Yes). **Expiry Date**: Date and Time Format **Date Only**. A new News post must show Show in News = Yes in Page details before you publish it. In grid view, set any blank Show in News to Yes. Create **Status** (type the name exactly): Choice, Live and Expired, default **Live**, **OK**, then open it again and **OK**; set any blank Status to Live |
 | Urgent, happy path | One email and one Teams post per matching port. Delivery Log has one *Sent* row per port and channel. UrgentSent = Yes |
 | Urgent, edit | Editing and republishing a sent urgent post sends nothing |
 | Urgent, correction | Round + 1 and UrgentSent = No, then republish. Exactly one new alert per destination |
