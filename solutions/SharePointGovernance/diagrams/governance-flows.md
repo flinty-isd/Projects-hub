@@ -131,3 +131,19 @@ flowchart TD
   P --> PL[("Access Review Log")]
 ```
 
+## 07 — Monthly site owner digest
+
+```mermaid
+flowchart TD
+  A([1st of month 08:00]) --> E{"OwnerDigestEnabled?"}
+  E -->|No| X([Nothing sent])
+  E -->|Yes| G[("Site Register, Guest Access Register,<br/>Access Requests")]
+  G --> O["For each primary or secondary owner:<br/>their active sites"]
+  O --> C{"Anything to report?<br/>one owner, sharing on, no label,<br/>guests ending, open requests"}
+  C -->|Yes| D[/"Digest email: each item with what to do"/]:::info
+  C -->|No| AC{"OwnerDigestAllClear?"}
+  AC -->|Yes| OK[/"All-clear email"/]:::good
+  AC -->|No| N([Nothing sent])
+  classDef good fill:#dcfce7,stroke:#15803d,color:#14532d
+  classDef info fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+```
