@@ -47,6 +47,7 @@ Flow 02 keeps the owner-decides step until the Board decides D-GSA-03.
 | Oversharing review request | SAM (S4, sent by IT) | When IT sends it |
 | Monthly digest of everything outstanding, or all clear | Flow 07 | 1st of each month |
 | Guest ending in 14 days; removal decision | Flow 02 | Per guest |
+| Site orphaned, or Highly Confidential with external sharing on | Flow 08 | At once, once per issue |
 
 Flow 07 doesn't repeat SAM's attestation reminders.
 

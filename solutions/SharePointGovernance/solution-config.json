@@ -3,7 +3,7 @@
   "uniqueName": "SharePointGovernance",
   "displayName": "SharePoint Governance (BAU)",
   "description": "Power Automate flows that enforce SharePoint Online governance controls (PID v4.2) in BAU.",
-  "version": "1.3.0.0",
+  "version": "1.4.0.0",
   "publisher": {
     "uniqueName": "HPUKIT",
     "displayName": "HPUK IT",
@@ -71,6 +71,11 @@
       "displayName": "Send all-clear digests",
       "description": "Yes (default): owners with nothing outstanding get a short all-clear email each month. No: they get nothing.",
       "default": true
+    },
+    "UrgentAlertsEnabled": {
+      "displayName": "Send urgent site alerts",
+      "description": "No (default): flow 08 does nothing. Set Yes once the Site Register is loaded, so owners get an immediate email when a site becomes orphaned or a Highly Confidential site has external sharing on.",
+      "default": false
     }
   },
   "connectionReferences": {

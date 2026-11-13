@@ -147,3 +147,18 @@ flowchart TD
   classDef good fill:#dcfce7,stroke:#15803d,color:#14532d
   classDef info fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
 ```
+
+## 08 — Urgent site alerts
+
+```mermaid
+flowchart TD
+  A([Site Register item created or changed]) --> E{"UrgentAlertsEnabled?"}
+  E -->|No| X([Nothing sent])
+  E -->|Yes| K["Work out the alert:<br/>orphaned, or Highly Confidential<br/>with sharing not Disabled"]
+  K --> N{"New alert, not already<br/>in UrgentAlertKey?"}
+  N -->|Yes| M[/"High-importance email to owners + service owner<br/>(InfoSec for sharing)"/]:::bad
+  M --> R[("Record UrgentAlertKey")]
+  N -->|No, issue fixed| C[("Clear UrgentAlertKey")]
+  classDef bad fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+```
+
