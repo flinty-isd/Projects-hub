@@ -14,6 +14,7 @@ ended with the migration and are not included.
 | 03 | [Site provisioning](powerautomate/flows/03-Site-Provisioning.json) | New *Site Requests* item | Naming standard (G-08), two named owners, permission groups, external sharing off by default; per-site Sites.Selected grant (G-04) before the baseline runbook | PID v4.2 5.3, 6.4, 8.4 |
 | 05 | [File share disposition](powerautomate/flows/05-FileShare-Disposition.json) | New *File Share Register* item | Remaining file shares move to SharePoint case by case only; integration/system-dependent shares excluded | PID v4.2 2.3.1 |
 | 06 | [Quarterly privileged role review](powerautomate/flows/06-Access-Recertification.json) | Monthly, 1st, 07:00 (acts Jan/Apr/Jul/Oct) | Quarterly InfoSec review of SharePoint Administrator assignments: PIM-eligible only. Site access reviews and ownerless sites moved to SAM (below) | PID v4.2 8.4, D-GSA-08 |
+| 07 | [Monthly site owner digest](powerautomate/flows/07-Owner-Digest.json) | Monthly, 1st, 08:00 | One email per site owner: sites with one owner, sharing on or unconfirmed, no sensitivity label, guests ending in 30 days or awaiting their decision, open access requests; all clear when nothing is outstanding. Notify only. Off until `OwnerDigestEnabled` = Yes | PID v4.2 8.4, G-11 |
 
 **Flow 04 (InfoPath triage) was retired on 25 October 2026.** Microsoft
 removed InfoPath Forms Services on 14/07/2026, and PID v4.2 triages forms

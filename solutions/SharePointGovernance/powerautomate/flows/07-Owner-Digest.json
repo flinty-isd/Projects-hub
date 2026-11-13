@@ -1,0 +1,470 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Monthly site owner digest",
+  "description": "Runs on the 1st of each month at 08:00. For every owner (primary or secondary) of an active site in the Site Register, sends one email listing what needs their attention: sites with only one owner, external sharing on or not confirmed, no sensitivity label, guests ending in the next 30 days or waiting on their decision, and open access requests for their sites, each with what to do. Owners with nothing outstanding get an all-clear email (OwnerDigestAllClear). Notify only: it changes nothing (G-11). Does nothing while OwnerDigestEnabled is No. Attestation, ownership and inactive-site emails come from SharePoint Advanced Management, not this flow.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "GovernanceSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{governance-site}"
+    },
+    "SharePointServiceOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{sharepoint-service-owner}@{domain}"
+    },
+    "OwnerDigestEnabled": {
+      "type": "Bool",
+      "defaultValue": false
+    },
+    "OwnerDigestAllClear": {
+      "type": "Bool",
+      "defaultValue": true
+    }
+  },
+  "triggers": {
+    "Monthly_on_the_1st": {
+      "type": "Recurrence",
+      "recurrence": {
+        "frequency": "Month",
+        "interval": 1,
+        "timeZone": "GMT Standard Time",
+        "startTime": "2027-01-01T08:00:00Z",
+        "schedule": {
+          "hours": [
+            8
+          ],
+          "minutes": [
+            0
+          ]
+        }
+      }
+    }
+  },
+  "actions": {
+    "Condition_Digest_enabled": {
+      "type": "If",
+      "expression": {
+        "equals": [
+          "@parameters('OwnerDigestEnabled')",
+          true
+        ]
+      },
+      "runAfter": {},
+      "actions": {
+        "Get_sites": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('GovernanceSiteUrl')",
+              "table": "Site Register",
+              "$filter": "Status eq 'Active'",
+              "$top": 5000
+            }
+          },
+          "runAfter": {}
+        },
+        "Get_guests": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('GovernanceSiteUrl')",
+              "table": "Guest Access Register",
+              "$filter": "@{concat('(Status eq ''Active'' and AccessEndDate le ''', addDays(utcNow(), 30, 'yyyy-MM-dd'), ''') or Status eq ''Removal pending owner decision''')}",
+              "$top": 5000
+            }
+          },
+          "runAfter": {
+            "Get_sites": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Get_access_requests": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('GovernanceSiteUrl')",
+              "table": "Access Requests",
+              "$filter": "Status eq 'Submitted' or Status eq 'Approved - awaiting AD group change' or Status eq 'Approved - PIM eligible assignment pending'",
+              "$top": 5000
+            }
+          },
+          "runAfter": {
+            "Get_guests": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Select_primary_owners": {
+          "type": "Select",
+          "inputs": {
+            "from": "@body('Get_sites')?['value']",
+            "select": "@toLower(coalesce(item()?['PrimaryOwner']?['Email'], ''))"
+          },
+          "runAfter": {
+            "Get_access_requests": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Select_secondary_owners": {
+          "type": "Select",
+          "inputs": {
+            "from": "@body('Get_sites')?['value']",
+            "select": "@toLower(coalesce(item()?['SecondaryOwner']?['Email'], ''))"
+          },
+          "runAfter": {
+            "Select_primary_owners": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Filter_owners": {
+          "type": "Query",
+          "inputs": {
+            "from": "@union(body('Select_primary_owners'), body('Select_secondary_owners'))",
+            "where": "@not(empty(item()))"
+          },
+          "runAfter": {
+            "Select_secondary_owners": [
+              "Succeeded"
+            ]
+          }
+        },
+        "For_each_owner": {
+          "type": "Foreach",
+          "foreach": "@body('Filter_owners')",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 5
+            }
+          },
+          "actions": {
+            "Filter_my_sites": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Get_sites')?['value']",
+                "where": "@or(equals(toLower(coalesce(item()?['PrimaryOwner']?['Email'], '')), items('For_each_owner')), equals(toLower(coalesce(item()?['SecondaryOwner']?['Email'], '')), items('For_each_owner')))"
+              },
+              "runAfter": {}
+            },
+            "Select_my_site_ids": {
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Filter_my_sites')",
+                "select": "@item()?['ID']"
+              },
+              "runAfter": {
+                "Filter_my_sites": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_No_second_owner": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Filter_my_sites')",
+                "where": "@empty(item()?['SecondaryOwner'])"
+              },
+              "runAfter": {
+                "Select_my_site_ids": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Table_No_second_owner": {
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_No_second_owner')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Site",
+                    "value": "@item()?['Title']"
+                  },
+                  {
+                    "header": "URL",
+                    "value": "@item()?['SiteUrl']"
+                  }
+                ]
+              },
+              "runAfter": {
+                "Filter_No_second_owner": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_Sharing_on": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Filter_my_sites')",
+                "where": "@not(equals(item()?['SharingCapability']?['Value'], 'Disabled'))"
+              },
+              "runAfter": {
+                "Table_No_second_owner": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Table_Sharing_on": {
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_Sharing_on')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Site",
+                    "value": "@item()?['Title']"
+                  },
+                  {
+                    "header": "URL",
+                    "value": "@item()?['SiteUrl']"
+                  },
+                  {
+                    "header": "External sharing",
+                    "value": "@coalesce(item()?['SharingCapability']?['Value'], 'Not confirmed')"
+                  }
+                ]
+              },
+              "runAfter": {
+                "Filter_Sharing_on": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_No_label": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Filter_my_sites')",
+                "where": "@empty(item()?['Sensitivity']?['Value'])"
+              },
+              "runAfter": {
+                "Table_Sharing_on": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Table_No_label": {
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_No_label')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Site",
+                    "value": "@item()?['Title']"
+                  },
+                  {
+                    "header": "URL",
+                    "value": "@item()?['SiteUrl']"
+                  }
+                ]
+              },
+              "runAfter": {
+                "Filter_No_label": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_Guests": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Get_guests')?['value']",
+                "where": "@contains(body('Select_my_site_ids'), item()?['SiteId'])"
+              },
+              "runAfter": {
+                "Table_No_label": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Table_Guests": {
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_Guests')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Guest",
+                    "value": "@item()?['Title']"
+                  },
+                  {
+                    "header": "Access ends",
+                    "value": "@formatDateTime(item()?['AccessEndDate'], 'dd MMM yyyy')"
+                  },
+                  {
+                    "header": "Status",
+                    "value": "@item()?['Status']?['Value']"
+                  }
+                ]
+              },
+              "runAfter": {
+                "Filter_Guests": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_Requests": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Get_access_requests')?['value']",
+                "where": "@contains(body('Select_my_site_ids'), item()?['TargetSite']?['Id'])"
+              },
+              "runAfter": {
+                "Table_Guests": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Table_Requests": {
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_Requests')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Requester",
+                    "value": "@item()?['Requester']?['DisplayName']"
+                  },
+                  {
+                    "header": "Site",
+                    "value": "@item()?['TargetSite']?['Value']"
+                  },
+                  {
+                    "header": "Status",
+                    "value": "@item()?['Status']?['Value']"
+                  }
+                ]
+              },
+              "runAfter": {
+                "Filter_Requests": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Count_items": {
+              "type": "Compose",
+              "inputs": "@add(add(add(add(length(body('Filter_No_second_owner')), length(body('Filter_Sharing_on'))), length(body('Filter_No_label'))), length(body('Filter_Guests'))), length(body('Filter_Requests')))",
+              "runAfter": {
+                "Table_Requests": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Compose_sections": {
+              "type": "Compose",
+              "inputs": "@concat(if(empty(body('Filter_No_second_owner')), '', concat('<h3>Sites with only one owner</h3><p>Every site needs two named owners. Raise a site change request on the IT Enterprise Governance site naming a second owner (not a shared mailbox).</p>', body('Table_No_second_owner'))), if(empty(body('Filter_Sharing_on')), '', concat('<h3>Sites open to guests, or sharing not confirmed</h3><p>External sharing is off unless InfoSec approved it. If guests don't need this site, ask IT to switch sharing off; if they do, confirm it with InfoSec.</p>', body('Table_Sharing_on'))), if(empty(body('Filter_No_label')), '', concat('<h3>Sites without a sensitivity label</h3><p>Choose General, Confidential or Highly Confidential and tell the SharePoint service owner.</p>', body('Table_No_label'))), if(empty(body('Filter_Guests')), '', concat('<h3>Guests ending in the next 30 days, or waiting for your decision</h3><p>To keep a guest, their sponsor raises a new access request (90 days or less). If a removal is waiting on you, answer the approval in Teams or Outlook.</p>', body('Table_Guests'))), if(empty(body('Filter_Requests')), '', concat('<h3>Access requests for your sites still open</h3><p>Nothing to do unless an approval is waiting for you in Teams or Outlook.</p>', body('Table_Requests'))))",
+              "runAfter": {
+                "Count_items": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Condition_Anything_to_report": {
+              "type": "If",
+              "expression": {
+                "greater": [
+                  "@outputs('Count_items')",
+                  0
+                ]
+              },
+              "actions": {
+                "Send_digest": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@{items('For_each_owner')}",
+                      "emailMessage/Subject": "@{concat('Your SharePoint sites: ', string(outputs('Count_items')), ' item(s) need attention (', formatDateTime(utcNow(), 'MMMM yyyy'), ')')}",
+                      "emailMessage/Body": "<p>This is your monthly summary of the SharePoint sites you own. Each section says what to do. Nothing has been changed on your sites: access decisions stay with you (G-11).</p>@{outputs('Compose_sections')}<p>Questions: reply to this email or contact the SharePoint service owner (@{parameters('SharePointServiceOwnerEmail')}). Site attestation reminders come separately from SharePoint every 3 months.</p>",
+                      "emailMessage/Importance": "Normal"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "else": {
+                "actions": {
+                  "Condition_All_clear_enabled": {
+                    "type": "If",
+                    "expression": {
+                      "equals": [
+                        "@parameters('OwnerDigestAllClear')",
+                        true
+                      ]
+                    },
+                    "actions": {
+                      "Send_all_clear": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_office365",
+                            "operationId": "SendEmailV2",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                          },
+                          "parameters": {
+                            "emailMessage/To": "@{items('For_each_owner')}",
+                            "emailMessage/Subject": "@{concat('Your SharePoint sites: all clear (', formatDateTime(utcNow(), 'MMMM yyyy'), ')')}",
+                            "emailMessage/Body": "<p>Nothing needs your attention on the SharePoint sites you own this month: each has two owners, a sensitivity label, external sharing off or confirmed, and no guests ending or requests waiting.</p><p>Thank you. Site attestation reminders come separately from SharePoint every 3 months.</p>",
+                            "emailMessage/Importance": "Normal"
+                          }
+                        },
+                        "runAfter": {}
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                }
+              },
+              "runAfter": {
+                "Compose_sections": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "Filter_owners": [
+              "Succeeded"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

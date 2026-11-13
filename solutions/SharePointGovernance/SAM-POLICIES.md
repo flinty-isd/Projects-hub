@@ -37,6 +37,19 @@ now only runs the quarterly privileged-role review.
 Turning it on removes guest access automatically, which conflicts with G-11.
 Flow 02 keeps the owner-decides step until the Board decides D-GSA-03.
 
+## What site owners hear, and from where
+
+| Message | From | When |
+|---|---|---|
+| Attestation request and reminders | SAM (S1) | Every 3 months |
+| Fewer than two owners | SAM (S2) | When it happens |
+| Site inactive | SAM (S3) | After 6 months without activity |
+| Oversharing review request | SAM (S4, sent by IT) | When IT sends it |
+| Monthly digest of everything outstanding, or all clear | Flow 07 | 1st of each month |
+| Guest ending in 14 days; removal decision | Flow 02 | Per guest |
+
+Flow 07 doesn't repeat SAM's attestation reminders.
+
 ## Order
 
 1. S4 reports first: they show where the 161 sites with external sharing
