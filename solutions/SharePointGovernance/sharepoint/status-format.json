@@ -1,0 +1,15 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
+  "$comment": "Status badge in the governance outcome colours: good (green), bad (red), info (blue). The words always show; colour never carries the meaning alone.",
+  "elmType": "div",
+  "txtContent": "@currentField",
+  "style": {
+    "display": "=if(@currentField == '', 'none', 'inline-block')",
+    "padding": "2px 10px",
+    "border-radius": "8px",
+    "font-weight": "600",
+    "background-color": "=if(indexOf(@currentField, 'Blocked') == 0 || indexOf(@currentField, 'Rejected') == 0 || indexOf(@currentField, 'Returned') == 0 || indexOf(@currentField, 'Provisioning failed') == 0 || indexOf(@currentField, 'Orphaned') == 0 || indexOf(@currentField, 'Disposition required') == 0 || indexOf(@currentField, 'Revoked') == 0, '#fee2e2', if(indexOf(@currentField, 'Granted') == 0 || indexOf(@currentField, 'Approved') == 0 || indexOf(@currentField, 'Provisioned') == 0 || indexOf(@currentField, 'Active') == 0 || indexOf(@currentField, 'Migrated') == 0 || indexOf(@currentField, 'Ready for migration') == 0 || indexOf(@currentField, 'Disposition agreed') == 0 || indexOf(@currentField, 'Disabled') == 0, '#dcfce7', '#e0f2fe'))",
+    "color": "=if(indexOf(@currentField, 'Blocked') == 0 || indexOf(@currentField, 'Rejected') == 0 || indexOf(@currentField, 'Returned') == 0 || indexOf(@currentField, 'Provisioning failed') == 0 || indexOf(@currentField, 'Orphaned') == 0 || indexOf(@currentField, 'Disposition required') == 0 || indexOf(@currentField, 'Revoked') == 0, '#7f1d1d', if(indexOf(@currentField, 'Granted') == 0 || indexOf(@currentField, 'Approved') == 0 || indexOf(@currentField, 'Provisioned') == 0 || indexOf(@currentField, 'Active') == 0 || indexOf(@currentField, 'Migrated') == 0 || indexOf(@currentField, 'Ready for migration') == 0 || indexOf(@currentField, 'Disposition agreed') == 0 || indexOf(@currentField, 'Disabled') == 0, '#14532d', '#0c4a6e'))",
+    "border": "=if(indexOf(@currentField, 'Blocked') == 0 || indexOf(@currentField, 'Rejected') == 0 || indexOf(@currentField, 'Returned') == 0 || indexOf(@currentField, 'Provisioning failed') == 0 || indexOf(@currentField, 'Orphaned') == 0 || indexOf(@currentField, 'Disposition required') == 0 || indexOf(@currentField, 'Revoked') == 0, '1px solid #b91c1c', if(indexOf(@currentField, 'Granted') == 0 || indexOf(@currentField, 'Approved') == 0 || indexOf(@currentField, 'Provisioned') == 0 || indexOf(@currentField, 'Active') == 0 || indexOf(@currentField, 'Migrated') == 0 || indexOf(@currentField, 'Ready for migration') == 0 || indexOf(@currentField, 'Disposition agreed') == 0 || indexOf(@currentField, 'Disabled') == 0, '1px solid #15803d', '1px solid #0369a1'))"
+  }
+}
