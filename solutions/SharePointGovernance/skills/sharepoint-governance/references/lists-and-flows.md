@@ -7,7 +7,7 @@ SecondaryOwner, OwnersGroupId, MembersGroupId, VisitorsGroupId,
 GuestsGroupId, SharingCapability (Disabled | ExistingExternalUserSharingOnly),
 Sensitivity (General | Confidential | Highly Confidential), Status (Active |
 Orphaned - owner inactive | Read-only | Archived), LastAccessReview and
-NextAccessReview (optional since 1.2.0.0: site reviews are SAM attestations).
+NextAccessReview (optional since 1.2.0.0: site reviews are SAM attestations), UrgentAlertKey (written by flow 08 only).
 
 **Site Requests:** SiteAlias, Purpose, Department, Requester, PrimaryOwner,
 SecondaryOwner, OwnersGroupId, MembersGroupId, VisitorsGroupId,
@@ -44,7 +44,7 @@ Ready for migration | Migrated), DecisionLog.
 **Decision Log:** Title (DL001…), Category (InfoPath | File share | Access),
 Decision, DecidedBy, DecisionDate, Rationale.
 
-## Flows (solution 1.3.0.0)
+## Flows (solution 1.4.0.0)
 
 | Flow | Trigger | Does |
 |---|---|---|
@@ -54,6 +54,7 @@ Decision, DecidedBy, DecisionDate, Rationale.
 | 05 File share disposition | new File Share Register item | excludes system-dependent shares; routes remediation; service owner approval |
 | 06 Quarterly privileged role review | monthly, acts Jan/Apr/Jul/Oct | InfoSec confirms SharePoint Administrator is PIM-eligible only; logs to Access Review Log |
 | 07 Monthly site owner digest | monthly, 1st, 08:00 | one email per owner: one-owner sites, sharing on or unconfirmed, no label, guests ending in 30 days or awaiting decision, open access requests; all-clear otherwise; notify only; off until OwnerDigestEnabled = Yes |
+| 08 Urgent site alerts | Site Register item created or changed | immediate email to owners and service owner when a site becomes Orphaned - owner inactive, or is Highly Confidential with sharing not Disabled (InfoSec copied); once per issue via UrgentAlertKey; off until UrgentAlertsEnabled = Yes |
 
 Site access reviews, ownerless and inactive sites, and oversharing are SAM
 policies, not flows (see pid-rules.md §7). Flow 04 was retired 25/10/2026.

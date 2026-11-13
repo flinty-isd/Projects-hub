@@ -1,0 +1,193 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Urgent site alerts",
+  "description": "Triggers when a Site Register item is created or changed. Emails the site's owners and the SharePoint service owner at once (high importance) when the site becomes Orphaned - owner inactive, or is Highly Confidential with external sharing not Disabled (InfoSec copied). Each alert is sent once: the alert is recorded in UrgentAlertKey and cleared when the issue is fixed, so it can alert again if it recurs. Notify only (G-11). Does nothing while UrgentAlertsEnabled is No.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "GovernanceSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{governance-site}"
+    },
+    "SharePointServiceOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{sharepoint-service-owner}@{domain}"
+    },
+    "InfoSecApproverEmail": {
+      "type": "String",
+      "defaultValue": "{security-and-architecture}@{domain}"
+    },
+    "UrgentAlertsEnabled": {
+      "type": "Bool",
+      "defaultValue": false
+    }
+  },
+  "triggers": {
+    "When_a_site_register_item_changes": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnUpdatedItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('GovernanceSiteUrl')",
+          "table": "Site Register"
+        }
+      },
+      "recurrence": {
+        "frequency": "Minute",
+        "interval": 5
+      },
+      "splitOn": "@triggerOutputs()?['body/value']"
+    }
+  },
+  "actions": {
+    "Condition_Alerts_enabled": {
+      "type": "If",
+      "expression": {
+        "equals": [
+          "@parameters('UrgentAlertsEnabled')",
+          true
+        ]
+      },
+      "runAfter": {},
+      "actions": {
+        "Compose_alert_key": {
+          "type": "Compose",
+          "inputs": "@concat(if(equals(triggerBody()?['Status']?['Value'], 'Orphaned - owner inactive'), 'orphaned;', ''), if(and(equals(triggerBody()?['Sensitivity']?['Value'], 'Highly Confidential'), not(equals(triggerBody()?['SharingCapability']?['Value'], 'Disabled'))), concat('hc-sharing:', coalesce(triggerBody()?['SharingCapability']?['Value'], 'not set'), ';'), ''))",
+          "runAfter": {}
+        },
+        "Condition_New_alert": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "not": {
+                  "equals": [
+                    "@outputs('Compose_alert_key')",
+                    ""
+                  ]
+                }
+              },
+              {
+                "not": {
+                  "equals": [
+                    "@outputs('Compose_alert_key')",
+                    "@coalesce(triggerBody()?['UrgentAlertKey'], '')"
+                  ]
+                }
+              }
+            ]
+          },
+          "actions": {
+            "Send_urgent_alert": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@{concat(coalesce(triggerBody()?['PrimaryOwner']?['Email'], ''), ';', coalesce(triggerBody()?['SecondaryOwner']?['Email'], ''), ';', parameters('SharePointServiceOwnerEmail'), if(and(equals(triggerBody()?['Sensitivity']?['Value'], 'Highly Confidential'), not(equals(triggerBody()?['SharingCapability']?['Value'], 'Disabled'))), concat(';', parameters('InfoSecApproverEmail')), ''))}",
+                  "emailMessage/Subject": "@{concat('Action needed on a SharePoint site you own: ', triggerBody()?['Title'])}",
+                  "emailMessage/Body": "<p>A governance check on <b>@{triggerBody()?['Title']}</b> (@{triggerBody()?['SiteUrl']}) needs attention now:</p><ul>@{concat(if(equals(triggerBody()?['Status']?['Value'], 'Orphaned - owner inactive'), '<li><b>Orphaned - owner inactive</b>: the primary owner has left or been disabled. Name a new owner through a site change request; the secondary owner keeps the site running meanwhile.</li>', ''), if(and(equals(triggerBody()?['Sensitivity']?['Value'], 'Highly Confidential'), not(equals(triggerBody()?['SharingCapability']?['Value'], 'Disabled'))), concat('<li><b>Highly Confidential with external sharing ', coalesce(triggerBody()?['SharingCapability']?['Value'], 'not set'), '</b>: external sharing must be Disabled on Highly Confidential sites unless InfoSec has approved it. Confirm the approval with InfoSec or ask IT to switch sharing off.</li>'), ''))}</ul><p>Nothing has been changed on the site: the decision stays with the owners (G-11). You'll get this alert once; it appears again in the monthly digest until it is fixed.</p>",
+                  "emailMessage/Importance": "High"
+                }
+              },
+              "runAfter": {}
+            },
+            "Record_alert_key": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PatchItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('GovernanceSiteUrl')",
+                  "table": "Site Register",
+                  "id": "@triggerBody()?['ID']",
+                  "item/UrgentAlertKey": "@outputs('Compose_alert_key')"
+                }
+              },
+              "runAfter": {
+                "Send_urgent_alert": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Condition_Cleared": {
+                "type": "If",
+                "expression": {
+                  "and": [
+                    {
+                      "equals": [
+                        "@outputs('Compose_alert_key')",
+                        ""
+                      ]
+                    },
+                    {
+                      "not": {
+                        "equals": [
+                          "@coalesce(triggerBody()?['UrgentAlertKey'], '')",
+                          ""
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "actions": {
+                  "Clear_alert_key": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_sharepointonline",
+                        "operationId": "PatchItem",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                      },
+                      "parameters": {
+                        "dataset": "@parameters('GovernanceSiteUrl')",
+                        "table": "Site Register",
+                        "id": "@triggerBody()?['ID']",
+                        "item/UrgentAlertKey": ""
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                },
+                "runAfter": {}
+              }
+            }
+          },
+          "runAfter": {
+            "Compose_alert_key": [
+              "Succeeded"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
