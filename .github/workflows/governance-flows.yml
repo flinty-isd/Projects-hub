@@ -20,6 +20,8 @@ jobs:
           python-version: "3.12"
       - name: Validate flow definitions against the list schema
         run: python solutions/SharePointGovernance/tools/validate_flows.py
+      - name: Validate the dashboard views against the list schema
+        run: python solutions/SharePointGovernance/tools/validate_dashboard.py
       - name: Build the importable solution package
         run: python solutions/SharePointGovernance/tools/build_solution.py --out dist
       - name: Upload solution package

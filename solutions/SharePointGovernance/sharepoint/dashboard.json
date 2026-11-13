@@ -1,0 +1,172 @@
+{
+  "$comment": "Read by provisioning/Provision-GovernanceDashboard.ps1 and checked by tools/validate_dashboard.py. Views are added to the lists; the page shows each view in a List web part.",
+  "page": {
+    "name": "Governance-Dashboard",
+    "title": "Governance dashboard",
+    "intro": "<p>What needs action across the governance lists. Each panel is a filtered view of a list: open it to work the items. Site attestation, ownership, inactive-site and oversharing reports are in SharePoint Advanced Management (links below).</p>",
+    "links": "<h3>SharePoint Advanced Management and automation</h3><ul><li><a href=\"{AdminUrl}/_layouts/15/online/AdminHome.aspx#/siteManagement\">Active sites</a>: sharing, owners and site policies</li><li><a href=\"{AdminUrl}/_layouts/15/online/AdminHome.aspx#/policies\">Policies</a>: site attestation, site ownership, inactive sites, restricted site creation</li><li><a href=\"{AdminUrl}/_layouts/15/online/AdminHome.aspx#/reports\">Reports</a>: data access governance (oversharing) and site access reviews</li><li>Azure Automation jobs log for Set-SiteGovernanceBaseline: success comes from the ###RESULT### line, not the flow (G-10)</li></ul>"
+  },
+  "statusColumns": [
+    [
+      "Site Requests",
+      "Status"
+    ],
+    [
+      "Access Requests",
+      "Status"
+    ],
+    [
+      "Guest Access Register",
+      "Status"
+    ],
+    [
+      "Site Register",
+      "Status"
+    ],
+    [
+      "File Share Register",
+      "Status"
+    ],
+    [
+      "Site Register",
+      "SharingCapability"
+    ]
+  ],
+  "views": [
+    {
+      "key": "requests",
+      "list": "Site Requests",
+      "title": "Needs action",
+      "heading": "Site requests needing action",
+      "query": "<Where><In><FieldRef Name=\"Status\"/><Values><Value Type=\"Choice\">Submitted</Value><Value Type=\"Choice\">Provisioning failed</Value></Values></In></Where><OrderBy><FieldRef Name=\"Created\"/></OrderBy>",
+      "fields": [
+        "LinkTitle",
+        "SiteAlias",
+        "Requester",
+        "Sensitivity",
+        "Status",
+        "Created"
+      ],
+      "section": 2,
+      "column": 1,
+      "rowLimit": 30
+    },
+    {
+      "key": "access",
+      "list": "Access Requests",
+      "title": "Needs action",
+      "heading": "Access requests needing action",
+      "query": "<Where><In><FieldRef Name=\"Status\"/><Values><Value Type=\"Choice\">Submitted</Value><Value Type=\"Choice\">Approved - awaiting AD group change</Value><Value Type=\"Choice\">Approved - PIM eligible assignment pending</Value></Values></In></Where><OrderBy><FieldRef Name=\"Created\"/></OrderBy>",
+      "fields": [
+        "LinkTitle",
+        "Requester",
+        "UserType",
+        "TargetSite",
+        "Status",
+        "Created"
+      ],
+      "section": 2,
+      "column": 2,
+      "rowLimit": 30
+    },
+    {
+      "key": "guests",
+      "list": "Guest Access Register",
+      "title": "Ending soon",
+      "heading": "Guests ending in 14 days or awaiting an owner decision",
+      "query": "<Where><Or><Eq><FieldRef Name=\"Status\"/><Value Type=\"Choice\">Removal pending owner decision</Value></Eq><And><Eq><FieldRef Name=\"Status\"/><Value Type=\"Choice\">Active</Value></Eq><Leq><FieldRef Name=\"AccessEndDate\"/><Value Type=\"DateTime\"><Today OffsetDays=\"14\"/></Value></Leq></And></Or></Where><OrderBy><FieldRef Name=\"AccessEndDate\"/></OrderBy>",
+      "fields": [
+        "LinkTitle",
+        "Sponsor",
+        "AccessEndDate",
+        "Status"
+      ],
+      "section": 3,
+      "column": 1,
+      "rowLimit": 30
+    },
+    {
+      "key": "owners",
+      "list": "Site Register",
+      "title": "Ownership gaps",
+      "heading": "Sites without two owners",
+      "query": "<Where><Or><Eq><FieldRef Name=\"Status\"/><Value Type=\"Choice\">Orphaned - owner inactive</Value></Eq><IsNull><FieldRef Name=\"SecondaryOwner\"/></IsNull></Or></Where><OrderBy><FieldRef Name=\"Title\"/></OrderBy>",
+      "fields": [
+        "LinkTitle",
+        "SiteUrl",
+        "PrimaryOwner",
+        "SecondaryOwner",
+        "Status"
+      ],
+      "section": 3,
+      "column": 2,
+      "rowLimit": 30
+    },
+    {
+      "key": "sharing",
+      "list": "Site Register",
+      "title": "External sharing on",
+      "heading": "Sites open to guests or not yet confirmed",
+      "query": "<Where><Or><Neq><FieldRef Name=\"SharingCapability\"/><Value Type=\"Choice\">Disabled</Value></Neq><IsNull><FieldRef Name=\"SharingCapability\"/></IsNull></Or></Where><OrderBy><FieldRef Name=\"Title\"/></OrderBy>",
+      "fields": [
+        "LinkTitle",
+        "SiteUrl",
+        "Department",
+        "SharingCapability",
+        "Sensitivity"
+      ],
+      "section": 4,
+      "column": 1,
+      "rowLimit": 30
+    },
+    {
+      "key": "shares",
+      "list": "File Share Register",
+      "title": "Awaiting decision",
+      "heading": "File shares awaiting a decision",
+      "query": "<Where><In><FieldRef Name=\"Status\"/><Values><Value Type=\"Choice\">Registered</Value><Value Type=\"Choice\">Awaiting owner decision</Value><Value Type=\"Choice\">Disposition required</Value></Values></In></Where><OrderBy><FieldRef Name=\"Created\"/></OrderBy>",
+      "fields": [
+        "LinkTitle",
+        "ShareOwner",
+        "SizeGB",
+        "Status"
+      ],
+      "section": 4,
+      "column": 2,
+      "rowLimit": 30
+    },
+    {
+      "key": "decisions",
+      "list": "Decision Log",
+      "title": "Last 90 days",
+      "heading": "Recent governance decisions",
+      "query": "<Where><Geq><FieldRef Name=\"DecisionDate\"/><Value Type=\"DateTime\"><Today OffsetDays=\"-90\"/></Value></Geq></Where><OrderBy><FieldRef Name=\"DecisionDate\" Ascending=\"FALSE\"/></OrderBy>",
+      "fields": [
+        "LinkTitle",
+        "Category",
+        "Decision",
+        "DecidedBy",
+        "DecisionDate"
+      ],
+      "section": 5,
+      "column": 1,
+      "rowLimit": 30
+    },
+    {
+      "key": "privileged",
+      "list": "Access Review Log",
+      "title": "Privileged reviews",
+      "heading": "Quarterly privileged-role reviews",
+      "query": "<Where><IsNull><FieldRef Name=\"SiteId\"/></IsNull></Where><OrderBy><FieldRef Name=\"Created\" Ascending=\"FALSE\"/></OrderBy>",
+      "fields": [
+        "LinkTitle",
+        "Outcome",
+        "Reviewer",
+        "Created"
+      ],
+      "section": 5,
+      "column": 2,
+      "rowLimit": 30
+    }
+  ]
+}

@@ -47,12 +47,44 @@ SharePointGovernance/
 ├── powerautomate/flows/   flow definitions (Workflow Definition Language JSON)
 ├── sharepoint/            list-schema.json: the 7 governance lists; csv/ holds import templates
 ├── runbooks/              Set-SiteGovernanceBaseline.ps1 (Azure Automation, called by flow 03)
+├── provisioning/          Provision-GovernanceDashboard.ps1: dashboard page, views and status badges
 ├── skills/                sharepoint-governance: Claude skill that applies these rules and the SAM policies
 ├── SAM-POLICIES.md        SharePoint Advanced Management policies, settings and the D-GSA-08 decision
 ├── diagrams/              Mermaid process diagrams
 ├── solution-config.json   solution name, version, publisher, environment variables
 └── tools/                 validate_flows.py (static checks) and build_solution.py (packager)
 ```
+
+## Dashboard
+
+`provisioning/Provision-GovernanceDashboard.ps1` builds **Governance-Dashboard.aspx**
+on the IT Enterprise Governance site from `sharepoint/dashboard.json`:
+
+| Panel | List view | Shows |
+|---|---|---|
+| Site requests needing action | Site Requests: *Needs action* | Submitted, Provisioning failed |
+| Access requests needing action | Access Requests: *Needs action* | Submitted, awaiting AD group change, PIM assignment pending |
+| Guests ending soon | Guest Access Register: *Ending soon* | Active guests ending within 14 days, and removals waiting on an owner |
+| Sites without two owners | Site Register: *Ownership gaps* | No secondary owner, or Orphaned - owner inactive |
+| Sites open to guests | Site Register: *External sharing on* | Sharing not Disabled, or not yet confirmed |
+| File shares awaiting a decision | File Share Register: *Awaiting decision* | Registered, Awaiting owner decision, Disposition required |
+| Recent decisions | Decision Log: *Last 90 days* | Newest first |
+| Privileged-role reviews | Access Review Log: *Privileged reviews* | Flow 06's quarterly reviews |
+
+Status columns are formatted as outcome badges (green good, red bad, blue
+info, with the words always shown, `sharepoint/status-format.json`). The page
+links to the SharePoint Advanced Management policies and reports, which hold
+attestation, ownership, inactive-site and oversharing results. It uses list
+views, List web parts and JSON column formatting only: no custom script (G-02)
+and nothing embedded (G-06). `tools/validate_dashboard.py` checks every view
+against the list schema in CI.
+
+```powershell
+./provisioning/Provision-GovernanceDashboard.ps1 -GovernanceSiteUrl https://hphneu.sharepoint.com/sites/<governance-site> -Interactive
+```
+
+Re-running leaves existing views and the page alone; `-RefreshViews` and
+`-RefreshPage` rebuild them.
 
 ## Roles
 
