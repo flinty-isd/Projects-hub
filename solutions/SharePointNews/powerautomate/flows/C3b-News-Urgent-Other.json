@@ -188,19 +188,9 @@
       "type": "If",
       "expression": {
         "not": {
-          "or": [
-            {
-              "contains": [
-                "@toLower(parameters('UrgentPublisherEmails'))",
-                "@toLower(coalesce(triggerBody()?['Editor']?['Email'], '-'))"
-              ]
-            },
-            {
-              "contains": [
-                "@toLower(parameters('UrgentPublisherEmails'))",
-                "@toLower(coalesce(triggerBody()?['Author']?['Email'], '-'))"
-              ]
-            }
+          "contains": [
+            "@split(toLower(replace(replace(parameters('UrgentPublisherEmails'), ' ', ''), ',', ';')), ';')",
+            "@toLower(trim(coalesce(triggerBody()?['Editor']?['Email'], '-')))"
           ]
         }
       },
@@ -1096,12 +1086,116 @@
         ]
       }
     },
+    "Select_expected_email_keys": {
+      "type": "Select",
+      "runAfter": {
+        "For_each_destination": [
+          "Succeeded",
+          "Failed",
+          "TimedOut",
+          "Skipped"
+        ]
+      },
+      "inputs": {
+        "from": "@body('Destinations_for_post')",
+        "select": "@if(equals(coalesce(item()?['EmailGroup'], ''), ''), '', concat(outputs('Dispatch_prefix'), '|', item()?['Port']?['Value'], '|Email'))"
+      }
+    },
+    "Select_expected_teams_keys": {
+      "type": "Select",
+      "runAfter": {
+        "Select_expected_email_keys": [
+          "Succeeded"
+        ]
+      },
+      "inputs": {
+        "from": "@body('Destinations_for_post')",
+        "select": "@if(or(equals(coalesce(item()?['TeamId'], ''), ''), equals(coalesce(item()?['ChannelId'], ''), '')), '', concat(outputs('Dispatch_prefix'), '|', item()?['Port']?['Value'], '|Teams'))"
+      }
+    },
+    "Filter_expected_keys": {
+      "type": "Query",
+      "runAfter": {
+        "Select_expected_teams_keys": [
+          "Succeeded"
+        ]
+      },
+      "inputs": {
+        "from": "@union(body('Select_expected_email_keys'), body('Select_expected_teams_keys'))",
+        "where": "@not(equals(item(), ''))"
+      }
+    },
+    "Get_delivery_rows": {
+      "type": "OpenApiConnection",
+      "runAfter": {
+        "Filter_expected_keys": [
+          "Succeeded"
+        ]
+      },
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('HPUKNewsSiteUrl')",
+          "table": "Delivery Log",
+          "$filter": "@{concat('startswith(Title, ''', outputs('Dispatch_prefix'), '|'')')}",
+          "$top": 5000
+        }
+      }
+    },
+    "Filter_sent_rows": {
+      "type": "Query",
+      "runAfter": {
+        "Get_delivery_rows": [
+          "Succeeded"
+        ]
+      },
+      "inputs": {
+        "from": "@outputs('Get_delivery_rows')?['body/value']",
+        "where": "@equals(item()?['DeliveryStatus']?['Value'], 'Sent')"
+      }
+    },
+    "Select_sent_keys": {
+      "type": "Select",
+      "runAfter": {
+        "Filter_sent_rows": [
+          "Succeeded"
+        ]
+      },
+      "inputs": {
+        "from": "@body('Filter_sent_rows')",
+        "select": "@item()?['Title']"
+      }
+    },
+    "Filter_not_yet_sent": {
+      "type": "Query",
+      "runAfter": {
+        "Select_sent_keys": [
+          "Succeeded"
+        ]
+      },
+      "inputs": {
+        "from": "@body('Filter_expected_keys')",
+        "where": "@not(contains(body('Select_sent_keys'), item()))"
+      }
+    },
     "Condition_all_sent": {
       "type": "If",
+      "runAfter": {
+        "Filter_not_yet_sent": [
+          "Succeeded",
+          "Failed",
+          "TimedOut",
+          "Skipped"
+        ]
+      },
       "expression": {
         "equals": [
-          "@length(variables('Failures'))",
-          0
+          "@and(equals(actions('Filter_not_yet_sent')?['status'], 'Succeeded'), greater(length(body('Filter_expected_keys')), 0), equals(length(body('Filter_not_yet_sent')), 0), equals(length(variables('Failures')), 0))",
+          true
         ]
       },
       "actions": {
@@ -1133,6 +1227,86 @@
             }
           },
           "runAfter": {}
+        },
+        "Read_back_UrgentSent": {
+          "type": "OpenApiConnection",
+          "runAfter": {
+            "Mark_urgent_sent": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('OtherNewsSiteUrl')",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists/GetByTitle('Site Pages')/items(@{triggerBody()?['ID']})?$select=UrgentSent",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            }
+          }
+        },
+        "Condition_update_confirmed": {
+          "type": "If",
+          "runAfter": {
+            "Read_back_UrgentSent": [
+              "Succeeded",
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@actions('Read_back_UrgentSent')?['status']",
+                  "Succeeded"
+                ]
+              },
+              {
+                "not": {
+                  "contains": [
+                    "@string(body('Mark_urgent_sent'))",
+                    "\"HasException\":true"
+                  ]
+                }
+              },
+              {
+                "equals": [
+                  "@body('Read_back_UrgentSent')?['UrgentSent']",
+                  true
+                ]
+              }
+            ]
+          },
+          "actions": {},
+          "else": {
+            "actions": {
+              "Alert_update_failed": {
+                "type": "OpenApiConnection",
+                "runAfter": {},
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_office365",
+                    "operationId": "SharedMailboxSendEmailV2",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                  },
+                  "parameters": {
+                    "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
+                    "emailMessage/To": "@{concat(parameters('SupportOwnerEmail'), ';', parameters('CommsTeamEmail'))}",
+                    "emailMessage/Subject": "Urgent notice sent, but UrgentSent could not be set",
+                    "emailMessage/Body": "<p><a href=\"@{triggerBody()?['{Link}']}\">@{triggerBody()?['Title']}</a> (Other News)</p><p>Every delivery is logged as Sent, but setting UrgentSent to Yes failed or didn't read back. Set UrgentSent to Yes on the page by hand. Nothing will be resent: every destination is already reserved as Sent in the Delivery Log.</p>",
+                    "emailMessage/Importance": "High"
+                  }
+                }
+              }
+            }
+          }
         }
       },
       "else": {
@@ -1149,19 +1323,13 @@
                 "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
                 "emailMessage/To": "@{concat(parameters('SupportOwnerEmail'), ';', parameters('CommsTeamEmail'))}",
                 "emailMessage/Subject": "Urgent notice: some deliveries failed",
-                "emailMessage/Body": "<p><a href=\"@{triggerBody()?['{Link}']}\">@{triggerBody()?['Title']}</a> (Other News)</p><p>These deliveries did not complete:</p><p>@{join(variables('Failures'), '<br>')}</p><p>UrgentSent has been left at No.</p><p>A row logged as <b>Reconcile</b> may or may not have arrived: check with the recipient. If it didn't arrive, set the row's Delivery status to Failed and resubmit this run. Only Failed rows are ever retried. A row still <b>Reserved</b> was sent but not logged: set it to Sent.</p>",
+                "emailMessage/Body": "<p><a href=\"@{triggerBody()?['{Link}']}\">@{triggerBody()?['Title']}</a> (Other News)</p><p>These deliveries did not complete:</p><p>@{join(variables('Failures'), '<br>')}</p><p>Not yet logged as Sent: @{if(equals(actions('Filter_not_yet_sent')?['status'], 'Succeeded'), join(coalesce(actions('Filter_not_yet_sent')?['outputs']?['body'], json('[]')), '<br>'), 'the Delivery Log could not be read, so completion is unknown')}</p><p>UrgentSent has been left at No.</p><p>A row logged as <b>Reconcile</b> may or may not have arrived: check with the recipient. If it didn't arrive, set the row's Delivery status to Failed and resubmit this run. Only Failed rows are ever retried. A row still <b>Reserved</b> was sent but not logged: set it to Sent.</p>",
                 "emailMessage/Importance": "Normal"
               }
             },
             "runAfter": {}
           }
         }
-      },
-      "runAfter": {
-        "For_each_destination": [
-          "Succeeded",
-          "Failed"
-        ]
       }
     }
   }

@@ -42,7 +42,7 @@ if Communications or IT decide otherwise.
 | Decision | Confirmed | Where it's applied |
 |----------|-----------|--------------------|
 | Ports | **Felixstowe, Harwich, Thamesport** (plus *All ports* on posts) | `list-schema.json`: Port choices on posts and Comms Distribution |
-| Who can send urgent notices | **Chloe, Rachel and Toby** | `UrgentPublisherEmails` environment variable. C3 sends only when the post's author or last editor is on the list; anything else is logged as *Skipped - not an urgent publisher* and Communications is told |
+| Who can send urgent notices | **Chloe, Rachel and Toby** | `UrgentPublisherEmails` environment variable. C3 sends only when the person who published this version (the page's last editor) is on the list, matched exactly by address, not the page's original author; anything else is logged as *Skipped - not an urgent publisher* and Communications is told |
 | Page approval | **None. Publishers are pre-approved** (changed 23 October 2026; this replaces HR approving every page) | Content approval stays off on Site Pages (the provisioning script turns it off if it was on). A published page is live straight away, and an urgent post by Chloe, Rachel or Toby alerts as soon as it is published. Membership of the publisher groups is the control, so keep them to trained, named publishers |
 | Retention | **7 years** from creation, on both sites | `provisioning/Set-NewsRetention.ps1`: a Purview retention policy. Nothing is deleted automatically at the end unless the records owner asks for `-DeleteAfterRetention` |
 | Support owner | **Nigel Bell** | `SupportOwnerEmail` environment variable: receives all flow failure alerts |
@@ -190,6 +190,10 @@ is not the production permission model.
 | Go-live date | Editing and republishing an urgent post first published before `UrgentGoLiveDate` sends nothing |
 | No approval | A publisher's page is visible to readers as soon as it is published, with no approval request. An urgent post by an urgent publisher alerts once, on publish |
 | Unauthorised urgent | An urgent post by a publisher not on the urgent list sends nothing, logs *Skipped - not an urgent publisher* and tells Communications once |
+| Unauthorised editor | An editor not on the list edits and republishes a page first created by an urgent publisher: nothing is sent |
+| Partial address | An address that only partly matches a listed one (e.g. `chloe@` vs `chloe.l@`) sends nothing |
+| Completion | UrgentSent becomes Yes only when every expected destination and channel reads back as *Sent* in the Delivery Log; rerun with only Reserved or Reconcile rows, or with the Delivery Log unreadable, leaves it No and alerts support |
+| UrgentSent write | If setting UrgentSent fails or doesn't read back, support gets a high-importance email and nothing is resent |
 | Audience-targeted urgent | Nothing is broadcast. A *Skipped - audience targeted* row is logged and Communications is emailed once |
 | All ports | A post tagged *All ports* reaches every enabled row |
 | Company-wide roundup | An enabled Comms Distribution row with Port All ports gets one digest listing every port's posts. An urgent post for All ports does **not** go to that row |
