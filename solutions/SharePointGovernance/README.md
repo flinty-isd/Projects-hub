@@ -136,7 +136,9 @@ one person's address: approvals still reach someone during absences.
 5. **Import the solution** (see [Importing](#importing) below), then set
    the environment variables in the solution.
 6. Turn the flows on in this order: 03 and 06 (sites), then 01 and 02
-   (access), then 05.
+   (access), then 05, then 07 and 08 (their switches stay No until tested).
+   The full step-by-step deployment and test script is
+   [`DEPLOY-AND-TEST.md`](DEPLOY-AND-TEST.md).
 7. **Ownership**: hand the flows and their connections to the SharePoint
    service owner's team in the BAU support model (runbook / KB), so they
    don't depend on a project account.
@@ -168,10 +170,10 @@ This writes `solutions/SharePointGovernance/dist/SharePointGovernance_<version>.
    **Current value** of every variable whose description starts "Set after
    import". These are the governance
    site URL, the tenant root URL, the four role mailboxes, the three
-   Automation account values, the review interval (90 days by default), the
+   Automation account values, the
    site naming codes (`SiteOrgCode`, default `hpuk`, pending ruling C-03;
-   `SiteLocationCodes`, default `pof;har;ltp;ldn`) and `GuestAutoRemoval`
-   (default No; see below).
+   `SiteLocationCodes`, default `pof;har;ltp;ldn`) `GuestAutoRemoval`
+   (default No; see below) and the digest and urgent-alert switches (default No).
 5. **Import**. It takes a minute or two.
 6. Set the environment variables (step 4), then open the solution and turn
    each flow on (they import switched off), in
