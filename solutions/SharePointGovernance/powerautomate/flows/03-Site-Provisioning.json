@@ -421,96 +421,188 @@
                                 },
                                 "parameters": {
                                   "x-ms-api-version": "2015-10-31",
-                                  "subscriptionId": "@parameters('AutomationSubscriptionId')",
-                                  "resourceGroupName": "@parameters('AutomationResourceGroup')",
-                                  "automationAccountName": "@parameters('AutomationAccountName')",
-                                  "runbookName": "Set-SiteGovernanceBaseline",
+                                  "subscription": "@parameters('AutomationSubscriptionId')",
+                                  "resourceGroup": "@parameters('AutomationResourceGroup')",
+                                  "automationAccount": "@parameters('AutomationAccountName')",
+                                  "body/properties/runbook/name": "Set-SiteGovernanceBaseline",
                                   "wait": true,
-                                  "properties/parameters/SiteUrl": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}",
-                                  "properties/parameters/SecondaryOwner": "@{triggerBody()?['SecondaryOwner']?['Email']}",
-                                  "properties/parameters/OwnersGroupId": "@{triggerBody()?['OwnersGroupId']}",
-                                  "properties/parameters/MembersGroupId": "@{triggerBody()?['MembersGroupId']}",
-                                  "properties/parameters/VisitorsGroupId": "@{triggerBody()?['VisitorsGroupId']}",
-                                  "properties/parameters/ExternalSharing": "@{if(equals(triggerBody()?['ExternalSharingRequired'], true), 'ExistingExternalUserSharingOnly', 'Disabled')}",
-                                  "properties/parameters/SensitivityLabel": "@{triggerBody()?['Sensitivity']?['Value']}"
+                                  "body/properties/parameters/SiteUrl": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}",
+                                  "body/properties/parameters/SecondaryOwner": "@{triggerBody()?['SecondaryOwner']?['Email']}",
+                                  "body/properties/parameters/OwnersGroupId": "@{triggerBody()?['OwnersGroupId']}",
+                                  "body/properties/parameters/MembersGroupId": "@{triggerBody()?['MembersGroupId']}",
+                                  "body/properties/parameters/VisitorsGroupId": "@{triggerBody()?['VisitorsGroupId']}",
+                                  "body/properties/parameters/ExternalSharing": "@{if(equals(triggerBody()?['ExternalSharingRequired'], true), 'ExistingExternalUserSharingOnly', 'Disabled')}",
+                                  "body/properties/parameters/SensitivityLabel": "@{triggerBody()?['Sensitivity']?['Value']}",
+                                  "body/properties/parameters/GuestsGroupId": "@{triggerBody()?['GuestsGroupId']}"
                                 }
                               },
                               "runAfter": {}
                             },
-                            "Add_to_site_register": {
+                            "Get_job_output": {
                               "type": "OpenApiConnection",
                               "inputs": {
                                 "host": {
-                                  "connectionName": "shared_sharepointonline",
-                                  "operationId": "PostItem",
-                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                  "connectionName": "shared_azureautomation",
+                                  "operationId": "GetJobOutput",
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureautomation"
                                 },
                                 "parameters": {
-                                  "dataset": "@parameters('GovernanceSiteUrl')",
-                                  "table": "Site Register",
-                                  "item/Title": "@triggerBody()?['Title']",
-                                  "item/SiteTitle": "@triggerBody()?['Title']",
-                                  "item/SiteUrl": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}",
-                                  "item/Department": "@triggerBody()?['Department']",
-                                  "item/PrimaryOwner/Claims": "@triggerBody()?['PrimaryOwner']?['Claims']",
-                                  "item/SecondaryOwner/Claims": "@triggerBody()?['SecondaryOwner']?['Claims']",
-                                  "item/OwnersGroupId": "@triggerBody()?['OwnersGroupId']",
-                                  "item/MembersGroupId": "@triggerBody()?['MembersGroupId']",
-                                  "item/VisitorsGroupId": "@triggerBody()?['VisitorsGroupId']",
-                                  "item/GuestsGroupId": "@triggerBody()?['GuestsGroupId']",
-                                  "item/SharingCapability": "@if(equals(triggerBody()?['ExternalSharingRequired'], true), 'ExistingExternalUserSharingOnly', 'Disabled')",
-                                  "item/Sensitivity/Value": "@triggerBody()?['Sensitivity']?['Value']",
-                                  "item/Status/Value": "Active",
-                                  "item/NextAccessReview": "@addDays(utcNow(), 90)"
+                                  "x-ms-api-version": "2015-10-31",
+                                  "subscription": "@parameters('AutomationSubscriptionId')",
+                                  "resourceGroup": "@parameters('AutomationResourceGroup')",
+                                  "automationAccount": "@parameters('AutomationAccountName')",
+                                  "jobId": "@body('Apply_governance_baseline')?['properties']?['jobId']"
                                 }
                               },
                               "runAfter": {
                                 "Apply_governance_baseline": [
+                                  "Succeeded",
+                                  "Failed",
+                                  "TimedOut"
+                                ]
+                              }
+                            },
+                            "Compose_runbook_result": {
+                              "type": "Compose",
+                              "inputs": "@json(trim(last(split(string(body('Get_job_output')), '###RESULT###'))))",
+                              "runAfter": {
+                                "Get_job_output": [
                                   "Succeeded"
                                 ]
                               }
                             },
-                            "Mark_provisioned": {
-                              "type": "OpenApiConnection",
-                              "inputs": {
-                                "host": {
-                                  "connectionName": "shared_sharepointonline",
-                                  "operationId": "PatchItem",
-                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                                },
-                                "parameters": {
-                                  "dataset": "@parameters('GovernanceSiteUrl')",
-                                  "table": "Site Requests",
-                                  "id": "@triggerBody()?['ID']",
-                                  "item/Status/Value": "Provisioned",
-                                  "item/SiteUrl": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}"
-                                }
-                              },
-                              "runAfter": {
-                                "Add_to_site_register": [
-                                  "Succeeded"
+                            "Condition_Baseline_verified": {
+                              "type": "If",
+                              "expression": {
+                                "equals": [
+                                  "@and(equals(actions('Compose_runbook_result')?['status'], 'Succeeded'), equals(body('Apply_governance_baseline')?['properties']?['status'], 'Completed'), equals(actions('Compose_runbook_result')?['outputs']?['Status'], 'Success'))",
+                                  true
                                 ]
-                              }
-                            },
-                            "Notify_owners": {
-                              "type": "OpenApiConnection",
-                              "inputs": {
-                                "host": {
-                                  "connectionName": "shared_office365",
-                                  "operationId": "SendEmailV2",
-                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                              },
+                              "actions": {
+                                "Add_to_site_register": {
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "host": {
+                                      "connectionName": "shared_sharepointonline",
+                                      "operationId": "PostItem",
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                    },
+                                    "parameters": {
+                                      "dataset": "@parameters('GovernanceSiteUrl')",
+                                      "table": "Site Register",
+                                      "item/Title": "@triggerBody()?['Title']",
+                                      "item/SiteTitle": "@triggerBody()?['Title']",
+                                      "item/SiteUrl": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}",
+                                      "item/Department": "@triggerBody()?['Department']",
+                                      "item/PrimaryOwner/Claims": "@triggerBody()?['PrimaryOwner']?['Claims']",
+                                      "item/SecondaryOwner/Claims": "@triggerBody()?['SecondaryOwner']?['Claims']",
+                                      "item/OwnersGroupId": "@triggerBody()?['OwnersGroupId']",
+                                      "item/MembersGroupId": "@triggerBody()?['MembersGroupId']",
+                                      "item/VisitorsGroupId": "@triggerBody()?['VisitorsGroupId']",
+                                      "item/GuestsGroupId": "@triggerBody()?['GuestsGroupId']",
+                                      "item/SharingCapability": "@if(equals(triggerBody()?['ExternalSharingRequired'], true), 'ExistingExternalUserSharingOnly', 'Disabled')",
+                                      "item/Sensitivity/Value": "@triggerBody()?['Sensitivity']?['Value']",
+                                      "item/Status/Value": "Active",
+                                      "item/NextAccessReview": "@addDays(utcNow(), 90)"
+                                    }
+                                  },
+                                  "runAfter": {}
                                 },
-                                "parameters": {
-                                  "emailMessage/To": "@{concat(triggerBody()?['PrimaryOwner']?['Email'], ';', triggerBody()?['SecondaryOwner']?['Email'])}",
-                                  "emailMessage/Subject": "@{concat('Your SharePoint site is ready: ', triggerBody()?['Title'])}",
-                                  "emailMessage/Body": "<p>@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])} has been created with the agreed governance baseline: permissions through security groups, external sharing @{if(equals(triggerBody()?['ExternalSharingRequired'], true), 'limited to existing guests', 'off')}, and sensitivity <b>@{triggerBody()?['Sensitivity']?['Value']}</b>.</p><p>As site owners you are accountable for its content and access, and will be asked to recertify access every 90 days.</p>",
-                                  "emailMessage/Importance": "Normal",
-                                  "emailMessage/Cc": "@parameters('SharePointServiceOwnerEmail')"
+                                "Mark_provisioned": {
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "host": {
+                                      "connectionName": "shared_sharepointonline",
+                                      "operationId": "PatchItem",
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                    },
+                                    "parameters": {
+                                      "dataset": "@parameters('GovernanceSiteUrl')",
+                                      "table": "Site Requests",
+                                      "id": "@triggerBody()?['ID']",
+                                      "item/Status/Value": "Provisioned",
+                                      "item/SiteUrl": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}"
+                                    }
+                                  },
+                                  "runAfter": {
+                                    "Add_to_site_register": [
+                                      "Succeeded"
+                                    ]
+                                  }
+                                },
+                                "Notify_owners": {
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "host": {
+                                      "connectionName": "shared_office365",
+                                      "operationId": "SendEmailV2",
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                                    },
+                                    "parameters": {
+                                      "emailMessage/To": "@{concat(triggerBody()?['PrimaryOwner']?['Email'], ';', triggerBody()?['SecondaryOwner']?['Email'])}",
+                                      "emailMessage/Subject": "@{concat('Your SharePoint site is ready: ', triggerBody()?['Title'])}",
+                                      "emailMessage/Body": "<p>@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])} has been created with the agreed governance baseline: permissions through security groups, external sharing @{if(equals(triggerBody()?['ExternalSharingRequired'], true), 'limited to existing guests', 'off')}, and sensitivity <b>@{triggerBody()?['Sensitivity']?['Value']}</b>.</p><p>As site owners you are accountable for its content and access, and will be asked to recertify access every 90 days.</p>",
+                                      "emailMessage/Importance": "Normal",
+                                      "emailMessage/Cc": "@parameters('SharePointServiceOwnerEmail')"
+                                    }
+                                  },
+                                  "runAfter": {
+                                    "Mark_provisioned": [
+                                      "Succeeded"
+                                    ]
+                                  }
+                                }
+                              },
+                              "else": {
+                                "actions": {
+                                  "Mark_failed_baseline": {
+                                    "type": "OpenApiConnection",
+                                    "inputs": {
+                                      "host": {
+                                        "connectionName": "shared_sharepointonline",
+                                        "operationId": "PatchItem",
+                                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                      },
+                                      "parameters": {
+                                        "dataset": "@parameters('GovernanceSiteUrl')",
+                                        "table": "Site Requests",
+                                        "id": "@triggerBody()?['ID']",
+                                        "item/Status/Value": "Provisioning failed",
+                                        "item/DecisionLog": "@{concat('Site created but the governance baseline was not confirmed (G-10: only a completed job with a ###RESULT### of Success counts). ', concat('Job ', coalesce(body('Apply_governance_baseline')?['properties']?['jobId'], 'not created'), ', job status ', coalesce(body('Apply_governance_baseline')?['properties']?['status'], 'unknown'), ', runbook result ', coalesce(actions('Compose_runbook_result')?['outputs']?['Status'], 'missing or unreadable'), '. Errors: ', coalesce(join(coalesce(actions('Compose_runbook_result')?['outputs']?['Errors'], json('[]')), ' | '), 'none reported'), '. Steps done: ', coalesce(join(coalesce(actions('Compose_runbook_result')?['outputs']?['Steps'], json('[]')), ' | '), 'none')))}"
+                                      }
+                                    },
+                                    "runAfter": {}
+                                  },
+                                  "Notify_baseline_failed": {
+                                    "type": "OpenApiConnection",
+                                    "inputs": {
+                                      "host": {
+                                        "connectionName": "shared_office365",
+                                        "operationId": "SendEmailV2",
+                                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                                      },
+                                      "parameters": {
+                                        "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), ';', parameters('ITOpsOwnerEmail'))}",
+                                        "emailMessage/Subject": "@{concat('Site created without a confirmed baseline: ', triggerBody()?['Title'])}",
+                                        "emailMessage/Body": "<p>@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])} was created, but the governance baseline wasn't confirmed, so the site isn't in the Site Register and the request is Provisioning failed. The site may be partly configured: check what the runbook did before giving anyone access, fix the cause (often a missing Sites.Selected grant), and re-run the runbook for this URL.</p><p>@{concat('Job ', coalesce(body('Apply_governance_baseline')?['properties']?['jobId'], 'not created'), ', job status ', coalesce(body('Apply_governance_baseline')?['properties']?['status'], 'unknown'), ', runbook result ', coalesce(actions('Compose_runbook_result')?['outputs']?['Status'], 'missing or unreadable'), '. Errors: ', coalesce(join(coalesce(actions('Compose_runbook_result')?['outputs']?['Errors'], json('[]')), ' | '), 'none reported'), '. Steps done: ', coalesce(join(coalesce(actions('Compose_runbook_result')?['outputs']?['Steps'], json('[]')), ' | '), 'none'))}</p>",
+                                        "emailMessage/Importance": "High"
+                                      }
+                                    },
+                                    "runAfter": {
+                                      "Mark_failed_baseline": [
+                                        "Succeeded"
+                                      ]
+                                    }
+                                  }
                                 }
                               },
                               "runAfter": {
-                                "Mark_provisioned": [
-                                  "Succeeded"
+                                "Compose_runbook_result": [
+                                  "Succeeded",
+                                  "Failed",
+                                  "Skipped",
+                                  "TimedOut"
                                 ]
                               }
                             }

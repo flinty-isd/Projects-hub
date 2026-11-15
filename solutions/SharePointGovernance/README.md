@@ -195,8 +195,11 @@ every future build includes it.
 - **Guest expiry and G-11**: PID v4.2 allows no silent revocation outside
   four critical classes. With `GuestAutoRemoval` = No (the default), flow 02
   asks the site owner or sponsor on the end date: Approve removes the guest,
-  Reject keeps access, records *Kept - owner decision* and tells InfoSec.
-  Set it to Yes only if the Control Board rules expired guest access a
+  Reject keeps access as an exception until *Kept until* (30 days,
+  `KeptExceptionDays`), records *Kept - owner decision* and tells InfoSec; on
+  that date the owner is asked again. A decision not made within 14 days (no
+  answer, an expired or failed approval) is escalated to the service owner and
+  InfoSec every 7 days until someone decides. Set `GuestAutoRemoval` to Yes only if the Control Board rules expired guest access a
   critical class (D-GSA-03).
 - **Naming standard**: flow 03 returns any request whose alias isn't lower
   case `[org]-[location]-[department]-[site]` with a known location code
@@ -208,15 +211,23 @@ every future build includes it.
   instead of changing membership, and flow 06 sends all access removals to
   the Service Desk. Cloud-only groups (including each site's
   Guests group) are changed directly through Graph.
-- **Licence checks** read the user's licence service plans through Graph. Any
-  plan whose name contains `SHAREPOINT` counts (SHAREPOINTDESKLESS for F3,
-  SHAREPOINTENTERPRISE for E3/E5). Entra ID P2 is detected by
-  `AAD_PREMIUM_P2`. If the user can't be found, the request is blocked rather
-  than failing the flow.
+- **Licence and account checks** (flow 01) read the requester's account and
+  licence service plans through Graph. Only plans with provisioning status
+  *Success* count, and only the names listed in `SharePointServicePlans`
+  (default F3/E3/E5 SharePoint plans) and `EntraP2ServicePlans`
+  (`AAD_PREMIUM_P2`). Disabled or guest accounts are rejected. Site Owner /
+  Author and Privileged admin requests both need P2. If Graph can't be read
+  (permission, throttling, outage), the flow makes no licensing decision: the
+  request stays *Submitted* and the service owner and IT Ops are emailed.
 - **Site creation** checks `SPSiteManager` reports the site as ready before
-  applying the baseline. The runbook throws if the requested sensitivity label
-  isn't published. Check the Automation job output if a site shows
-  *Provisioned* but the label is missing.
+  applying the baseline. A site is marked *Provisioned* and added to the Site
+  Register only when the Automation job is *Completed* and its `###RESULT###`
+  line says *Success* (G-10). The runbook reads its settings back (sharing,
+  custom script, label, group membership) and reports *Partial* if anything
+  is missing. Any other outcome marks the request *Provisioning failed* and
+  emails the service owner and IT Ops the job ID, errors and steps done. The
+  Automation connector inputs follow the connector's documented names;
+  confirm the action in the designer after the first import.
 - **Choice values** the flows write are checked against the list schema by
   `tools/validate_flows.py`, so a renamed status fails CI rather than failing
   silently at run time.

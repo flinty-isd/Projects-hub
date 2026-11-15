@@ -29,7 +29,7 @@ ApprovedAccessMethod, DecisionLog.
 **Guest Access Register:** Title (guest email), GuestUserId, GroupId,
 SiteId, Sponsor, AccessEndDate, AccessRequestId, Status (Active | Removal
 pending owner decision | Kept - owner decision | Expired - access removed |
-Revoked), ReminderSent, RemovedOn.
+Revoked), ReminderSent, RemovedOn, DecisionDueBy, KeptUntil.
 
 **Access Review Log:** quarterly privileged-role reviews only (flow 06):
 SiteId (empty), Outcome, Reviewer, Comments, AccessCount.
@@ -44,7 +44,7 @@ Ready for migration | Migrated), DecisionLog.
 **Decision Log:** Title (DL001…), Category (InfoPath | File share | Access),
 Decision, DecidedBy, DecisionDate, Rationale.
 
-## Flows (solution 1.4.0.0)
+## Flows (solution 1.5.0.0)
 
 | Flow | Trigger | Does |
 |---|---|---|

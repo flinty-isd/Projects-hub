@@ -398,6 +398,20 @@
           "displayName": "Removed on",
           "type": "DateTime",
           "required": false
+        },
+        {
+          "internalName": "DecisionDueBy",
+          "displayName": "Decision due by",
+          "type": "DateTime",
+          "required": false,
+          "notes": "Set by flow 02 when a removal decision is asked for (14 days), then moved on 7 days at each escalation."
+        },
+        {
+          "internalName": "KeptUntil",
+          "displayName": "Kept until",
+          "type": "DateTime",
+          "required": false,
+          "notes": "End of a Kept - owner decision exception (30 days by default). On this date flow 02 asks the owner again."
         }
       ]
     },

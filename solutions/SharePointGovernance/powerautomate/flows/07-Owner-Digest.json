@@ -2,7 +2,7 @@
   "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
   "contentVersion": "1.0.0.0",
   "displayName": "Monthly site owner digest",
-  "description": "Runs on the 1st of each month at 08:00. For every owner (primary or secondary) of an active site in the Site Register, sends one email listing what needs their attention: sites with only one owner, external sharing on or not confirmed, no sensitivity label, guests ending in the next 30 days or waiting on their decision, and open access requests for their sites, each with what to do. Owners with nothing outstanding get an all-clear email (OwnerDigestAllClear). Notify only: it changes nothing (G-11). Does nothing while OwnerDigestEnabled is No. Attestation, ownership and inactive-site emails come from SharePoint Advanced Management, not this flow.",
+  "description": "Runs on the 1st of each month at 08:00. For every owner (primary or secondary) of a site in the Site Register that isn't archived, sends one email listing what the register shows needs their attention: orphaned sites, sites with only one owner, external sharing on or not confirmed, no sensitivity label, guests ending in the next 30 days or waiting on their decision, and open access requests for their sites, each with what to do. Owners with nothing outstanding get an all-clear email only if OwnerDigestAllClear is Yes (off by default until the digest's coverage is accepted). Notify only: it changes nothing (G-11). Does nothing while OwnerDigestEnabled is No. Attestation, ownership and inactive-site emails come from SharePoint Advanced Management, not this flow.",
   "connectionReferences": {
     "shared_sharepointonline": {
       "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
@@ -34,7 +34,7 @@
     },
     "OwnerDigestAllClear": {
       "type": "Bool",
-      "defaultValue": true
+      "defaultValue": false
     }
   },
   "triggers": {
@@ -78,7 +78,7 @@
             "parameters": {
               "dataset": "@parameters('GovernanceSiteUrl')",
               "table": "Site Register",
-              "$filter": "Status eq 'Active'",
+              "$filter": "Status ne 'Archived'",
               "$top": 5000
             }
           },
@@ -95,7 +95,7 @@
             "parameters": {
               "dataset": "@parameters('GovernanceSiteUrl')",
               "table": "Guest Access Register",
-              "$filter": "@{concat('(Status eq ''Active'' and AccessEndDate le ''', addDays(utcNow(), 30, 'yyyy-MM-dd'), ''') or Status eq ''Removal pending owner decision''')}",
+              "$filter": "@{concat('(Status eq ''Active'' and AccessEndDate le ''', addDays(utcNow(), 30, 'yyyy-MM-dd'), ''') or Status eq ''Removal pending owner decision'' or Status eq ''Kept - owner decision''')}",
               "$top": 5000
             }
           },
@@ -191,6 +191,40 @@
                 ]
               }
             },
+            "Filter_Orphaned": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Filter_my_sites')",
+                "where": "@equals(item()?['Status']?['Value'], 'Orphaned - owner inactive')"
+              },
+              "runAfter": {
+                "Select_my_site_ids": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Table_Orphaned": {
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_Orphaned')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Site",
+                    "value": "@item()?['Title']"
+                  },
+                  {
+                    "header": "URL",
+                    "value": "@item()?['SiteUrl']"
+                  }
+                ]
+              },
+              "runAfter": {
+                "Filter_Orphaned": [
+                  "Succeeded"
+                ]
+              }
+            },
             "Filter_No_second_owner": {
               "type": "Query",
               "inputs": {
@@ -198,7 +232,7 @@
                 "where": "@empty(item()?['SecondaryOwner'])"
               },
               "runAfter": {
-                "Select_my_site_ids": [
+                "Table_Orphaned": [
                   "Succeeded"
                 ]
               }
@@ -375,7 +409,7 @@
             },
             "Count_items": {
               "type": "Compose",
-              "inputs": "@add(add(add(add(length(body('Filter_No_second_owner')), length(body('Filter_Sharing_on'))), length(body('Filter_No_label'))), length(body('Filter_Guests'))), length(body('Filter_Requests')))",
+              "inputs": "@add(add(add(add(add(length(body('Filter_Orphaned')), length(body('Filter_No_second_owner'))), length(body('Filter_Sharing_on'))), length(body('Filter_No_label'))), length(body('Filter_Guests'))), length(body('Filter_Requests')))",
               "runAfter": {
                 "Table_Requests": [
                   "Succeeded"
@@ -384,7 +418,7 @@
             },
             "Compose_sections": {
               "type": "Compose",
-              "inputs": "@concat(if(empty(body('Filter_No_second_owner')), '', concat('<h3>Sites with only one owner</h3><p>Every site needs two named owners. Raise a site change request on the IT Enterprise Governance site naming a second owner (not a shared mailbox).</p>', body('Table_No_second_owner'))), if(empty(body('Filter_Sharing_on')), '', concat('<h3>Sites open to guests, or sharing not confirmed</h3><p>External sharing is off unless InfoSec approved it. If guests don't need this site, ask IT to switch sharing off; if they do, confirm it with InfoSec.</p>', body('Table_Sharing_on'))), if(empty(body('Filter_No_label')), '', concat('<h3>Sites without a sensitivity label</h3><p>Choose General, Confidential or Highly Confidential and tell the SharePoint service owner.</p>', body('Table_No_label'))), if(empty(body('Filter_Guests')), '', concat('<h3>Guests ending in the next 30 days, or waiting for your decision</h3><p>To keep a guest, their sponsor raises a new access request (90 days or less). If a removal is waiting on you, answer the approval in Teams or Outlook.</p>', body('Table_Guests'))), if(empty(body('Filter_Requests')), '', concat('<h3>Access requests for your sites still open</h3><p>Nothing to do unless an approval is waiting for you in Teams or Outlook.</p>', body('Table_Requests'))))",
+              "inputs": "@concat(if(empty(body('Filter_Orphaned')), '', concat('<h3>Sites marked orphaned</h3><p>The primary owner has left or been disabled. Raise a site change request naming a new primary owner.</p>', body('Table_Orphaned'))), if(empty(body('Filter_No_second_owner')), '', concat('<h3>Sites with only one owner</h3><p>Every site needs two named owners. Raise a site change request on the IT Enterprise Governance site naming a second owner (not a shared mailbox).</p>', body('Table_No_second_owner'))), if(empty(body('Filter_Sharing_on')), '', concat('<h3>Sites open to guests, or sharing not confirmed</h3><p>External sharing is off unless InfoSec approved it. If guests don't need this site, ask IT to switch sharing off; if they do, confirm it with InfoSec.</p>', body('Table_Sharing_on'))), if(empty(body('Filter_No_label')), '', concat('<h3>Sites without a sensitivity label</h3><p>Choose General, Confidential or Highly Confidential and tell the SharePoint service owner.</p>', body('Table_No_label'))), if(empty(body('Filter_Guests')), '', concat('<h3>Guests ending in the next 30 days, waiting for your decision, or kept as an exception</h3><p>To keep a guest, their sponsor raises a new access request (90 days or less). If a removal is waiting on you, answer the approval in Teams or Outlook.</p>', body('Table_Guests'))), if(empty(body('Filter_Requests')), '', concat('<h3>Access requests for your sites still open</h3><p>Nothing to do unless an approval is waiting for you in Teams or Outlook.</p>', body('Table_Requests'))))",
               "runAfter": {
                 "Count_items": [
                   "Succeeded"
@@ -411,7 +445,7 @@
                     "parameters": {
                       "emailMessage/To": "@{items('For_each_owner')}",
                       "emailMessage/Subject": "@{concat('Your SharePoint sites: ', string(outputs('Count_items')), ' item(s) need attention (', formatDateTime(utcNow(), 'MMMM yyyy'), ')')}",
-                      "emailMessage/Body": "<p>This is your monthly summary of the SharePoint sites you own. Each section says what to do. Nothing has been changed on your sites: access decisions stay with you (G-11).</p>@{outputs('Compose_sections')}<p>Questions: reply to this email or contact the SharePoint service owner (@{parameters('SharePointServiceOwnerEmail')}). Site attestation reminders come separately from SharePoint every 3 months.</p>",
+                      "emailMessage/Body": "<p>This is your monthly summary of the SharePoint sites you own, from the Site Register (the governance record of owners, sharing and labels), not a live check of each site. Each section says what to do. Nothing has been changed on your sites: access decisions stay with you (G-11).</p>@{outputs('Compose_sections')}<p>Questions: reply to this email or contact the SharePoint service owner (@{parameters('SharePointServiceOwnerEmail')}). Site attestation reminders come separately from SharePoint every 3 months.</p>",
                       "emailMessage/Importance": "Normal"
                     }
                   },
@@ -440,7 +474,7 @@
                           "parameters": {
                             "emailMessage/To": "@{items('For_each_owner')}",
                             "emailMessage/Subject": "@{concat('Your SharePoint sites: all clear (', formatDateTime(utcNow(), 'MMMM yyyy'), ')')}",
-                            "emailMessage/Body": "<p>Nothing needs your attention on the SharePoint sites you own this month: each has two owners, a sensitivity label, external sharing off or confirmed, and no guests ending or requests waiting.</p><p>Thank you. Site attestation reminders come separately from SharePoint every 3 months.</p>",
+                            "emailMessage/Body": "<p>The Site Register shows nothing needing your attention on the SharePoint sites you own this month: each is recorded with two owners, a sensitivity label and external sharing off or confirmed, with no guests ending or requests waiting. This is a check of the register, not of the sites themselves.</p><p>Thank you. Site attestation reminders come separately from SharePoint every 3 months.</p>",
                             "emailMessage/Importance": "Normal"
                           }
                         },

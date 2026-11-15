@@ -105,6 +105,8 @@ Delete any empty columns from a row before importing; check Yes/No and dates imp
 | Status | Status | Yes | one of: Active | Removal pending owner decision | Kept - owner decision | Expired - access removed | Revoked |
 | ReminderSent | Expiry reminder sent |  | Yes or No |
 | RemovedOn | Removed on |  | yyyy-mm-dd |
+| DecisionDueBy | Decision due by |  | yyyy-mm-dd; leave blank: set by flow 02 |
+| KeptUntil | Kept until |  | yyyy-mm-dd: end of a Kept - owner decision exception (30 days) |
 
 ## Access Review Log (`Access_Review_Log.csv`)
 
