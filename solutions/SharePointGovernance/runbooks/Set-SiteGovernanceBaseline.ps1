@@ -42,6 +42,7 @@ param(
     [Parameter(Mandatory)] [string] $OwnersGroupId,
     [Parameter(Mandatory)] [string] $MembersGroupId,
     [string] $VisitorsGroupId,
+    [string] $GuestsGroupId,
     [ValidateSet('Disabled', 'ExistingExternalUserSharingOnly')]
     [string] $ExternalSharing = 'Disabled',
     [ValidateSet('General', 'Confidential', 'Highly Confidential')]
@@ -93,6 +94,10 @@ $assignments = @(
 if ($VisitorsGroupId) {
     $assignments += @{ Group = (Get-PnPGroup -AssociatedVisitorGroup -Connection $site); Id = $VisitorsGroupId }
 }
+# Contractor guests get read-only access through the site's cloud Guests group, never edit rights.
+if ($GuestsGroupId) {
+    $assignments += @{ Group = (Get-PnPGroup -AssociatedVisitorGroup -Connection $site); Id = $GuestsGroupId }
+}
 
 foreach ($a in $assignments) {
     Add-PnPGroupMember -Group $a.Group -LoginName (Get-GroupClaim $a.Id) -Connection $site
@@ -123,6 +128,27 @@ if ($label) {
     # Fail loudly: a Highly Confidential site without its label is a governance gap.
     throw "Sensitivity label '$SensitivityLabel' is not published to this tenant."
 }
+
+# --- Read back -----------------------------------------------------------------
+# Success means the settings are there now, not that the commands ran (G-10).
+$check = Get-PnPTenantSite -Url $SiteUrl -Connection $admin
+$problems = @()
+if ("$($check.SharingCapability)" -ne $ExternalSharing) { $problems += "Sharing is $($check.SharingCapability), expected $ExternalSharing" }
+if ("$($check.DenyAddAndCustomizePages)" -notin @('Enabled', 'True')) { $problems += "Custom script is not blocked ($($check.DenyAddAndCustomizePages))" }
+if ($check.SensitivityLabel -and $label -and "$($check.SensitivityLabel)" -ne "$($label.Id)") { $problems += "Sensitivity label on the site is $($check.SensitivityLabel), expected $($label.Id)" }
+foreach ($a in $assignments) {
+    $claim = Get-GroupClaim $a.Id
+    if (-not (Get-PnPGroupMember -Group $a.Group -Connection $site | Where-Object LoginName -eq $claim)) {
+        $problems += "Group $($a.Id) is not in '$($a.Group.Title)'"
+    }
+}
+if ($problems) {
+    $result.Errors += $problems
+    $result.Status = 'Partial'
+    Write-Result
+    throw "Baseline read-back found $($problems.Count) problem(s); see the result line."
+}
+$result.Steps += 'Read back: sharing, custom script, label and group membership confirmed'
 
 $result.Status = 'Success'
 Write-Result

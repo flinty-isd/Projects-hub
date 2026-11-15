@@ -61,11 +61,11 @@
 | Site owner / author | Owner/Author role | named | E3 or equivalent | yes | create, edit, publish | service owner is second approver |
 | Long-term contractor | Entra ID guest, scoped | guest | no | no | read-only by default | *Rejected - Not time-bound* without an end date ≤ 90 days |
 | Screen / kiosk | Published page, display mode | none | no | no | display only | *Closed - Use published display page* |
-| Privileged admin | PIM-eligible role | named | licensed | yes | privileged | *Blocked - Entra ID P2 required* without P2; else *Approved - PIM eligible assignment pending*; InfoSec approves |
+| Privileged admin | PIM-eligible role | named | licensed | yes | privileged | *Blocked - Entra ID P2 required* without an active P2 plan (checked before InfoSec is asked); else InfoSec approves → *Approved - PIM eligible assignment pending* |
 | Service / shared account | not permitted (D-03) | — | — | — | none | *Rejected - Prohibited* |
 
 Anyone who signs in needs a named account and a licence with SharePoint
-(minimum F3). Plans containing SHAREPOINT count; P2 is AAD_PREMIUM_P2. Synced
+(minimum F3). Only service plans with status Success count (SharePoint: SHAREPOINTDESKLESS, SHAREPOINTSTANDARD, SHAREPOINTENTERPRISE; P2: AAD_PREMIUM_P2); a disabled plan doesn't. If Graph can't be read, flow 01 makes no decision and the request stays Submitted. Synced
 AD groups (DEP003) are changed by the Service Desk → *Approved - awaiting AD
 group change*. Unknown user type → *Rejected - Unknown access type*.
 
@@ -74,8 +74,10 @@ group change*. Unknown user type → *Rejected - Unknown access type*.
 - 90 days maximum per grant, named Sponsor, MFA, read-only by default;
   renewal is a new request. InfoSec approves.
 - Guests ending within 14 days are reviewed weekly.
-- On the end date flow 02 asks the owner or sponsor (G-11): Approve →
-  *Expired - access removed*; Reject → *Kept - owner decision*, InfoSec told.
+- On the end date flow 02 asks the owner or sponsor (G-11), due within 14
+  days: Approve → *Expired - access removed*; Reject → *Kept - owner decision*
+  until *Kept until* (30 days), then asked again; InfoSec told. No decision by
+  the due date → escalated to the service owner and InfoSec every 7 days.
   Automatic removal only if the Board rules it (D-GSA-03,
   `GuestAutoRemoval` = Yes).
 - The tenant's built-in guest expiry setting stays **off** until D-GSA-03:

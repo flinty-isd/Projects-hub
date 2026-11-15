@@ -3,7 +3,7 @@
   "uniqueName": "SharePointGovernance",
   "displayName": "SharePoint Governance (BAU)",
   "description": "Power Automate flows that enforce SharePoint Online governance controls (PID v4.2) in BAU.",
-  "version": "1.4.0.0",
+  "version": "1.5.0.0",
   "publisher": {
     "uniqueName": "HPUKIT",
     "displayName": "HPUK IT",
@@ -69,13 +69,28 @@
     },
     "OwnerDigestAllClear": {
       "displayName": "Send all-clear digests",
-      "description": "Yes (default): owners with nothing outstanding get a short all-clear email each month. No: they get nothing.",
-      "default": true
+      "description": "No (default): owners with nothing outstanding get no email. Set Yes only once the digest's coverage has been accepted: it checks the Site Register, not the live sites.",
+      "default": false
     },
     "UrgentAlertsEnabled": {
       "displayName": "Send urgent site alerts",
       "description": "No (default): flow 08 does nothing. Set Yes once the Site Register is loaded, so owners get an immediate email when a site becomes orphaned or a Highly Confidential site has external sharing on.",
       "default": false
+    },
+    "SharePointServicePlans": {
+      "displayName": "SharePoint service plans",
+      "description": "Service plan names (semicolon-separated) that count as a SharePoint licence when their provisioning status is Success. Disabled or pending plans don't count.",
+      "default": "SHAREPOINTDESKLESS;SHAREPOINTSTANDARD;SHAREPOINTENTERPRISE"
+    },
+    "EntraP2ServicePlans": {
+      "displayName": "Entra ID P2 service plans",
+      "description": "Service plan names (semicolon-separated) that count as Entra ID P2 when their provisioning status is Success. Checked for Site Owner / Author and Privileged admin requests.",
+      "default": "AAD_PREMIUM_P2"
+    },
+    "KeptExceptionDays": {
+      "displayName": "Kept guest exception (days)",
+      "description": "How long a guest kept by owner decision stays before flow 02 asks again. Agreed: 30 days.",
+      "default": 30
     }
   },
   "connectionReferences": {

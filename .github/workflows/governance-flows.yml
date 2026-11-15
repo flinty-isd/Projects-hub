@@ -22,10 +22,15 @@ jobs:
         run: python solutions/SharePointGovernance/tools/validate_flows.py
       - name: Validate the dashboard views against the list schema
         run: python solutions/SharePointGovernance/tools/validate_dashboard.py
-      - name: Build the importable solution package
-        run: python solutions/SharePointGovernance/tools/build_solution.py --out dist
+      - name: Build the solution package and the deployment kit
+        run: python solutions/SharePointGovernance/tools/build_kit.py --out dist
       - name: Upload solution package
         uses: actions/upload-artifact@v4
         with:
           name: SharePointGovernance-solution
-          path: dist/*.zip
+          path: dist/SharePointGovernance_*.zip
+      - name: Upload deployment kit
+        uses: actions/upload-artifact@v4
+        with:
+          name: SharePointGovernance-DeploymentKit
+          path: dist/SharePointGovernance-DeploymentKit_*.zip
