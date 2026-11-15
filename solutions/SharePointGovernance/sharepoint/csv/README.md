@@ -52,6 +52,7 @@ Delete any empty columns from a row before importing; check Yes/No and dates imp
 | Status | Status | Yes | one of: Active | Orphaned - owner inactive | Read-only | Archived |
 | LastAccessReview | Last access review |  | yyyy-mm-dd — optional: site reviews are SAM attestations from 1.2.0.0 |
 | NextAccessReview | Next access review |  | yyyy-mm-dd — optional: site reviews are SAM attestations from 1.2.0.0 |
+| UrgentAlertKey | Urgent alert sent for |  | leave blank: written by flow 08 |
 
 ## Site Requests (`Site_Requests.csv`)
 

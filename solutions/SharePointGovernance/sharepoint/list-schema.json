@@ -111,6 +111,13 @@
           "type": "DateTime",
           "required": false,
           "notes": "Not updated by a flow from 1.2.0.0: site reviews are SAM site attestations (D-GSA-08). Keep for reference or leave blank."
+        },
+        {
+          "internalName": "UrgentAlertKey",
+          "displayName": "Urgent alert sent for",
+          "type": "Text",
+          "required": false,
+          "notes": "Written by flow 08 only: which urgent alert was last sent (orphaned; hc-sharing:...). Cleared when the issue is fixed. Leave blank when loading."
         }
       ]
     },
