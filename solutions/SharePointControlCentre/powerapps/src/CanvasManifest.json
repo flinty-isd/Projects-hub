@@ -1,0 +1,23 @@
+{
+  "FormatVersion": "2.1",
+  "_comment_UNVERIFIED": "Best-effort sketch of the modern Power Apps source-file manifest, written from memory with no way to check it in this environment (no Power Platform CLI, no reachable reference, no prior real example to copy). Treat every field here as a guess at the right shape, not a confirmed schema. If `pac canvas pack` / Studio's source import rejects this, it's this file, not the idea - rebuild in Studio by hand using ../formulas.md instead.",
+  "Properties": {
+    "AppName": "ControlCentreAttention",
+    "AppDescription": "Unified Attention Required view across SP_RAID, SP_Actions, SP_MigrationRegister and SP_Decisions.",
+    "DocumentLayoutWidth": 1366,
+    "DocumentLayoutHeight": 768,
+    "DocumentLayoutOrientation": "landscape"
+  },
+  "PublishInfo": {
+    "AppVersion": "0.0.1"
+  },
+  "Screens": [
+    "AttentionScreen"
+  ],
+  "DataSources": [
+    { "Name": "SP_RAID", "Type": "SharePoint" },
+    { "Name": "SP_Actions", "Type": "SharePoint" },
+    { "Name": "SP_MigrationRegister", "Type": "SharePoint" },
+    { "Name": "SP_Decisions", "Type": "SharePoint" }
+  ]
+}
