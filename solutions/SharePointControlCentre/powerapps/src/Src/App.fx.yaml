@@ -1,0 +1,47 @@
+# UNVERIFIED - see ../../README.md. Best-effort sketch of App.fx.yaml,
+# written from memory with no CLI or reference available to check it
+# against. If this doesn't import, use ../formulas.md instead.
+App:
+  Properties:
+    StartScreen: =AttentionScreen
+    OnStart: |
+      =ClearCollect(
+          colAttention,
+          AddColumns(
+              Filter(SP_RAID, RAG = "Red", Status = "Open"),
+              "Category", "Red RAID",
+              "Description", Title,
+              "OwnerName", Owner.DisplayName,
+              "RAGValue", "Red"
+          )
+      );
+      Collect(
+          colAttention,
+          AddColumns(
+              Filter(SP_Actions, Status <> "Closed", DueDate < Today()),
+              "Category", "Overdue Action",
+              "Description", Title,
+              "OwnerName", Owner.DisplayName,
+              "RAGValue", "Red"
+          )
+      );
+      Collect(
+          colAttention,
+          AddColumns(
+              Filter(SP_MigrationRegister, 'Migration Status' = "Blocked"),
+              "Category", "Blocked Site",
+              "Description", Title & " - " & 'Blocker / Dependency',
+              "OwnerName", 'Migration Owner'.DisplayName,
+              "RAGValue", "Red"
+          )
+      );
+      Collect(
+          colAttention,
+          AddColumns(
+              Filter(SP_Decisions, Status = "Pending"),
+              "Category", "Decision Required",
+              "Description", Title,
+              "OwnerName", Owner.DisplayName,
+              "RAGValue", "Amber"
+          )
+      );

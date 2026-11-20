@@ -1,0 +1,32 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
+  "elmType": "div",
+  "style": { "display": "flex", "flex-direction": "column", "gap": "4px" },
+  "children": [
+    {
+      "elmType": "div",
+      "style": {
+        "height": "10px",
+        "background-color": "#f3f2f1",
+        "border-radius": "5px",
+        "overflow": "hidden"
+      },
+      "children": [
+        {
+          "elmType": "div",
+          "style": {
+            "height": "100%",
+            "background-color": "#0078d4",
+            "border-radius": "5px",
+            "width": "=if([$DeliveryStatus] == 'Assess', '7%', if([$DeliveryStatus] == 'Define', '21%', if([$DeliveryStatus] == 'Design', '36%', if([$DeliveryStatus] == 'Build', '50%', if([$DeliveryStatus] == 'UAT', '64%', if([$DeliveryStatus] == 'Sign-off', '79%', if([$DeliveryStatus] == 'Complete', '100%', '0%')))))))"
+          }
+        }
+      ]
+    },
+    {
+      "elmType": "span",
+      "txtContent": "[$DeliveryStatus]",
+      "style": { "font-size": "12px", "color": "#605e5c" }
+    }
+  ]
+}
