@@ -1,10 +1,10 @@
-# Governance deployment and test guide (solution 1.5.0.0)
+# Governance deployment and test guide (solution 1.6.0.0)
 
 How to deploy the SharePoint governance flows, runbook, dashboard and SAM
 policies to a test environment, test them, and then go live. Work through it
 in order; each section says who does it.
 
-Deploy from the **deployment kit** (`SharePointGovernance-DeploymentKit_1_5_0_0.zip`,
+Deploy from the **deployment kit** (`SharePointGovernance-DeploymentKit_1_6_0_0.zip`,
 CI artifact *SharePointGovernance-DeploymentKit*, or `python tools/build_kit.py`).
 It holds everything this guide refers to and a `MANIFEST.json` of SHA-256
 checksums: check them before you start and keep the manifest with the test
@@ -25,7 +25,7 @@ evidence.
 - [ ] **Test site**: a copy of the IT Enterprise Governance site (or a test site collection), plus two or three throwaway test sites to provision and break.
 - [ ] **Test people**: two internal test users who can act as site owners, one unlicensed or F3 user, one external test mailbox for a guest.
 - [ ] **Licences**: the flow owner has Power Automate premium (HTTP with Entra ID and Azure Automation are premium). Confirm SAM covers each policy (restricted site creation needs SAM Plan 1).
-- [ ] **Kit**: `SharePointGovernance-DeploymentKit_1_5_0_0.zip`; checksums match `MANIFEST.json`.
+- [ ] **Kit**: `SharePointGovernance-DeploymentKit_1_6_0_0.zip`; checksums match `MANIFEST.json`.
 
 ## 2. Deploy to test
 
@@ -34,6 +34,7 @@ evidence.
 1. On the test governance site, create the lists in `sharepoint/list-schema.json` (PnP.PowerShell, or by hand from the column guide in `sharepoint/csv/README.md`).
 2. Check the Site Register has the **Urgent alert sent for** text column (`UrgentAlertKey`, flow 08), and the Guest Access Register has **Decision due by** (`DecisionDueBy`) and **Kept until** (`KeptUntil`) date columns (flow 02). On lists created before 1.5.0.0, add these by hand.
 3. Load a **small** Site Register sample from `Site_Register.csv`: five or six rows for the test sites and test owners, not all 225. Include one site with no secondary owner, one with external sharing on, and one with no sensitivity label, so the digest has something to report.
+4. Load a **small** Page Health Register sample from `Page_Health_Register.csv`: two or three test pages with a test content owner. Include one with `NextReviewDue` overdue and one with `BrokenLinksFound` = Yes, so the page review digest has something to report.
 
 ### 2.2 Dashboard (IT PM)
 
@@ -86,12 +87,14 @@ For the HTTP with Entra ID connection: `User.Read.All`, `GroupMember.ReadWrite.A
 | Send the monthly owner digest | **No** for now |
 | Send all-clear digests | **No** (until the digest's coverage is accepted) |
 | Send urgent site alerts | **No** for now |
+| Send the monthly page review digest | **No** for now |
+| Send all-clear page review digests | **No** (until the digest's coverage is accepted) |
 
 5. If 1.2.0.0 or earlier was imported before, delete the unused **Access review interval (days)** variable.
 
 ### 2.7 Turn the flows on (IT PM)
 
-In this order: **03**, **06**, then **01**, **02**, then **05**, then **07** and **08**. Flows 07 and 08 stay quiet until their switches are Yes (tests T15–T21).
+In this order: **03**, **06**, then **01**, **02**, then **05**, then **07**, **08** and **09**. Flows 07, 08 and 09 stay quiet until their switches are Yes (tests T15–T21, T24–T26).
 
 ### 2.8 SAM policies (IT Operations owner, InfoSec approves)
 
@@ -138,8 +141,11 @@ Record each result (pass, fail, notes) in the UAT log. For any fail, keep the fl
 | T19 | 08 Orphaned | Switch Yes; set another test site's Status to *Orphaned - owner inactive* | One high-importance email to both owners and the service owner at the next trigger poll (every 5 minutes; not a delivery guarantee); *Urgent alert sent for* = `orphaned;` |
 | T20 | 08 No repeat | Edit the same site's Department | No second email |
 | T21 | 08 Cleared and HC | Set the site back to Active (column clears); then set Sensitivity Highly Confidential with sharing ExistingExternalUserSharingOnly | Second step: one email with InfoSec copied |
-| T22 | Dashboard | Open Governance-Dashboard.aspx | Each panel shows its view and the items created in T01–T21; Status badges coloured with words |
+| T22 | Dashboard | Open Governance-Dashboard.aspx | Each panel shows its view and the items created in T01–T21, T24–T26; Status badges coloured with words |
 | T23 | SAM | Attestation (notify only) on one test site | Owner receives the attestation email; nothing goes read-only |
+| T24 | 09 Off | Switch No, run flow 09 by hand | No emails |
+| T25 | 09 Digest | Switch Yes, run flow 09 by hand | The content owner of the sample pages gets one email listing the overdue page and the broken-links page, each with what to do; Status is unchanged by the flow |
+| T26 | 09 All clear | A test content owner whose pages have no issues, with *Send all-clear page review digests* No, then Yes | No email while No; one all-clear when Yes. An owner with one clean and one overdue page gets a digest, never an all-clear |
 
 **Exit criteria:**
 
@@ -152,10 +158,10 @@ Review findings still open (R16 alert deduplication under concurrent edits, R17 
 ## 4. Go live (production)
 
 1. Agree the date with the Control Board (plan: w/c 4 January 2027).
-2. Repeat 2.1 to 2.7 in production with **real** values: the real governance site, role mailboxes and Automation account. Load the full Site Register (225 sites) after the owner emails have been checked.
-3. Turn the flows on in the same order, with both switches still **No**.
+2. Repeat 2.1 to 2.7 in production with **real** values: the real governance site, role mailboxes and Automation account. Load the full Site Register (225 sites) after the owner emails have been checked, and the Page Health Register once content owners for the pages worth tracking are agreed.
+3. Turn the flows on in the same order, with all switches still **No**.
 4. Run the production smoke tests: T01 with a real request, T05 and T10 with real accounts, T22, and confirm a failure alert reaches the support mailbox.
-5. Brief site owners (comms lead), then set **Send urgent site alerts** = Yes and, from the 1st of the next month, **Send the monthly owner digest** = Yes.
+5. Brief site owners (comms lead), then set **Send urgent site alerts** = Yes and, from the 1st of the next month, **Send the monthly owner digest** = Yes. Once the Page Health Register is loaded and content owners are briefed, set **Send the monthly page review digest** = Yes the same way.
 6. Configure the SAM policies in the order in `SAM-POLICIES.md`, notify-only until the Board approves enforcement.
 7. Hand over to the SharePoint service owner's team: flows, connections (backup owner signed in), runbook, dashboard and this guide.
 

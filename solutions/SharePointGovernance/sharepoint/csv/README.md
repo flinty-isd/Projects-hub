@@ -16,6 +16,7 @@ with the list however the display names are set. Fill one row per item.
 2. **Guest_Access_Register.csv**: any contractor guests who already have access, with an end date no more than 90 days ahead.
 3. **File_Share_Register.csv**: remaining file shares, if that work is still open.
 4. **Decision_Log.csv**: earlier governance decisions you want on record.
+5. **Page_Health_Register.csv**: existing published pages worth tracking, with a content owner, a last-reviewed date and a review frequency (spread NextReviewDue over a few months so reminders don't all land at once).
 
 Site Requests, Access Requests and Access Review Log are normally filled by people and flows as work happens; their CSVs are here for completeness and for bulk loads.
 
@@ -146,3 +147,18 @@ Delete any empty columns from a row before importing; check Yes/No and dates imp
 | DecidedBy | Decided by | Yes | text |
 | DecisionDate | Decision date | Yes | yyyy-mm-dd |
 | Rationale | Rationale |  | text |
+
+## Page Health Register (`Page_Health_Register.csv`)
+
+| Column | Display name | Required | Value |
+|---|---|---|---|
+| Title | Title | Yes | Page title |
+| PageUrl | Page URL | Yes | text |
+| SiteId | Site |  | ID of the Site Register row — optional |
+| ContentOwner | Content owner | Yes | email address — accountable for reviewing this page's content. Must be a named, enabled, internal user. |
+| ReviewFrequencyDays | Review frequency (days) | Yes | number — 365 unless the page needs reviewing more often |
+| LastReviewed | Last reviewed | Yes | yyyy-mm-dd |
+| NextReviewDue | Next review due | Yes | yyyy-mm-dd — not computed by a flow: set by hand, usually LastReviewed + ReviewFrequencyDays |
+| BrokenLinksFound | Broken links found |  | Yes or No |
+| Status | Status | Yes | one of: Healthy | Review due | Stale - review overdue | Broken links found | Archived |
+| Notes | Notes |  | text |

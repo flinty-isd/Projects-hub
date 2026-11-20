@@ -1,0 +1,303 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Monthly page review reminder",
+  "description": "Runs on the 1st of each month at 09:00. For every content owner with a page in the Page Health Register that is due or overdue for review (NextReviewDue within 30 days, or Status is Review due / Stale - review overdue) or has broken links reported, sends one email listing their pages and what to check. Owners with nothing outstanding get an all-clear email only if PageReviewDigestAllClear is Yes. Notify only: it never changes Status itself - the content owner reviews the page and sets Status by hand, the same way Site Register's access review dates are hand-maintained. Does nothing while PageReviewDigestEnabled is No.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "GovernanceSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{governance-site}"
+    },
+    "PageReviewDigestEnabled": {
+      "type": "Bool",
+      "defaultValue": false
+    },
+    "PageReviewDigestAllClear": {
+      "type": "Bool",
+      "defaultValue": false
+    }
+  },
+  "triggers": {
+    "Monthly_on_the_1st": {
+      "type": "Recurrence",
+      "recurrence": {
+        "frequency": "Month",
+        "interval": 1,
+        "timeZone": "GMT Standard Time",
+        "startTime": "2027-01-01T09:00:00Z",
+        "schedule": {
+          "hours": [
+            9
+          ],
+          "minutes": [
+            0
+          ]
+        }
+      }
+    }
+  },
+  "actions": {
+    "Condition_Digest_enabled": {
+      "type": "If",
+      "expression": {
+        "equals": [
+          "@parameters('PageReviewDigestEnabled')",
+          true
+        ]
+      },
+      "runAfter": {},
+      "actions": {
+        "Get_pages": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('GovernanceSiteUrl')",
+              "table": "Page Health Register",
+              "$filter": "Status ne 'Archived'",
+              "$top": 5000
+            }
+          },
+          "runAfter": {}
+        },
+        "Select_owners": {
+          "type": "Select",
+          "inputs": {
+            "from": "@body('Get_pages')?['value']",
+            "select": "@toLower(coalesce(item()?['ContentOwner']?['Email'], ''))"
+          },
+          "runAfter": {
+            "Get_pages": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Dedupe_owners": {
+          "type": "Compose",
+          "inputs": "@union(body('Select_owners'), body('Select_owners'))",
+          "runAfter": {
+            "Select_owners": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Filter_owners": {
+          "type": "Query",
+          "inputs": {
+            "from": "@outputs('Dedupe_owners')",
+            "where": "@not(empty(item()))"
+          },
+          "runAfter": {
+            "Dedupe_owners": [
+              "Succeeded"
+            ]
+          }
+        },
+        "For_each_owner": {
+          "type": "Foreach",
+          "foreach": "@body('Filter_owners')",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 5
+            }
+          },
+          "actions": {
+            "Filter_my_pages": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Get_pages')?['value']",
+                "where": "@equals(toLower(coalesce(item()?['ContentOwner']?['Email'], '')), items('For_each_owner'))"
+              },
+              "runAfter": {}
+            },
+            "Filter_Due_or_overdue": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Filter_my_pages')",
+                "where": "@or(or(equals(item()?['Status']?['Value'], 'Review due'), equals(item()?['Status']?['Value'], 'Stale - review overdue')), lessOrEquals(item()?['NextReviewDue'], addDays(utcNow(), 30, 'yyyy-MM-dd')))"
+              },
+              "runAfter": {
+                "Filter_my_pages": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Table_Due_or_overdue": {
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_Due_or_overdue')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Page",
+                    "value": "@item()?['Title']"
+                  },
+                  {
+                    "header": "URL",
+                    "value": "@item()?['PageUrl']"
+                  },
+                  {
+                    "header": "Review due",
+                    "value": "@formatDateTime(item()?['NextReviewDue'], 'dd MMM yyyy')"
+                  },
+                  {
+                    "header": "Status",
+                    "value": "@item()?['Status']?['Value']"
+                  }
+                ]
+              },
+              "runAfter": {
+                "Filter_Due_or_overdue": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_Broken_links": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Filter_my_pages')",
+                "where": "@equals(item()?['BrokenLinksFound'], true)"
+              },
+              "runAfter": {
+                "Table_Due_or_overdue": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Table_Broken_links": {
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Filter_Broken_links')",
+                "format": "HTML",
+                "columns": [
+                  {
+                    "header": "Page",
+                    "value": "@item()?['Title']"
+                  },
+                  {
+                    "header": "URL",
+                    "value": "@item()?['PageUrl']"
+                  }
+                ]
+              },
+              "runAfter": {
+                "Filter_Broken_links": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Count_items": {
+              "type": "Compose",
+              "inputs": "@add(length(body('Filter_Due_or_overdue')), length(body('Filter_Broken_links')))",
+              "runAfter": {
+                "Table_Broken_links": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Compose_sections": {
+              "type": "Compose",
+              "inputs": "@concat(if(empty(body('Filter_Due_or_overdue')), '', concat('<h3>Pages due or overdue for review</h3><p>Open each page, check the content is still accurate, then update Last reviewed, Next review due and Status in the Page Health Register.</p>', body('Table_Due_or_overdue'))), if(empty(body('Filter_Broken_links')), '', concat('<h3>Pages with broken links reported</h3><p>Fix the links, then clear Broken links found and update Status.</p>', body('Table_Broken_links'))))",
+              "runAfter": {
+                "Count_items": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Condition_Anything_to_report": {
+              "type": "If",
+              "expression": {
+                "greater": [
+                  "@outputs('Count_items')",
+                  0
+                ]
+              },
+              "actions": {
+                "Send_digest": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@{items('For_each_owner')}",
+                      "emailMessage/Subject": "@{concat('Your pages: ', string(outputs('Count_items')), ' item(s) need a review (', formatDateTime(utcNow(), 'MMMM yyyy'), ')')}",
+                      "emailMessage/Body": "<p>This is your monthly summary of the pages you own content for. Each section says what to do. Nothing has been changed on these pages or their Status - that stays with you.</p>@{outputs('Compose_sections')}<p>Questions: reply to this email or contact the SharePoint service owner.</p>",
+                      "emailMessage/Importance": "Normal"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "else": {
+                "actions": {
+                  "Condition_All_clear_enabled": {
+                    "type": "If",
+                    "expression": {
+                      "equals": [
+                        "@parameters('PageReviewDigestAllClear')",
+                        true
+                      ]
+                    },
+                    "actions": {
+                      "Send_all_clear": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_office365",
+                            "operationId": "SendEmailV2",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                          },
+                          "parameters": {
+                            "emailMessage/To": "@{items('For_each_owner')}",
+                            "emailMessage/Subject": "@{concat('Your pages: all clear (', formatDateTime(utcNow(), 'MMMM yyyy'), ')')}",
+                            "emailMessage/Body": "<p>Nothing needs your attention on the pages you own content for this month: none are due or overdue for review, and no broken links are reported.</p><p>Thank you.</p>",
+                            "emailMessage/Importance": "Normal"
+                          }
+                        },
+                        "runAfter": {}
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                }
+              },
+              "runAfter": {
+                "Compose_sections": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "Filter_owners": [
+              "Succeeded"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
