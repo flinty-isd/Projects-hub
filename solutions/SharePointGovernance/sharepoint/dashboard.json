@@ -30,6 +30,10 @@
     [
       "Site Register",
       "SharingCapability"
+    ],
+    [
+      "Page Health Register",
+      "Status"
     ]
   ],
   "views": [
@@ -165,6 +169,39 @@
         "Created"
       ],
       "section": 5,
+      "column": 2,
+      "rowLimit": 30
+    },
+    {
+      "key": "pagereview",
+      "list": "Page Health Register",
+      "title": "Needs review",
+      "heading": "Pages due or overdue for review",
+      "query": "<Where><Or><In><FieldRef Name=\"Status\"/><Values><Value Type=\"Choice\">Review due</Value><Value Type=\"Choice\">Stale - review overdue</Value></Values></In><Leq><FieldRef Name=\"NextReviewDue\"/><Value Type=\"DateTime\"><Today OffsetDays=\"30\"/></Value></Leq></Or></Where><OrderBy><FieldRef Name=\"NextReviewDue\"/></OrderBy>",
+      "fields": [
+        "LinkTitle",
+        "PageUrl",
+        "ContentOwner",
+        "NextReviewDue",
+        "Status"
+      ],
+      "section": 6,
+      "column": 1,
+      "rowLimit": 30
+    },
+    {
+      "key": "pagelinks",
+      "list": "Page Health Register",
+      "title": "Broken links reported",
+      "heading": "Pages with broken links reported",
+      "query": "<Where><Eq><FieldRef Name=\"BrokenLinksFound\"/><Value Type=\"Integer\">1</Value></Eq></Where><OrderBy><FieldRef Name=\"Title\"/></OrderBy>",
+      "fields": [
+        "LinkTitle",
+        "PageUrl",
+        "ContentOwner",
+        "Status"
+      ],
+      "section": 6,
       "column": 2,
       "rowLimit": 30
     }

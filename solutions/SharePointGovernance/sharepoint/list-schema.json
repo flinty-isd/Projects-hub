@@ -591,6 +591,81 @@
           "required": false
         }
       ]
+    },
+    {
+      "listTitle": "Page Health Register",
+      "listDescription": "Steady-state content review tracking for published pages: who owns each page's content, when it was last reviewed, when it's due again, and whether broken links have been reported. Notify only (flow 09); the content owner reviews the page and sets Status themselves, the same way Site Register's access review dates are hand-maintained, not flow-written.",
+      "fields": [
+        {
+          "internalName": "PageUrl",
+          "displayName": "Page URL",
+          "type": "Text",
+          "required": true
+        },
+        {
+          "internalName": "SiteId",
+          "displayName": "Site",
+          "type": "Lookup",
+          "required": false,
+          "lookupList": "Site Register",
+          "lookupField": "SiteTitle",
+          "notes": "Optional link to the Site Register row this page lives on."
+        },
+        {
+          "internalName": "ContentOwner",
+          "displayName": "Content owner",
+          "type": "Person",
+          "required": true,
+          "notes": "Accountable for reviewing this page's content. Must be a named, enabled, internal user."
+        },
+        {
+          "internalName": "ReviewFrequencyDays",
+          "displayName": "Review frequency (days)",
+          "type": "Number",
+          "required": true,
+          "default": 365
+        },
+        {
+          "internalName": "LastReviewed",
+          "displayName": "Last reviewed",
+          "type": "DateTime",
+          "required": true
+        },
+        {
+          "internalName": "NextReviewDue",
+          "displayName": "Next review due",
+          "type": "DateTime",
+          "required": true,
+          "notes": "Not computed by a flow: set by the content owner at each review, usually LastReviewed + ReviewFrequencyDays. Flow 09 only reminds, same as Site Register's access review dates."
+        },
+        {
+          "internalName": "BrokenLinksFound",
+          "displayName": "Broken links found",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "internalName": "Status",
+          "displayName": "Status",
+          "type": "Choice",
+          "required": true,
+          "choices": [
+            "Healthy",
+            "Review due",
+            "Stale - review overdue",
+            "Broken links found",
+            "Archived"
+          ],
+          "default": "Healthy"
+        },
+        {
+          "internalName": "Notes",
+          "displayName": "Notes",
+          "type": "Note",
+          "required": false
+        }
+      ]
     }
   ]
 }

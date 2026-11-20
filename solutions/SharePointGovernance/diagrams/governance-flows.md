@@ -162,3 +162,20 @@ flowchart TD
   classDef bad fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
 ```
 
+## 09 — Monthly page review reminder
+
+```mermaid
+flowchart TD
+  A([1st of month 09:00]) --> E{"PageReviewDigestEnabled?"}
+  E -->|No| X([Nothing sent])
+  E -->|Yes| G[("Page Health Register")]
+  G --> O["For each content owner:<br/>their pages"]
+  O --> C{"Anything to report?<br/>review due/overdue,<br/>broken links"}
+  C -->|Yes| D[/"Digest email: each page with what to check.<br/>Status is never changed by this flow"/]:::info
+  C -->|No| AC{"PageReviewDigestAllClear?"}
+  AC -->|Yes| OK[/"All-clear email"/]:::good
+  AC -->|No| N([Nothing sent])
+  classDef good fill:#dcfce7,stroke:#15803d,color:#14532d
+  classDef info fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+```
+

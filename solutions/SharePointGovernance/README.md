@@ -16,6 +16,7 @@ ended with the migration and are not included.
 | 06 | [Quarterly privileged role review](powerautomate/flows/06-Access-Recertification.json) | Monthly, 1st, 07:00 (acts Jan/Apr/Jul/Oct) | Quarterly InfoSec review of SharePoint Administrator assignments: PIM-eligible only. Site access reviews and ownerless sites moved to SAM (below) | PID v4.2 8.4, D-GSA-08 |
 | 07 | [Monthly site owner digest](powerautomate/flows/07-Owner-Digest.json) | Monthly, 1st, 08:00 | One email per site owner: sites with one owner, sharing on or unconfirmed, no sensitivity label, guests ending in 30 days or awaiting their decision, open access requests; all clear when nothing is outstanding. Notify only. Off until `OwnerDigestEnabled` = Yes | PID v4.2 8.4, G-11 |
 | 08 | [Urgent site alerts](powerautomate/flows/08-Urgent-Site-Alerts.json) | Site Register item created or changed | Immediate high-importance email to the owners and service owner when a site becomes *Orphaned - owner inactive*, or is Highly Confidential with external sharing on (InfoSec copied). Sent once per issue (`UrgentAlertKey`), again only if it recurs. Notify only. Off until `UrgentAlertsEnabled` = Yes | PID v4.2 8.4, G-11 |
+| 09 | [Monthly page review reminder](powerautomate/flows/09-Page-Review-Reminder.json) | Monthly, 1st, 09:00 | One email per content owner: pages due or overdue for review, or with broken links reported; all clear only if `PageReviewDigestAllClear` = Yes. Notify only - it never sets Status itself. Off until `PageReviewDigestEnabled` = Yes | New: content/page health isn't a PID v4.2 control, added for BAU content upkeep |
 
 **Flow 04 (InfoPath triage) was retired on 25 October 2026.** Microsoft
 removed InfoPath Forms Services on 14/07/2026, and PID v4.2 triages forms
@@ -47,7 +48,7 @@ GitHub).
 ```
 SharePointGovernance/
 ├── powerautomate/flows/   flow definitions (Workflow Definition Language JSON)
-├── sharepoint/            list-schema.json: the 7 governance lists; csv/ holds import templates
+├── sharepoint/            list-schema.json: the 8 governance lists; csv/ holds import templates
 ├── runbooks/              Set-SiteGovernanceBaseline.ps1 (Azure Automation, called by flow 03)
 ├── provisioning/          Provision-GovernanceDashboard.ps1: dashboard page, views and status badges
 ├── skills/                sharepoint-governance: Claude skill that applies these rules and the SAM policies
@@ -72,6 +73,8 @@ on the IT Enterprise Governance site from `sharepoint/dashboard.json`:
 | File shares awaiting a decision | File Share Register: *Awaiting decision* | Registered, Awaiting owner decision, Disposition required |
 | Recent decisions | Decision Log: *Last 90 days* | Newest first |
 | Privileged-role reviews | Access Review Log: *Privileged reviews* | Flow 06's quarterly reviews |
+| Pages needing review | Page Health Register: *Needs review* | Due or overdue for review within 30 days |
+| Pages with broken links | Page Health Register: *Broken links reported* | Broken links found = Yes |
 
 Status columns are formatted as outcome badges (green good, red bad, blue
 info, with the words always shown, `sharepoint/status-format.json`). The page
@@ -114,7 +117,10 @@ one person's address: approvals still reach someone during absences.
    groups, and, optionally, a `NextAccessReview` date spread over the next 90 days so
    reviews don't all land in one month). Load only the file shares still
    outstanding after migration into *File Share Register*. Each loaded item
-   triggers flow 05, so load in batches the owners can handle.
+   triggers flow 05, so load in batches the owners can handle. Bulk-load
+   *Page Health Register* with whichever published pages are worth tracking,
+   spreading `NextReviewDue` over a few months so flow 09's reminders don't
+   all land at once.
 2. **Connections**: in the target environment create a connection for
    SharePoint, Office 365 Outlook, Approvals, **HTTP with Microsoft Entra
    ID** (base resource and Azure AD resource URI both
@@ -136,7 +142,7 @@ one person's address: approvals still reach someone during absences.
 5. **Import the solution** (see [Importing](#importing) below), then set
    the environment variables in the solution.
 6. Turn the flows on in this order: 03 and 06 (sites), then 01 and 02
-   (access), then 05, then 07 and 08 (their switches stay No until tested).
+   (access), then 05, then 07, 08 and 09 (their switches stay No until tested).
    The full step-by-step deployment and test script is
    [`DEPLOY-AND-TEST.md`](DEPLOY-AND-TEST.md).
 7. **Ownership**: hand the flows and their connections to the SharePoint
@@ -173,7 +179,8 @@ This writes `solutions/SharePointGovernance/dist/SharePointGovernance_<version>.
    Automation account values, the
    site naming codes (`SiteOrgCode`, default `hpuk`, pending ruling C-03;
    `SiteLocationCodes`, default `pof;har;ltp;ldn`) `GuestAutoRemoval`
-   (default No; see below) and the digest and urgent-alert switches (default No).
+   (default No; see below) and the digest, urgent-alert and page-review
+   switches (default No).
 5. **Import**. It takes a minute or two.
 6. Set the environment variables (step 4), then open the solution and turn
    each flow on (they import switched off), in
@@ -204,6 +211,12 @@ every future build includes it.
 - **Naming standard**: flow 03 returns any request whose alias isn't lower
   case `[org]-[location]-[department]-[site]` with a known location code
   (G-08), as *Returned - Naming standard*.
+- **Page Health Register's Status is hand-maintained**, the same as Site
+  Register's access review dates: flow 09 only reads `NextReviewDue` and
+  `BrokenLinksFound` to build the monthly reminder, it never writes Status.
+  A content owner who fixes broken links or completes a review has to update
+  Status (and `LastReviewed`/`NextReviewDue`) themselves, or the dashboard
+  and next month's reminder keep flagging the page.
 
 - **Synced AD groups**: permissions use the federated AD security groups
   (DEP003). These are mastered on-premises and cannot be changed from the
