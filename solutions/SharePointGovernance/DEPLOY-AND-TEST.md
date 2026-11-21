@@ -152,7 +152,7 @@ Review findings still open (R16 alert deduplication under concurrent edits, R17 
 ## 4. Go live (production)
 
 1. Agree the date with the Control Board (plan: w/c 4 January 2027).
-2. Repeat 2.1 to 2.7 in production with **real** values: the real governance site, role mailboxes and Automation account. Load the full Site Register (225 sites) after the owner emails have been checked.
+2. Repeat 2.1 to 2.7 in production with **real** values: the real governance site (`https://hphneu.sharepoint.com/sites/hpuk-pof-it-enterprisegovernance`), role mailboxes and Automation account. Load the full Site Register (225 sites) after the owner emails have been checked.
 3. Turn the flows on in the same order, with both switches still **No**.
 4. Run the production smoke tests: T01 with a real request, T05 and T10 with real accounts, T22, and confirm a failure alert reaches the support mailbox.
 5. Brief site owners (comms lead), then set **Send urgent site alerts** = Yes and, from the 1st of the next month, **Send the monthly owner digest** = Yes.

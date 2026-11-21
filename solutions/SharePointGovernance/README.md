@@ -82,7 +82,7 @@ and nothing embedded (G-06). `tools/validate_dashboard.py` checks every view
 against the list schema in CI.
 
 ```powershell
-./provisioning/Provision-GovernanceDashboard.ps1 -GovernanceSiteUrl https://hphneu.sharepoint.com/sites/<governance-site> -Interactive
+./provisioning/Provision-GovernanceDashboard.ps1 -GovernanceSiteUrl https://hphneu.sharepoint.com/sites/hpuk-pof-it-enterprisegovernance -Interactive
 ```
 
 Re-running leaves existing views and the page alone; `-RefreshViews` and
@@ -147,6 +147,13 @@ one person's address: approvals still reach someone during absences.
 
 The flows are imported as one unmanaged Power Platform solution.
 
+**Live governance site.** The production IT Enterprise Governance site, which
+holds the governance lists and the dashboard, is
+<https://hphneu.sharepoint.com/sites/hpuk-pof-it-enterprisegovernance>.
+Set the *Governance site URL* environment variable to this in production. Use
+a separate test governance site in dev and test environments. The config and
+flow files keep placeholders so the package stays tenant-neutral.
+
 **Get the package.** Either download it from GitHub (Actions → *Governance
 flows* → latest run on `main` → artifact *SharePointGovernance-solution*), or
 build it locally:
@@ -169,7 +176,7 @@ This writes `solutions/SharePointGovernance/dist/SharePointGovernance_<version>.
    **Environment variables**, where each is listed by its title, and set the
    **Current value** of every variable whose description starts "Set after
    import". These are the governance
-   site URL, the tenant root URL, the four role mailboxes, the three
+   site URL (production: the live governance site above), the tenant root URL, the four role mailboxes, the three
    Automation account values, the
    site naming codes (`SiteOrgCode`, default `hpuk`, pending ruling C-03;
    `SiteLocationCodes`, default `pof;har;ltp;ldn`) `GuestAutoRemoval`
