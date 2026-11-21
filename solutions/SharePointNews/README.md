@@ -171,6 +171,11 @@ If the News web part can't filter on the managed metadata Category in your
 tenant, use a Category view of Site Pages in a Highlighted content web part
 for the Safety section instead.
 
+If C1 passes as a dry run but fails once `ExpiryWritesEnabled` is Yes
+(502 BadGateway, *Additions to this Web site have been blocked*), the site
+is locked or full: follow
+[runbooks/Site-Write-Failure.md](runbooks/Site-Write-Failure.md).
+
 ## Testing
 
 Use test sites, test groups and safe test recipients first: the PoC set-up
