@@ -27,7 +27,7 @@ if Communications or IT decide otherwise.
 |---|------------------|----------------|-----|
 | 1 | Port blank means all ports | **Port is required**, with an explicit *All ports* choice | A forgotten Port on an urgent notice would otherwise email every port |
 | 2 | A Managers-targeted post must not be emailed to a whole port; either route or exclude it | **Audience-targeted posts are excluded** from the roundup and from urgent broadcasts. C3 logs *Skipped - audience targeted* and tells Communications | Audience targeting is personalisation, not a distribution list. Port routing can't express "managers at Felixstowe" |
-| 3 | Dispatch key uses an "agreed publication event" | Key = `urgent\|site\|page ID\|r<NotificationRound>\|port\|channel`. **NotificationRound** is a page column (default 1) | Edits never resend. Communications sends a correction by raising the round and resetting UrgentSent |
+| 3 | Dispatch key uses an "agreed publication event" | Key = `urgent\|site\|page ID\|r<NotificationRound>\|port#<row ID>\|channel`, where row ID is the Comms Distribution row's ID (from 1.4.0.0), so two rows for the same port are two destinations. **NotificationRound** is a page column (default 1) | Edits never resend. Communications sends a correction by raising the round and resetting UrgentSent |
 | 4 | Don't assume a metadata update leaves the published page unchanged | C1 and C3 update Status, Show in News and UrgentSent with **ValidateUpdateListItem** (`bNewDocumentUpdate`): no new version, no draft | A normal update leaves a published news page with a pending draft |
 | 5 | UrgentSent is not the sole duplicate control | The trigger runs only for **major versions** (`x.0`) with UrgentSent = No, one at a time. Each port and channel is **reserved** in the Delivery Log before sending (see the safeguards below) | Retries send only definite failures; an unknown outcome waits for a person. Setting UrgentSent cannot re-trigger the flow |
 | 6 | Expiry boundary to confirm | **Expiry Date is the last current day.** C1 runs 06:00 UK time and expires dates before today (UK date, so BST is handled) | Matches the design's proposed rule |
@@ -64,8 +64,11 @@ all ports (decision 1).
 | Safeguard | How it works |
 |-----------|--------------|
 | **Reserve before sending** | The Delivery Log Title (the dispatch key) is unique and indexed. Before each email or Teams post the flow writes a *Reserved* row, and sends only if that succeeds. The send has no automatic retry. The row then becomes *Sent*; *Failed* if the provider definitely rejected it (a 4xx other than 408/429); or *Reconcile* if the outcome is unknown (a timeout, 5xx or throttling). Only *Failed* rows are ever retried. A person checks *Reconcile* rows (the **Needs checking** view) with the recipient and sets *Failed* to allow a resend |
-| **Master switches, off by default** | `DispatchEnabled` = No: C2 and C3 send nothing (runs show as Cancelled). `ExpiryWritesEnabled` = No: C1 changes nothing and emails the support owner the pages it would have expired. Turn each on only after it has been proven, and set `DispatchEnabled` back to No to stop all sending at once |
+| **Master switches, off by default** | `DispatchEnabled` = No: C2 and C3 send nothing (runs show as Cancelled). `ExpiryWritesEnabled` = No: C1 changes nothing and emails the support owner the pages it would have expired. Turn each on only after it has been proven, and set `DispatchEnabled` back to No to stop new runs (see **Stopping** for a run already going) |
 | **Urgent go-live date** | `UrgentGoLiveDate`: C3 ignores posts first published before it, so editing an old or migrated post never sends an alert. Set it once at go-live and don't move it |
+| **One destination, one key** (1.4.0.0) | Keys name the Comms Distribution row (`port#ID`), not just the port, so two rows for the same port each get their delivery and never block each other. Changing a row's address keeps its key: that week's roundup or that notice isn't sent again to the new address. The address used is read from the row just before sending and written to the Delivery Log |
+| **Retry claims** (1.4.0.0) | A *Failed* row is claimed for a retry with an ETag check (`If-Match`): if another run changed the row after this run read it, the claim fails with 412, nothing is sent and support is told. C2 also runs one at a time (C3 already did), so a resubmitted roundup waits for the running one to finish |
+| **Stopping** | `DispatchEnabled` is read when a run starts, so setting it to No stops **new** runs only. To stop a run already going, set the destinations' `Enabled` to No in Comms Distribution: each row is read again just before it is sent, and a switched-off row is skipped and reported. To stop at once, also cancel the run in the flow's run history. Then open the Delivery Log **Needs checking** view: a row left *Reserved* by a cancelled run may or may not have gone; check with the recipient and set it to Sent or Failed. Turning the flow off doesn't stop a run already going |
 | **Fixed roundup week** | C2 covers Monday 00:00 to Monday 00:00 UK time, the week before the run. A late or repeated run covers the same posts and reuses the same dispatch keys, so nothing is sent twice |
 
 ## How it works
@@ -190,6 +193,11 @@ is not the production permission model.
 | Urgent, partial failure | Disable one Teams channel. The other sends succeed, the failure is logged as Failed, support is alerted and UrgentSent stays No. Resubmitting the run sends only the failed one |
 | Unknown outcome | Force a timeout or 5xx on one send (e.g. an unreachable mailbox). The row is logged as Reconcile and appears in *Needs checking*; resubmitting the run does **not** resend it until the row is set to Failed |
 | Concurrent runs | Resubmit the same urgent run twice at once. Each destination is sent once; the second reservation fails on the unique key and nothing is sent |
+| Concurrent retries | Set one roundup row to Failed and resubmit the C2 run twice at once: the second waits for the first (one run at a time) and then finds the row Sent, so the port gets one roundup. Edit a Failed row by hand after a run has read it but before it claims it (or test the claim with a stale ETag in a copy of the flow): the claim fails with 412 and nothing is sent |
+| Two rows, one port | Two enabled Comms Distribution rows for the same port with different addresses: each gets the roundup and the urgent alert, with its own Delivery Log row (`port#ID`) |
+| Changed address | Change a row's address after its roundup was sent and re-run C2 the same week: nothing is sent. Set its row to Failed and re-run: it goes to the new address, and the Delivery Log's Destination shows the new address |
+| Sent, then log failure | Make the Delivery Log read-only for the flow identity just after a send (or break Mark sent in a copy): the row stays Reserved, support is told it was sent but not logged, and a re-run doesn't resend it |
+| Stop during a run | With several destinations, start C2 and set the later rows' `Enabled` to No: those rows are reported as switched off and not sent. Cancel a run in run history mid-way: any row left Reserved shows in *Needs checking* |
 | Switches off | With `DispatchEnabled` = No, publishing an urgent post and running C2 send nothing (runs show Cancelled). With `ExpiryWritesEnabled` = No, C1 emails a dry-run list and changes no page |
 | Go-live date | Editing and republishing an urgent post first published before `UrgentGoLiveDate` sends nothing |
 | No approval | A publisher's page is visible to readers as soon as it is published, with no approval request. An urgent post by an urgent publisher alerts once, on publish |
@@ -207,10 +215,20 @@ is not the production permission model.
 | Reader boundary | Someone outside the HPUK reader group can't open pages or attachments |
 | Retention | Deleting a test page leaves a copy in the Preservation Hold library (after the policy has distributed) |
 
+## Upgrading to 1.4.0.0
+
+The dispatch keys change from `port` to `port#ID`, so rows logged by 1.3.x
+aren't matched by 1.4.0.0. Import it when nothing is in flight: after
+Monday's roundup has finished, with no urgent post waiting to be resent
+(the **Needs checking** view empty and no Failed urgent rows), and don't
+resubmit a run from before the upgrade. In the first retry test, open the claim action (*Reserve retry*) and check its `IF-MATCH` header shows a version such as `"3"`, not `"no-etag"`: if it says no-etag, the connector didn't return the row's ETag and every retry claim will fail safe (nothing sent) until that is fixed. Re-running a week's roundup after
+the upgrade would send it again to ports already sent under the old keys.
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
 | A write fails with **BadGateway (502)** and `x-ms-datasourceerror: True`; the raw output's inner message says **"Additions to this Web site have been blocked"** | The site is locked (*No additions* or *Read-only*), its storage is full, or a SAM policy or Microsoft 365 Archive has made it read-only. Reads still work, every write fails, and retrying doesn't help | A SharePoint admin checks `Get-SPOSite -Identity <site> \| Select LockState, StorageUsageCurrent, StorageQuota`, then `Set-SPOSite -Identity <site> -LockState Unlock` or raises the quota (Active sites → the site → Settings). Check why it was locked first, and check both news sites |
+| A retry claim fails with **412 Precondition Failed** | Another run (or a person) changed the Delivery Log row after this run read it | Nothing was sent by this run. Open the row: if it's Sent, nothing to do; if Failed again, re-run |
 | Any write fails with 502 | The connector wraps SharePoint's own error as 502 | Open the failed action → **Show raw outputs** and read `innerError.message`: it names SharePoint's real error |
 

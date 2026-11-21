@@ -1,5 +1,5 @@
 {
-  "$comment": "Lists and columns for the HPUK News and Other News sites. Provisioned by provisioning/Provision-NewsSites.ps1; tools/validate_flows.py (SharePointGovernance) checks every column the flows use against this file. The dispatch key in Delivery Log Title is: urgent|<site>|<page ID>|r<NotificationRound>|<port>|<channel>, or roundup|<Monday date>|<port>|<channel>.",
+  "$comment": "Lists and columns for the HPUK News and Other News sites. Provisioned by provisioning/Provision-NewsSites.ps1; tools/validate_flows.py (SharePointGovernance) checks every column the flows use against this file. The dispatch key in Delivery Log Title is: urgent|<site>|<page ID>|r<NotificationRound>|<port>#<Comms Distribution ID>|<channel>, or roundup|<Monday date>|<port>#<Comms Distribution ID>|<channel>. A Failed row is claimed for a retry with If-Match on its ETag.",
   "lists": [
     {
       "listTitle": "Site Pages",
