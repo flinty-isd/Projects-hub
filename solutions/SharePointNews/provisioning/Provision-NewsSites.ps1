@@ -22,6 +22,8 @@
         Needs checking view (rows that are Reserved or Reconcile)
       * locks Notices Archive, Comms Distribution and Delivery Log to the
         configuration maintainers group (and the named flow owner where it writes)
+      * turns on draft (minor) versions on Site Pages, with drafts visible only to
+        editors, so C1 can unpublish expired posts out of readers' sight
       * keeps content approval off on Site Pages: publishers are pre-approved,
         so a published page is live straight away (turns it off if it was on)
       * creates and publishes Publisher-Guide.aspx on HPUK News from
@@ -183,6 +185,18 @@ foreach ($site in $sites) {
     if ((Get-PnPList -Identity 'Site Pages' -Connection $conn).EnableModeration) {
         Set-PnPList -Identity 'Site Pages' -EnableModeration $false -Connection $conn | Out-Null
         Write-Output '  ~ Site Pages: content approval turned off'
+    }
+
+    # Expired posts are unpublished (back to draft) by C1, which needs draft versions on Site Pages.
+    # Drafts are visible only to people who can edit, so readers can't open an expired post.
+    $pages = Get-PnPList -Identity 'Site Pages' -Connection $conn
+    if (-not $pages.EnableMinorVersions -or "$($pages.DraftVersionVisibility)" -ne 'Author') {
+        Set-PnPList -Identity 'Site Pages' -EnableVersioning $true -EnableMinorVersions $true -Connection $conn | Out-Null
+        $pages = Get-PnPList -Identity 'Site Pages' -Connection $conn
+        $pages.DraftVersionVisibility = [Microsoft.SharePoint.Client.DraftVisibilityType]::Author
+        $pages.Update()
+        Invoke-PnPQuery -Connection $conn
+        Write-Output '  ~ Site Pages: draft versions on, drafts visible to editors only'
     }
 
     # Video for news posts: same permissions as the site, plays through Stream.
