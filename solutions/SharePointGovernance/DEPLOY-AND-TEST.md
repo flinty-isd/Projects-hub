@@ -1,10 +1,10 @@
-# Governance deployment and test guide (solution 1.5.0.0)
+# Governance deployment and test guide (solution 1.6.0.0)
 
 How to deploy the SharePoint governance flows, runbook, dashboard and SAM
 policies to a test environment, test them, and then go live. Work through it
 in order; each section says who does it.
 
-Deploy from the **deployment kit** (`SharePointGovernance-DeploymentKit_1_5_0_0.zip`,
+Deploy from the **deployment kit** (`SharePointGovernance-DeploymentKit_1_6_0_0.zip`,
 CI artifact *SharePointGovernance-DeploymentKit*, or `python tools/build_kit.py`).
 It holds everything this guide refers to and a `MANIFEST.json` of SHA-256
 checksums: check them before you start and keep the manifest with the test
@@ -25,7 +25,7 @@ evidence.
 - [ ] **Test site**: a copy of the IT Enterprise Governance site (or a test site collection), plus two or three throwaway test sites to provision and break.
 - [ ] **Test people**: two internal test users who can act as site owners, one unlicensed or F3 user, one external test mailbox for a guest.
 - [ ] **Licences**: the flow owner has Power Automate premium (HTTP with Entra ID and Azure Automation are premium). Confirm SAM covers each policy (restricted site creation needs SAM Plan 1).
-- [ ] **Kit**: `SharePointGovernance-DeploymentKit_1_5_0_0.zip`; checksums match `MANIFEST.json`.
+- [ ] **Kit**: `SharePointGovernance-DeploymentKit_1_6_0_0.zip`; checksums match `MANIFEST.json`.
 
 ## 2. Deploy to test
 
@@ -86,6 +86,7 @@ For the HTTP with Entra ID connection: `User.Read.All`, `GroupMember.ReadWrite.A
 | Send the monthly owner digest | **No** for now |
 | Send all-clear digests | **No** (until the digest's coverage is accepted) |
 | Send urgent site alerts | **No** for now |
+| Run privileged review in any month | **No** (Yes only while running T14) |
 
 5. If 1.2.0.0 or earlier was imported before, delete the unused **Access review interval (days)** variable.
 
@@ -130,13 +131,15 @@ Record each result (pass, fail, notes) in the UAT log. For any fail, keep the fl
 | T12b | 02 No decision | As T12 but nobody answers; set Decision due by to yesterday and run flow 02 | Escalation to service owner and InfoSec; Decision due by moves on 7 days; status stays pending and shows on the dashboard and digest |
 | T12c | 02 Exception ends | Set Kept until to yesterday and run flow 02 | Owner asked to decide again (pending, new due date) |
 | T13 | 05 File share | File Share Register item with Integration marker = Yes | *Excluded - system dependent*; IT Ops asked to agree |
-| T14 | 06 Privileged | Run flow 06 by hand outside Jan/Apr/Jul/Oct | Does nothing (only acts in quarter months). The quarter-month branch is reworked separately (review R17) before it is tested |
+| T14 | 06 Privileged | Set *Run privileged review in any month* = Yes, run flow 06 by hand. Have one permanent assignment, one time-bound direct assignment, one person with an active PIM activation and one eligible-only | The InfoSec approval lists each person with the right type; only the permanent one is counted as permanent; Access Review Log row has the evidence and AccessCount. Reject it: IT Ops and InfoSec get the remediation email. Set the switch back to No |
 | T15 | 07 Off | Switch No, run flow 07 by hand | No emails |
 | T16 | 07 Digest | Switch Yes, run flow 07 by hand | The owner of the sample sites gets one email listing the orphaned site, the one-owner site, the sharing-on site, the no-label site and any kept guests, each with what to do, and saying it is a register check |
 | T17 | 07 All clear | A test owner whose sites have no issues, with *Send all-clear digests* No, then Yes | No email while No; one all-clear (worded as a register check) when Yes. An owner with one clean and one orphaned site gets a digest, never an all-clear |
 | T18 | 08 Off | Switch No; set a test site's Status to *Orphaned - owner inactive* | No email |
 | T19 | 08 Orphaned | Switch Yes; set another test site's Status to *Orphaned - owner inactive* | One high-importance email to both owners and the service owner at the next trigger poll (every 5 minutes; not a delivery guarantee); *Urgent alert sent for* = `orphaned;` |
 | T20 | 08 No repeat | Edit the same site's Department | No second email |
+| T20b | 08 Concurrency | Change the same orphaned site twice within one minute (two edits) | One alert only |
+| T20c | 08 Send failure | In test, point the flow at a mailbox that rejects mail (or remove the Outlook connection's permission) and orphan a site | *Urgent alert sent for* starts `SEND FAILED`; service owner gets the not-sent email; no repeat until the column is cleared |
 | T21 | 08 Cleared and HC | Set the site back to Active (column clears); then set Sensitivity Highly Confidential with sharing ExistingExternalUserSharingOnly | Second step: one email with InfoSec copied |
 | T22 | Dashboard | Open Governance-Dashboard.aspx | Each panel shows its view and the items created in T01–T21; Status badges coloured with words |
 | T23 | SAM | Attestation (notify only) on one test site | Owner receives the attestation email; nothing goes read-only |
@@ -147,7 +150,7 @@ Record each result (pass, fail, notes) in the UAT log. For any fail, keep the fl
 - Any other failure can be accepted only by the owner of that control (InfoSec/IAM for access and guests, records owner for retention, IT Operations for automation), recorded with an expiry date and a compensating control. The IT PM and service owner can't waive it alone.
 - The verifier signs off each test against its evidence (run history, `###RESULT###` lines, list items, emails), with the kit's `MANIFEST.json`, the environment variable values and the test identities.
 
-Review findings still open (R16 alert deduplication under concurrent edits, R17 privileged review, and the news P0 items) are tracked in the review action register and must be closed or formally accepted before production.
+Review findings still open (R16 for the news roundup C2, R10 paging and failure alerts elsewhere, R12–R15) are tracked in the review action register and must be closed or formally accepted before production.
 
 ## 4. Go live (production)
 

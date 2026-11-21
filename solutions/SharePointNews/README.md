@@ -202,3 +202,11 @@ is not the production permission model.
 | Daylight saving | Runs in the week the clocks change still fire at 06:00 and 07:00 UK time |
 | Reader boundary | Someone outside the HPUK reader group can't open pages or attachments |
 | Retention | Deleting a test page leaves a copy in the Preservation Hold library (after the policy has distributed) |
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| A write fails with **BadGateway (502)** and `x-ms-datasourceerror: True`; the raw output's inner message says **"Additions to this Web site have been blocked"** | The site is locked (*No additions* or *Read-only*), its storage is full, or a SAM policy or Microsoft 365 Archive has made it read-only. Reads still work, every write fails, and retrying doesn't help | A SharePoint admin checks `Get-SPOSite -Identity <site> \| Select LockState, StorageUsageCurrent, StorageQuota`, then `Set-SPOSite -Identity <site> -LockState Unlock` or raises the quota (Active sites → the site → Settings). Check why it was locked first, and check both news sites |
+| Any write fails with 502 | The connector wraps SharePoint's own error as 502 | Open the failed action → **Show raw outputs** and read `innerError.message`: it names SharePoint's real error |
+

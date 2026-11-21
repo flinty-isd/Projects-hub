@@ -3,7 +3,7 @@
   "uniqueName": "SharePointGovernance",
   "displayName": "SharePoint Governance (BAU)",
   "description": "Power Automate flows that enforce SharePoint Online governance controls (PID v4.2) in BAU.",
-  "version": "1.5.0.0",
+  "version": "1.6.0.0",
   "publisher": {
     "uniqueName": "HPUKIT",
     "displayName": "HPUK IT",
@@ -91,6 +91,11 @@
       "displayName": "Kept guest exception (days)",
       "description": "How long a guest kept by owner decision stays before flow 02 asks again. Agreed: 30 days.",
       "default": 30
+    },
+    "PrivilegedReviewAnyMonth": {
+      "displayName": "Run privileged review in any month",
+      "description": "No (default): flow 06 reviews in January, April, July and October only. Set Yes in test to run the review whenever the flow runs.",
+      "default": false
     }
   },
   "connectionReferences": {
