@@ -39,6 +39,10 @@
     "SupportMailboxEmail": {
       "type": "String",
       "defaultValue": ""
+    },
+    "ITOpsOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{it-operations-owner}@{domain}"
     }
   },
   "triggers": {
@@ -67,198 +71,245 @@
     }
   },
   "actions": {
-    "Condition_Alerts_enabled": {
-      "type": "If",
-      "expression": {
-        "equals": [
-          "@parameters('UrgentAlertsEnabled')",
-          true
-        ]
-      },
-      "runAfter": {},
+    "Scope_Main": {
+      "type": "Scope",
       "actions": {
-        "For_each_changed_site": {
-          "type": "Foreach",
-          "foreach": "@triggerOutputs()?['body/value']",
-          "runtimeConfiguration": {
-            "concurrency": {
-              "repetitions": 1
-            }
+        "Condition_Alerts_enabled": {
+          "type": "If",
+          "expression": {
+            "equals": [
+              "@parameters('UrgentAlertsEnabled')",
+              true
+            ]
           },
           "runAfter": {},
           "actions": {
-            "Compose_alert_key": {
-              "type": "Compose",
-              "inputs": "@concat(if(equals(items('For_each_changed_site')?['Status']?['Value'], 'Orphaned - owner inactive'), 'orphaned;', ''), if(and(equals(items('For_each_changed_site')?['Sensitivity']?['Value'], 'Highly Confidential'), not(equals(items('For_each_changed_site')?['SharingCapability']?['Value'], 'Disabled'))), concat('hc-sharing:', coalesce(items('For_each_changed_site')?['SharingCapability']?['Value'], 'not set'), ';'), ''))",
-              "runAfter": {}
-            },
-            "Condition_New_alert": {
-              "type": "If",
-              "expression": {
-                "and": [
-                  {
-                    "not": {
-                      "equals": [
-                        "@outputs('Compose_alert_key')",
-                        ""
-                      ]
-                    }
-                  },
-                  {
-                    "not": {
-                      "equals": [
-                        "@outputs('Compose_alert_key')",
-                        "@coalesce(items('For_each_changed_site')?['UrgentAlertKey'], '')"
-                      ]
-                    }
-                  },
-                  {
-                    "not": {
-                      "startsWith": [
-                        "@coalesce(items('For_each_changed_site')?['UrgentAlertKey'], '')",
-                        "SEND FAILED"
-                      ]
-                    }
-                  }
-                ]
-              },
-              "actions": {
-                "Claim_alert": {
-                  "type": "OpenApiConnection",
-                  "inputs": {
-                    "host": {
-                      "connectionName": "shared_sharepointonline",
-                      "operationId": "PatchItem",
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                    },
-                    "parameters": {
-                      "dataset": "@parameters('GovernanceSiteUrl')",
-                      "table": "Site Register",
-                      "id": "@items('For_each_changed_site')?['ID']",
-                      "item/UrgentAlertKey": "@outputs('Compose_alert_key')"
-                    }
-                  },
-                  "runAfter": {}
-                },
-                "Send_urgent_alert": {
-                  "type": "OpenApiConnection",
-                  "inputs": {
-                    "host": {
-                      "connectionName": "shared_office365",
-                      "operationId": "SendEmailV2",
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
-                    },
-                    "parameters": {
-                      "emailMessage/To": "@{concat(coalesce(items('For_each_changed_site')?['PrimaryOwner']?['Email'], ''), ';', coalesce(items('For_each_changed_site')?['SecondaryOwner']?['Email'], ''), ';', parameters('SharePointServiceOwnerEmail'), if(and(equals(items('For_each_changed_site')?['Sensitivity']?['Value'], 'Highly Confidential'), not(equals(items('For_each_changed_site')?['SharingCapability']?['Value'], 'Disabled'))), concat(';', parameters('InfoSecApproverEmail')), ''))}",
-                      "emailMessage/Subject": "@{concat('Action needed on a SharePoint site you own: ', items('For_each_changed_site')?['Title'])}",
-                      "emailMessage/Body": "<p>A governance check on <b>@{items('For_each_changed_site')?['Title']}</b> (@{items('For_each_changed_site')?['SiteUrl']}) needs attention now:</p><ul>@{concat(if(equals(items('For_each_changed_site')?['Status']?['Value'], 'Orphaned - owner inactive'), '<li><b>Orphaned - owner inactive</b>: the primary owner has left or been disabled. Name a new owner through a site change request; the secondary owner keeps the site running meanwhile.</li>', ''), if(and(equals(items('For_each_changed_site')?['Sensitivity']?['Value'], 'Highly Confidential'), not(equals(items('For_each_changed_site')?['SharingCapability']?['Value'], 'Disabled'))), concat('<li><b>Highly Confidential with external sharing ', coalesce(items('For_each_changed_site')?['SharingCapability']?['Value'], 'not set'), '</b>: external sharing must be Disabled on Highly Confidential sites unless InfoSec has approved it. Confirm the approval with InfoSec or ask IT to switch sharing off.</li>'), ''))}</ul><p>Nothing has been changed on the site: the decision stays with the owners (G-11). You'll get this alert once; it appears again in the monthly digest until it is fixed.</p>",
-                      "emailMessage/Importance": "High"
-                    }
-                  },
-                  "runAfter": {
-                    "Claim_alert": [
-                      "Succeeded"
-                    ]
-                  }
-                },
-                "Record_send_failed": {
-                  "type": "OpenApiConnection",
-                  "inputs": {
-                    "host": {
-                      "connectionName": "shared_sharepointonline",
-                      "operationId": "PatchItem",
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                    },
-                    "parameters": {
-                      "dataset": "@parameters('GovernanceSiteUrl')",
-                      "table": "Site Register",
-                      "id": "@items('For_each_changed_site')?['ID']",
-                      "item/UrgentAlertKey": "@{concat('SEND FAILED: ', outputs('Compose_alert_key'))}"
-                    }
-                  },
-                  "runAfter": {
-                    "Send_urgent_alert": [
-                      "Failed",
-                      "TimedOut"
-                    ]
-                  }
-                },
-                "Alert_support_not_sent": {
-                  "type": "OpenApiConnection",
-                  "runAfter": {
-                    "Record_send_failed": [
-                      "Succeeded",
-                      "Failed"
-                    ]
-                  },
-                  "inputs": {
-                    "host": {
-                      "connectionName": "shared_office365",
-                      "operationId": "SendEmailV2",
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
-                    },
-                    "parameters": {
-                      "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
-                      "emailMessage/Subject": "@{concat('Urgent site alert NOT sent: ', items('For_each_changed_site')?['Title'])}",
-                      "emailMessage/Body": "<p>The urgent alert for @{items('For_each_changed_site')?['Title']} (@{items('For_each_changed_site')?['SiteUrl']}) could not be sent: @{outputs('Compose_alert_key')}. Its Urgent alert sent for column now starts SEND FAILED, so it won't retry by itself. Tell the owners directly, then clear that column to let flow 08 send it again.</p>",
-                      "emailMessage/Importance": "High"
-                    }
-                  }
+            "For_each_changed_site": {
+              "type": "Foreach",
+              "foreach": "@triggerOutputs()?['body/value']",
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 1
                 }
               },
-              "else": {
-                "actions": {
-                  "Condition_Cleared": {
-                    "type": "If",
-                    "expression": {
-                      "and": [
-                        {
+              "runAfter": {},
+              "actions": {
+                "Compose_alert_key": {
+                  "type": "Compose",
+                  "inputs": "@concat(if(equals(items('For_each_changed_site')?['Status']?['Value'], 'Orphaned - owner inactive'), 'orphaned;', ''), if(and(equals(items('For_each_changed_site')?['Sensitivity']?['Value'], 'Highly Confidential'), not(equals(items('For_each_changed_site')?['SharingCapability']?['Value'], 'Disabled'))), concat('hc-sharing:', coalesce(items('For_each_changed_site')?['SharingCapability']?['Value'], 'not set'), ';'), ''))",
+                  "runAfter": {}
+                },
+                "Condition_New_alert": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "not": {
                           "equals": [
                             "@outputs('Compose_alert_key')",
                             ""
                           ]
-                        },
-                        {
-                          "not": {
-                            "equals": [
-                              "@coalesce(items('For_each_changed_site')?['UrgentAlertKey'], '')",
-                              ""
-                            ]
-                          }
                         }
-                      ]
+                      },
+                      {
+                        "not": {
+                          "equals": [
+                            "@outputs('Compose_alert_key')",
+                            "@coalesce(items('For_each_changed_site')?['UrgentAlertKey'], '')"
+                          ]
+                        }
+                      },
+                      {
+                        "not": {
+                          "startsWith": [
+                            "@coalesce(items('For_each_changed_site')?['UrgentAlertKey'], '')",
+                            "SEND FAILED"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Claim_alert": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PatchItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('GovernanceSiteUrl')",
+                          "table": "Site Register",
+                          "id": "@items('For_each_changed_site')?['ID']",
+                          "item/UrgentAlertKey": "@outputs('Compose_alert_key')"
+                        }
+                      },
+                      "runAfter": {}
                     },
+                    "Send_urgent_alert": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365",
+                          "operationId": "SendEmailV2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "emailMessage/To": "@{concat(coalesce(items('For_each_changed_site')?['PrimaryOwner']?['Email'], ''), ';', coalesce(items('For_each_changed_site')?['SecondaryOwner']?['Email'], ''), ';', parameters('SharePointServiceOwnerEmail'), if(and(equals(items('For_each_changed_site')?['Sensitivity']?['Value'], 'Highly Confidential'), not(equals(items('For_each_changed_site')?['SharingCapability']?['Value'], 'Disabled'))), concat(';', parameters('InfoSecApproverEmail')), ''))}",
+                          "emailMessage/Subject": "@{concat('Action needed on a SharePoint site you own: ', items('For_each_changed_site')?['Title'])}",
+                          "emailMessage/Body": "<p>A governance check on <b>@{items('For_each_changed_site')?['Title']}</b> (@{items('For_each_changed_site')?['SiteUrl']}) needs attention now:</p><ul>@{concat(if(equals(items('For_each_changed_site')?['Status']?['Value'], 'Orphaned - owner inactive'), '<li><b>Orphaned - owner inactive</b>: the primary owner has left or been disabled. Name a new owner through a site change request; the secondary owner keeps the site running meanwhile.</li>', ''), if(and(equals(items('For_each_changed_site')?['Sensitivity']?['Value'], 'Highly Confidential'), not(equals(items('For_each_changed_site')?['SharingCapability']?['Value'], 'Disabled'))), concat('<li><b>Highly Confidential with external sharing ', coalesce(items('For_each_changed_site')?['SharingCapability']?['Value'], 'not set'), '</b>: external sharing must be Disabled on Highly Confidential sites unless InfoSec has approved it. Confirm the approval with InfoSec or ask IT to switch sharing off.</li>'), ''))}</ul><p>Nothing has been changed on the site: the decision stays with the owners (G-11). You'll get this alert once; it appears again in the monthly digest until it is fixed.</p>",
+                          "emailMessage/Importance": "High"
+                        }
+                      },
+                      "runAfter": {
+                        "Claim_alert": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Record_send_failed": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PatchItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('GovernanceSiteUrl')",
+                          "table": "Site Register",
+                          "id": "@items('For_each_changed_site')?['ID']",
+                          "item/UrgentAlertKey": "@{concat('SEND FAILED: ', outputs('Compose_alert_key'))}"
+                        }
+                      },
+                      "runAfter": {
+                        "Send_urgent_alert": [
+                          "Failed",
+                          "TimedOut"
+                        ]
+                      }
+                    },
+                    "Alert_support_not_sent": {
+                      "type": "OpenApiConnection",
+                      "runAfter": {
+                        "Record_send_failed": [
+                          "Succeeded",
+                          "Failed"
+                        ]
+                      },
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365",
+                          "operationId": "SendEmailV2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
+                          "emailMessage/Subject": "@{concat('Urgent site alert NOT sent: ', items('For_each_changed_site')?['Title'])}",
+                          "emailMessage/Body": "<p>The urgent alert for @{items('For_each_changed_site')?['Title']} (@{items('For_each_changed_site')?['SiteUrl']}) could not be sent: @{outputs('Compose_alert_key')}. Its Urgent alert sent for column now starts SEND FAILED, so it won't retry by itself. Tell the owners directly, then clear that column to let flow 08 send it again.</p>",
+                          "emailMessage/Importance": "High"
+                        }
+                      }
+                    }
+                  },
+                  "else": {
                     "actions": {
-                      "Clear_alert_key": {
-                        "type": "OpenApiConnection",
-                        "inputs": {
-                          "host": {
-                            "connectionName": "shared_sharepointonline",
-                            "operationId": "PatchItem",
-                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                          },
-                          "parameters": {
-                            "dataset": "@parameters('GovernanceSiteUrl')",
-                            "table": "Site Register",
-                            "id": "@items('For_each_changed_site')?['ID']",
-                            "item/UrgentAlertKey": ""
+                      "Condition_Cleared": {
+                        "type": "If",
+                        "expression": {
+                          "and": [
+                            {
+                              "equals": [
+                                "@outputs('Compose_alert_key')",
+                                ""
+                              ]
+                            },
+                            {
+                              "not": {
+                                "equals": [
+                                  "@coalesce(items('For_each_changed_site')?['UrgentAlertKey'], '')",
+                                  ""
+                                ]
+                              }
+                            }
+                          ]
+                        },
+                        "actions": {
+                          "Clear_alert_key": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_sharepointonline",
+                                "operationId": "PatchItem",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                              },
+                              "parameters": {
+                                "dataset": "@parameters('GovernanceSiteUrl')",
+                                "table": "Site Register",
+                                "id": "@items('For_each_changed_site')?['ID']",
+                                "item/UrgentAlertKey": ""
+                              }
+                            },
+                            "runAfter": {}
                           }
                         },
                         "runAfter": {}
                       }
-                    },
-                    "runAfter": {}
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_alert_key": [
+                      "Succeeded"
+                    ]
                   }
                 }
-              },
-              "runAfter": {
-                "Compose_alert_key": [
-                  "Succeeded"
-                ]
               }
             }
           }
         }
+      },
+      "runAfter": {}
+    },
+    "Catch_run_failed": {
+      "type": "Scope",
+      "description": "Run-level failure alert: any error in Scope_Main that no step handled.",
+      "actions": {
+        "Select_failed_steps": {
+          "type": "Select",
+          "inputs": {
+            "from": "@result('Scope_Main')",
+            "select": "@concat('<li><b>', item()?['name'], '</b>: ', item()?['status'], ' ', coalesce(item()?['error']?['code'], item()?['outputs']?['statusCode'], ''), ' ', coalesce(item()?['error']?['message'], ''), '</li>')"
+          },
+          "runAfter": {}
+        },
+        "Alert_run_failed": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@{concat(parameters('ITOpsOwnerEmail'), ';', parameters('SharePointServiceOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
+              "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
+              "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error it did not handle, so some of its work may not have been done. Nothing has been retried.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a> (started @{workflow()?['run']?['startTime']})</p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Open the run, find the failed step and its raw output, fix the cause, then resubmit the run or deal with the items by hand. Check for partial changes first (see Stopping and recovery in the deployment guide).</p>",
+              "emailMessage/Importance": "High"
+            }
+          },
+          "runAfter": {
+            "Select_failed_steps": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Scope_Main": [
+          "Failed",
+          "TimedOut"
+        ]
       }
     }
   }

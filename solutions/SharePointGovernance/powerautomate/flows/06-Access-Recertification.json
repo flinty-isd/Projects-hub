@@ -79,218 +79,243 @@
     }
   },
   "actions": {
-    "Is_quarter_month": {
-      "type": "Compose",
-      "runAfter": {},
-      "inputs": "@equals(mod(int(utcNow('MM')), 3), 1)"
-    },
-    "Condition_Quarterly_privileged_review": {
-      "type": "If",
-      "expression": {
-        "or": [
-          {
-            "equals": [
-              "@outputs('Is_quarter_month')",
-              true
-            ]
-          },
-          {
-            "equals": [
-              "@parameters('PrivilegedReviewAnyMonth')",
-              true
-            ]
-          }
-        ]
-      },
+    "Scope_Main": {
+      "type": "Scope",
       "actions": {
-        "Get_SharePoint_admin_assignments": {
-          "type": "OpenApiConnection",
-          "inputs": {
-            "host": {
-              "connectionName": "shared_webcontents",
-              "operationId": "InvokeHttp",
-              "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
-            },
-            "parameters": {
-              "request/method": "GET",
-              "request/url": "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentScheduleInstances?$filter=roleDefinitionId eq 'f28a1f50-f6e7-4571-818b-6a12f2af6b6c'&$expand=principal&$top=999"
-            }
-          },
-          "runAfter": {}
-        },
-        "Get_SharePoint_admin_eligibility": {
-          "type": "OpenApiConnection",
-          "inputs": {
-            "host": {
-              "connectionName": "shared_webcontents",
-              "operationId": "InvokeHttp",
-              "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
-            },
-            "parameters": {
-              "request/method": "GET",
-              "request/url": "https://graph.microsoft.com/v1.0/roleManagement/directory/roleEligibilityScheduleInstances?$filter=roleDefinitionId eq 'f28a1f50-f6e7-4571-818b-6a12f2af6b6c'&$expand=principal&$top=999"
-            }
-          },
-          "runAfter": {
-            "Get_SharePoint_admin_assignments": [
-              "Succeeded"
-            ]
-          }
-        },
-        "Filter_permanent": {
-          "type": "Query",
-          "runAfter": {
-            "Get_SharePoint_admin_eligibility": [
-              "Succeeded"
-            ]
-          },
-          "inputs": {
-            "from": "@body('Get_SharePoint_admin_assignments')?['value']",
-            "where": "@and(equals(item()?['assignmentType'], 'Assigned'), equals(item()?['endDateTime'], null))"
-          }
-        },
-        "Select_active_lines": {
-          "type": "Select",
-          "runAfter": {
-            "Filter_permanent": [
-              "Succeeded"
-            ]
-          },
-          "inputs": {
-            "from": "@body('Get_SharePoint_admin_assignments')?['value']",
-            "select": "@concat('- ', coalesce(item()?['principal']?['userPrincipalName'], item()?['principal']?['displayName'], item()?['principalId']), ' | ', if(equals(item()?['assignmentType'], 'Activated'), 'PIM activation (temporary)', if(equals(item()?['endDateTime'], null), 'PERMANENT active assignment', 'Time-bound direct assignment')), ' | ends ', coalesce(item()?['endDateTime'], 'never'), ' | scope ', coalesce(item()?['directoryScopeId'], '/'))"
-          }
-        },
-        "Select_eligible_lines": {
-          "type": "Select",
-          "runAfter": {
-            "Select_active_lines": [
-              "Succeeded"
-            ]
-          },
-          "inputs": {
-            "from": "@body('Get_SharePoint_admin_eligibility')?['value']",
-            "select": "@concat('- ', coalesce(item()?['principal']?['userPrincipalName'], item()?['principal']?['displayName'], item()?['principalId']), ' | PIM eligible | ends ', coalesce(item()?['endDateTime'], 'never'), ' | scope ', coalesce(item()?['directoryScopeId'], '/'))"
-          }
-        },
-        "Compose_evidence": {
+        "Is_quarter_month": {
           "type": "Compose",
-          "runAfter": {
-            "Select_eligible_lines": [
-              "Succeeded"
-            ]
-          },
-          "inputs": "@concat('Permanent active assignments (should be none): ', string(length(body('Filter_permanent'))), decodeUriComponent('%0A'), 'Active now (permanent, time-bound or PIM activation): ', string(length(body('Get_SharePoint_admin_assignments')?['value'])), decodeUriComponent('%0A'), 'Eligible (PIM): ', string(length(body('Get_SharePoint_admin_eligibility')?['value'])), decodeUriComponent('%0A'), if(or(contains(string(body('Get_SharePoint_admin_assignments')), '@odata.nextLink'), contains(string(body('Get_SharePoint_admin_eligibility')), '@odata.nextLink')), concat('WARNING: Graph returned more pages than were read; the list below is incomplete.', decodeUriComponent('%0A')), ''), decodeUriComponent('%0A'), 'Active:', decodeUriComponent('%0A'), join(body('Select_active_lines'), decodeUriComponent('%0A')), decodeUriComponent('%0A'), decodeUriComponent('%0A'), 'Eligible:', decodeUriComponent('%0A'), join(body('Select_eligible_lines'), decodeUriComponent('%0A')))"
+          "runAfter": {},
+          "inputs": "@equals(mod(int(utcNow('MM')), 3), 1)"
         },
-        "Approval_InfoSec_privileged": {
-          "type": "OpenApiConnection",
-          "inputs": {
-            "host": {
-              "connectionName": "shared_approvals",
-              "operationId": "StartAndWaitForAnApproval",
-              "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
-            },
-            "parameters": {
-              "approvalType": "Basic",
-              "WebhookApprovalCreationInput/title": "Quarterly review: SharePoint Administrator role",
-              "WebhookApprovalCreationInput/assignedTo": "@parameters('InfoSecApproverEmail')",
-              "WebhookApprovalCreationInput/details": "@{concat(outputs('Compose_evidence'), decodeUriComponent('%0A'), decodeUriComponent('%0A'), 'A PIM activation is temporary and expected; a permanent active assignment is not. Approve if every person listed should hold the role as shown. Reject and say which assignments to change if not: IT Operations then remediates and records the closure in the Access Review Log.')}",
-              "WebhookApprovalCreationInput/itemLink": "https://entra.microsoft.com/#view/Microsoft_Azure_PIMCommon/ResourceMenuBlade/~/members/resourceId//resourceType/tenant/provider/aadroles",
-              "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
-              "WebhookApprovalCreationInput/enableNotifications": true,
-              "WebhookApprovalCreationInput/enableReassignment": true
-            }
-          },
-          "runAfter": {
-            "Compose_evidence": [
-              "Succeeded"
-            ]
-          }
-        },
-        "Log_privileged_review": {
-          "type": "OpenApiConnection",
-          "inputs": {
-            "host": {
-              "connectionName": "shared_sharepointonline",
-              "operationId": "PostItem",
-              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-            },
-            "parameters": {
-              "dataset": "@parameters('GovernanceSiteUrl')",
-              "table": "Access Review Log",
-              "item/Title": "@{concat('SharePoint Administrator role - ', utcNow('yyyy-MM-dd'))}",
-              "item/Reviewer": "@{outputs('Approval_InfoSec_privileged')?['body/responses'][0]['responder']['email']}",
-              "item/Comments": "@{concat(join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_InfoSec_privileged')?['body/responses']), '}}'))), '//comments/text()'), ' | '), decodeUriComponent('%0A'), decodeUriComponent('%0A'), 'Evidence at review time:', decodeUriComponent('%0A'), outputs('Compose_evidence'))}",
-              "item/Outcome": "@outputs('Approval_InfoSec_privileged')?['body/outcome']",
-              "item/AccessCount": "@add(length(body('Get_SharePoint_admin_assignments')?['value']), length(body('Get_SharePoint_admin_eligibility')?['value']))"
-            }
-          },
-          "runAfter": {
-            "Approval_InfoSec_privileged": [
-              "Succeeded"
-            ]
-          }
-        },
-        "Condition_Rejected": {
+        "Condition_Quarterly_privileged_review": {
           "type": "If",
-          "runAfter": {
-            "Log_privileged_review": [
-              "Succeeded"
-            ]
-          },
           "expression": {
-            "equals": [
-              "@outputs('Approval_InfoSec_privileged')?['body/outcome']",
-              "Reject"
+            "or": [
+              {
+                "equals": [
+                  "@outputs('Is_quarter_month')",
+                  true
+                ]
+              },
+              {
+                "equals": [
+                  "@parameters('PrivilegedReviewAnyMonth')",
+                  true
+                ]
+              }
             ]
           },
           "actions": {
-            "Request_remediation": {
+            "Get_SharePoint_admin_assignments": {
               "type": "OpenApiConnection",
-              "runAfter": {},
               "inputs": {
                 "host": {
-                  "connectionName": "shared_office365",
-                  "operationId": "SendEmailV2",
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                  "connectionName": "shared_webcontents",
+                  "operationId": "InvokeHttp",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
                 },
                 "parameters": {
-                  "emailMessage/To": "@{concat(parameters('ITOpsOwnerEmail'), ';', parameters('InfoSecApproverEmail'))}",
-                  "emailMessage/Subject": "Privileged role review rejected: SharePoint Administrator assignments to fix",
-                  "emailMessage/Body": "<p>InfoSec rejected this quarter's SharePoint Administrator review. Change the assignments named in their comments, then add the date and what was changed to the Comments of this review's row in the Access Review Log, so the review is closed on evidence.</p><p>InfoSec comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_InfoSec_privileged')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p><pre>@{outputs('Compose_evidence')}</pre>",
-                  "emailMessage/Importance": "High"
+                  "request/method": "GET",
+                  "request/url": "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentScheduleInstances?$filter=roleDefinitionId eq 'f28a1f50-f6e7-4571-818b-6a12f2af6b6c'&$expand=principal&$top=999"
+                }
+              },
+              "runAfter": {}
+            },
+            "Get_SharePoint_admin_eligibility": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_webcontents",
+                  "operationId": "InvokeHttp",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                },
+                "parameters": {
+                  "request/method": "GET",
+                  "request/url": "https://graph.microsoft.com/v1.0/roleManagement/directory/roleEligibilityScheduleInstances?$filter=roleDefinitionId eq 'f28a1f50-f6e7-4571-818b-6a12f2af6b6c'&$expand=principal&$top=999"
+                }
+              },
+              "runAfter": {
+                "Get_SharePoint_admin_assignments": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_permanent": {
+              "type": "Query",
+              "runAfter": {
+                "Get_SharePoint_admin_eligibility": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Get_SharePoint_admin_assignments')?['value']",
+                "where": "@and(equals(item()?['assignmentType'], 'Assigned'), equals(item()?['endDateTime'], null))"
+              }
+            },
+            "Select_active_lines": {
+              "type": "Select",
+              "runAfter": {
+                "Filter_permanent": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Get_SharePoint_admin_assignments')?['value']",
+                "select": "@concat('- ', coalesce(item()?['principal']?['userPrincipalName'], item()?['principal']?['displayName'], item()?['principalId']), ' | ', if(equals(item()?['assignmentType'], 'Activated'), 'PIM activation (temporary)', if(equals(item()?['endDateTime'], null), 'PERMANENT active assignment', 'Time-bound direct assignment')), ' | ends ', coalesce(item()?['endDateTime'], 'never'), ' | scope ', coalesce(item()?['directoryScopeId'], '/'))"
+              }
+            },
+            "Select_eligible_lines": {
+              "type": "Select",
+              "runAfter": {
+                "Select_active_lines": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "from": "@body('Get_SharePoint_admin_eligibility')?['value']",
+                "select": "@concat('- ', coalesce(item()?['principal']?['userPrincipalName'], item()?['principal']?['displayName'], item()?['principalId']), ' | PIM eligible | ends ', coalesce(item()?['endDateTime'], 'never'), ' | scope ', coalesce(item()?['directoryScopeId'], '/'))"
+              }
+            },
+            "Compose_evidence": {
+              "type": "Compose",
+              "runAfter": {
+                "Select_eligible_lines": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": "@concat('Permanent active assignments (should be none): ', string(length(body('Filter_permanent'))), decodeUriComponent('%0A'), 'Active now (permanent, time-bound or PIM activation): ', string(length(body('Get_SharePoint_admin_assignments')?['value'])), decodeUriComponent('%0A'), 'Eligible (PIM): ', string(length(body('Get_SharePoint_admin_eligibility')?['value'])), decodeUriComponent('%0A'), if(or(contains(string(body('Get_SharePoint_admin_assignments')), '@odata.nextLink'), contains(string(body('Get_SharePoint_admin_eligibility')), '@odata.nextLink')), concat('WARNING: Graph returned more pages than were read; the list below is incomplete.', decodeUriComponent('%0A')), ''), decodeUriComponent('%0A'), 'Active:', decodeUriComponent('%0A'), join(body('Select_active_lines'), decodeUriComponent('%0A')), decodeUriComponent('%0A'), decodeUriComponent('%0A'), 'Eligible:', decodeUriComponent('%0A'), join(body('Select_eligible_lines'), decodeUriComponent('%0A')))"
+            },
+            "Approval_InfoSec_privileged": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_approvals",
+                  "operationId": "StartAndWaitForAnApproval",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                },
+                "parameters": {
+                  "approvalType": "Basic",
+                  "WebhookApprovalCreationInput/title": "Quarterly review: SharePoint Administrator role",
+                  "WebhookApprovalCreationInput/assignedTo": "@parameters('InfoSecApproverEmail')",
+                  "WebhookApprovalCreationInput/details": "@{concat(outputs('Compose_evidence'), decodeUriComponent('%0A'), decodeUriComponent('%0A'), 'A PIM activation is temporary and expected; a permanent active assignment is not. Approve if every person listed should hold the role as shown. Reject and say which assignments to change if not: IT Operations then remediates and records the closure in the Access Review Log.')}",
+                  "WebhookApprovalCreationInput/itemLink": "https://entra.microsoft.com/#view/Microsoft_Azure_PIMCommon/ResourceMenuBlade/~/members/resourceId//resourceType/tenant/provider/aadroles",
+                  "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+                  "WebhookApprovalCreationInput/enableNotifications": true,
+                  "WebhookApprovalCreationInput/enableReassignment": true
+                }
+              },
+              "runAfter": {
+                "Compose_evidence": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Log_privileged_review": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PostItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('GovernanceSiteUrl')",
+                  "table": "Access Review Log",
+                  "item/Title": "@{concat('SharePoint Administrator role - ', utcNow('yyyy-MM-dd'))}",
+                  "item/Reviewer": "@{outputs('Approval_InfoSec_privileged')?['body/responses'][0]['responder']['email']}",
+                  "item/Comments": "@{concat(join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_InfoSec_privileged')?['body/responses']), '}}'))), '//comments/text()'), ' | '), decodeUriComponent('%0A'), decodeUriComponent('%0A'), 'Evidence at review time:', decodeUriComponent('%0A'), outputs('Compose_evidence'))}",
+                  "item/Outcome": "@outputs('Approval_InfoSec_privileged')?['body/outcome']",
+                  "item/AccessCount": "@add(length(body('Get_SharePoint_admin_assignments')?['value']), length(body('Get_SharePoint_admin_eligibility')?['value']))"
+                }
+              },
+              "runAfter": {
+                "Approval_InfoSec_privileged": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Condition_Rejected": {
+              "type": "If",
+              "runAfter": {
+                "Log_privileged_review": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "equals": [
+                  "@outputs('Approval_InfoSec_privileged')?['body/outcome']",
+                  "Reject"
+                ]
+              },
+              "actions": {
+                "Request_remediation": {
+                  "type": "OpenApiConnection",
+                  "runAfter": {},
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@{concat(parameters('ITOpsOwnerEmail'), ';', parameters('InfoSecApproverEmail'))}",
+                      "emailMessage/Subject": "Privileged role review rejected: SharePoint Administrator assignments to fix",
+                      "emailMessage/Body": "<p>InfoSec rejected this quarter's SharePoint Administrator review. Change the assignments named in their comments, then add the date and what was changed to the Comments of this review's row in the Access Review Log, so the review is closed on evidence.</p><p>InfoSec comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_InfoSec_privileged')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p><pre>@{outputs('Compose_evidence')}</pre>",
+                      "emailMessage/Importance": "High"
+                    }
+                  }
                 }
               }
             }
+          },
+          "runAfter": {
+            "Is_quarter_month": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {}
+    },
+    "Catch_run_failed": {
+      "type": "Scope",
+      "description": "Run-level failure alert: any error in Scope_Main that no step handled.",
+      "actions": {
+        "Select_failed_steps": {
+          "type": "Select",
+          "inputs": {
+            "from": "@result('Scope_Main')",
+            "select": "@concat('<li><b>', item()?['name'], '</b>: ', item()?['status'], ' ', coalesce(item()?['error']?['code'], item()?['outputs']?['statusCode'], ''), ' ', coalesce(item()?['error']?['message'], ''), '</li>')"
+          },
+          "runAfter": {}
+        },
+        "Alert_run_failed": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@{concat(parameters('ITOpsOwnerEmail'), ';', parameters('SharePointServiceOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
+              "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
+              "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error it did not handle, so some of its work may not have been done. Nothing has been retried.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a> (started @{workflow()?['run']?['startTime']})</p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Open the run, find the failed step and its raw output, fix the cause, then resubmit the run or deal with the items by hand. Check for partial changes first (see Stopping and recovery in the deployment guide).</p>",
+              "emailMessage/Importance": "High"
+            }
+          },
+          "runAfter": {
+            "Select_failed_steps": [
+              "Succeeded"
+            ]
           }
         }
       },
       "runAfter": {
-        "Is_quarter_month": [
-          "Succeeded"
-        ]
-      }
-    },
-    "Alert_run_failed": {
-      "type": "OpenApiConnection",
-      "runAfter": {
-        "Condition_Quarterly_privileged_review": [
+        "Scope_Main": [
           "Failed",
           "TimedOut"
         ]
-      },
-      "inputs": {
-        "host": {
-          "connectionName": "shared_office365",
-          "operationId": "SendEmailV2",
-          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
-        },
-        "parameters": {
-          "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
-          "emailMessage/Subject": "Governance flow 06 failed",
-          "emailMessage/Body": "<p>Governance flow 06 (privileged role review) did not finish. Open its run history in Power Automate (run @{workflow()?['run']?['name']}), find the first failed step and fix the cause, usually a connection that needs signing in again. Then resubmit the run. Nothing after the failed step was done.</p>",
-          "emailMessage/Importance": "High"
-        }
       }
     }
   }

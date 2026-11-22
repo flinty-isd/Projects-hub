@@ -3,7 +3,7 @@
   "uniqueName": "SharePointGovernance",
   "displayName": "SharePoint Governance (BAU)",
   "description": "Power Automate flows that enforce SharePoint Online governance controls (PID v4.2) in BAU.",
-  "version": "1.7.0.0",
+  "version": "1.8.0.0",
   "publisher": {
     "uniqueName": "HPUKIT",
     "displayName": "HPUK IT",
@@ -37,7 +37,7 @@
     },
     "SupportMailboxEmail": {
       "displayName": "Support mailbox email",
-      "description": "Optional. Communications shared mailbox that gets a copy of every governance problem email (licence check failed, provisioning failed, undecided guest removal, urgent alert not sent) and the failure alerts from flows 06 and 07. Empty means no copy.",
+      "description": "Optional. Communications shared mailbox that gets a copy of every governance problem email (licence check failed, provisioning failed, undecided guest removal, urgent alert not sent) and the run-failure (Flow failed) alert of every flow. Empty means no copy.",
       "default": ""
     },
     "AutomationSubscriptionId": {

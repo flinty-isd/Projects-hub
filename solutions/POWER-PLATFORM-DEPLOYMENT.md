@@ -5,13 +5,22 @@ stay supported in BAU:
 
 | Solution | Flows | Connectors |
 |----------|-------|------------|
-| **SharePoint Governance (BAU)**, `solutions/SharePointGovernance` | 6 | SharePoint, Office 365 Outlook, Approvals, HTTP with Microsoft Entra ID, Azure Automation |
-| **SharePoint News and Notices**, `solutions/SharePointNews` | 4 | SharePoint, Office 365 Outlook, Microsoft Teams |
+| **SharePoint Governance (BAU)**, `solutions/SharePointGovernance` (1.8.0.0) | 7: 01, 02, 03, 05, 06, 07, 08 | SharePoint, Office 365 Outlook, Approvals, HTTP with Microsoft Entra ID, Azure Automation |
+| **SharePoint News and Notices**, `solutions/SharePointNews` (1.5.0.0) | 4: C1, C2, C3a, C3b | SharePoint, Office 365 Outlook, Microsoft Teams |
 
-Today each solution is built as an **unmanaged** .zip and imported by hand.
-That's fine for a first test, but not for production. Unmanaged flows can be
-edited in place, so production can drift from what's in the repo, and they
-can't be cleanly upgraded or rolled back.
+**Status today: unmanaged only.** Each solution is built as an **unmanaged**
+.zip and imported by hand. The managed pipeline below is a **proposal; it
+has not been built or tested**. Unmanaged flows can be edited in place, so an
+environment can drift from the repo, and an unmanaged solution can't be
+cleanly removed or rolled back.
+
+Until the pipeline exists, production use is a **bounded unmanaged pilot**
+and needs the Control Board to accept it explicitly (review R13), with these
+limits: imports only from a deployment kit whose `MANIFEST.json` matches the
+tested one; nobody edits flows in the designer in production (a fix goes
+through the repo and a new version); after each import the release owner
+exports the solution and compares it with the kit; and the pilot ends on a
+date the Board sets, by which the managed route has been tested.
 
 ## Target model
 
@@ -29,7 +38,8 @@ flowchart LR
   opened in the designer, and the only place a managed package is exported
   from.
 - **Test and Production** receive the **managed** package only, so their
-  flows can't be edited there, and an upgrade or rollback is a single import.
+  flows can't be edited there, and an upgrade is a single import. Going back
+  is a new, higher version (fix forward), not a re-import of an old one.
 - **Per-environment values** (site URLs, mailboxes, connections) live in a
   deployment settings file per environment, not in the package.
 
@@ -60,7 +70,7 @@ replaces the two service accounts decided on 23 October 2026.
 
 | Identity | Used for | Notes |
 |----------|----------|-------|
-| **Governance flow owner** (a named IT Operations administrator in Carl Sharman's team, to name) | Owns the governance connections: SharePoint, Office 365 Outlook, Approvals, HTTP with Microsoft Entra ID, Azure Automation | Their own licensed account (E5). Approval and notice emails come from their mailbox |
+| **Governance flow owner** (a named IT Operations administrator in Carl Sharman's team, to name) | Owns the governance connections: SharePoint, Office 365 Outlook, Approvals, HTTP with Microsoft Entra ID, Azure Automation | Their own licensed account (E5, plus the Power Automate Premium or Process route below). Approval and notice emails come from their mailbox |
 | **News flow owner** (Nigel Bell, or a named IT Operations administrator) | Owns the news connections: SharePoint, Office 365 Outlook, Microsoft Teams | Their own licensed account, with Send As on the Communications mailbox. Readers see the Communications mailbox and Flow bot, not the owner |
 | **Backup owner** (one named person per solution) | Co-owner of every flow and connection reference | Takes over the connections if the owner leaves or is absent |
 | **Azure Automation managed identity** | The governance baseline runbook | Sites.Selected grant per site URL (G-04), recorded in the grant register; SharePoint Administrator role for the tenant-level step, as for the RCD runbook (G-03, DEP007) |
@@ -77,7 +87,7 @@ requesters) keeps using their own account.
 | SharePoint rights | IT Enterprise Governance site: Edit on the governance lists; rights to create sites | HPUK News and Other News: Edit on Site Pages and Delivery Log, Read elsewhere |
 | Mail | Sends from their own mailbox | Send As on the Communications mailbox |
 | Other | Azure Automation job operator on the governance Automation account | Member of the port Teams channels the flows post to |
-| Licence | E5: premium connectors confirmed (PID v4.2 §5.8) | E5 or any licence with a mailbox |
+| Licence | **Power Automate Premium** (per user) or a **Process** licence on the flows: HTTP with Microsoft Entra ID and Azure Automation are premium connectors, and Microsoft 365 E5 does not include them. Record which route and the assignment (open decision below) | A licence with a mailbox; the news connectors are standard. Paging list reads above 5,000 rows also needs Premium, so give the news owner the same licence route if a list can grow past that |
 
 **Leavers and absence.** The named owner and the backup co-own every flow.
 When either changes role or leaves, reassign the connections and ownership to
@@ -90,7 +100,7 @@ Generate a settings template once per solution from the built package, then
 keep one filled-in copy per environment in the repo:
 
 ```
-pac solution create-settings --solution-zip dist/SharePointGovernance_1_0_0_0.zip --settings-file deploy/governance.test.json
+pac solution create-settings --solution-zip dist/SharePointGovernance_<version>.zip --settings-file deploy/governance.test.json
 ```
 
 ```
@@ -102,7 +112,8 @@ deploy/
 Each file holds two things:
 
 - **EnvironmentVariables**: site URLs, role mailboxes, Automation account
-  IDs, the review interval. None of these are secrets, so they're fine in git.
+  IDs and the feature switches (see each solution's `solution-config.json`).
+  None of these are secrets, so they're fine in git.
 - **ConnectionReferences**: the connection ID per connector in that
   environment. Create each connection once as that solution's named flow owner, then
   copy its ID from *Data → Connections* (it's in the URL).
@@ -146,17 +157,26 @@ deploys to Test automatically, then waits for an approved Production run.
 
 ## Operating it
 
-- **Monitoring.** Every flow already emails its failures to the support
-  mailbox (the Communications shared mailbox, Intercommunications@fdrc.co.uk). Also turn on Power Automate's *flow failure* email for both
-  named flow owners, and review run history weekly for the first month.
+- **Monitoring.** Every flow runs its steps in a main scope and emails a
+  *Flow failed* alert (run link, failed steps) when an error isn't handled:
+  governance to IT Operations, the service owner and the support mailbox;
+  news to the support mailbox. The support mailbox is the Communications
+  shared mailbox (Intercommunications@fdrc.co.uk). That doesn't catch a run
+  that never starts, so IT Operations does the daily run check in the
+  governance DEPLOY-AND-TEST.md §5, and the support mailbox's owners check
+  C1 and C2 ran each Monday. Also turn on Power Automate's *flow failure*
+  email for both named flow owners.
   For the runbook, check the Automation jobs log daily: success is the
   `###RESULT###` object saying Success, not the flow run (G-10).
 - **News deliveries needing a person.** Check the Delivery Log *Needs
   checking* view (rows left Reserved or Reconcile) whenever a failure alert
   arrives, and weekly. The news flows never resend those on their own.
 - **Emergency stop for news.** Set the `DispatchEnabled` environment variable
-  to No: the roundup and urgent flows stop sending at once, without turning
-  any flow off.
+  to No: **new** roundup and urgent runs send nothing. A run already going
+  read the switch when it started, so also set the Comms Distribution rows'
+  `Enabled` to No (each row is read again just before it is sent) and cancel
+  the run in run history; then check the Delivery Log *Needs checking* view
+  (news README, Stopping).
 - **Connections** are the usual cause of failure: a password change, MFA
   re-prompt, role change or leaver on a named flow owner. Reassign before
   the account changes, and re-authenticate in Production only, under
@@ -165,20 +185,29 @@ deploys to Test automatically, then waits for an approved Production run.
   When either leaves, reassign to the next named person first; never to a shared account.
 - **Upgrades.** Each release has a higher version number, and Production
   only ever moves forward.
-- **Rollback.** Power Platform won't import a lower version over a higher
-  one. Instead, revert the change in the repo and release it as a new
-  version through the same pipeline. For an urgent stop, turn the affected
-  flow off in Production; the next deployment turns it back on.
+- **No rollback by import.** Power Platform won't import a lower version
+  over a higher one. Revert the change in the repo and release it as a new,
+  higher version. Turning a flow off stops new runs only: it doesn't undo
+  sites, group changes, emails or list writes already made, or stop runs in
+  progress. Follow *Stopping and recovery* in the governance
+  DEPLOY-AND-TEST.md §5 (inspect and cancel runs, find side effects,
+  reconcile with the control owner, keep evidence).
 
 ## Moving the existing import
 
-The governance solution has already been imported **unmanaged**. Before the
-first managed release:
+The governance solution has already been imported **unmanaged**. Moving an
+environment from unmanaged to managed has to be rehearsed first: **copy the
+environment** (Power Platform admin centre → Copy) and do the steps below on
+the copy, then check each flow's **solution layers** before doing it for
+real.
 
 1. If that environment will be **Test or Production**, delete the unmanaged
    *SharePoint Governance (BAU)* solution from it. Use **Delete** on the
    solution only: its flows are kept as loose components, and the managed
-   import takes them over, because the IDs match.
+   import takes them over, because the IDs match. Afterwards, open
+   *See solution layers* on each flow and remove any **unmanaged active
+   layer** left on top (it would hide later managed upgrades), and check the
+   connection references and environment variables resolved.
 2. If it is a personal or default environment, leave it, turn its flows
    off, and deploy fresh to the new environments.
 3. In both cases, re-enter the connection and environment variable values
@@ -189,6 +218,7 @@ first managed release:
 | Decision | Owner |
 |----------|-------|
 | Environment names, regions and capacity | Power Platform admin |
-| Licensing route for the premium connectors (Premium per user vs Process) | IT / Finance |
+| Licensing route for the premium connectors (Premium per user vs Process), and evidence of the assignment | IT / Finance |
+| Accept a bounded unmanaged pilot (limits and end date above), or build and test the managed pipeline before production (R13) | Control Board, release owner |
 | Who approves Production runs | SharePoint service owner, IT Operations |
 | Whether Dev is shared or per developer | IT |

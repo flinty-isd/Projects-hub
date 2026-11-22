@@ -65,6 +65,7 @@ all ports (decision 1).
 |-----------|--------------|
 | **Reserve before sending** | The Delivery Log Title (the dispatch key) is unique and indexed. Before each email or Teams post the flow writes a *Reserved* row, and sends only if that succeeds. The send has no automatic retry. The row then becomes *Sent*; *Failed* if the provider definitely rejected it (a 4xx other than 408/429); or *Reconcile* if the outcome is unknown (a timeout, 5xx or throttling). Only *Failed* rows are ever retried. A person checks *Reconcile* rows (the **Needs checking** view) with the recipient and sets *Failed* to allow a resend |
 | **Master switches, off by default** | `DispatchEnabled` = No: C2 and C3 send nothing (runs show as Cancelled). `ExpiryWritesEnabled` = No: C1 changes nothing and emails the support mailbox the pages it would have expired. Turn each on only after it has been proven, and set `DispatchEnabled` back to No to stop new runs (see **Stopping** for a run already going) |
+| **Failure alert** (1.5.0.0) | Each flow's steps sit in a main scope: an error no step handles (a list that can't be read, a connection failure) sends the support mailbox one high-importance *Flow failed* email with the run link and the failed steps. A run that never starts sends nothing: the support mailbox's owners check each Monday that C1 ran every day and C2 ran that morning. List reads page up to 100,000 rows (Power Automate Premium; 5,000 without it) |
 | **Urgent go-live date** | `UrgentGoLiveDate`: C3 ignores posts first published before it, so editing an old or migrated post never sends an alert. Set it once at go-live and don't move it |
 | **One destination, one key** (1.4.0.0) | Keys name the Comms Distribution row (`port#ID`), not just the port, so two rows for the same port each get their delivery and never block each other. Changing a row's address keeps its key: that week's roundup or that notice isn't sent again to the new address. The address used is read from the row just before sending and written to the Delivery Log |
 | **Retry claims** (1.4.0.0) | A *Failed* row is claimed for a retry with an ETag check (`If-Match`): if another run changed the row after this run read it, the claim fails with 412, nothing is sent and support is told. C2 also runs one at a time (C3 already did), so a resubmitted roundup waits for the running one to finish |
@@ -103,8 +104,18 @@ flowchart LR
    or shared account, D-03; see the
    [deployment plan](../POWER-PLATFORM-DEPLOYMENT.md#identities)).
 2. **Provision.** Run `provisioning/Provision-NewsSites.ps1` with the two site
-   URLs, the group object IDs and the flow
-   owner's UPN. Add `-CreateTemplates` to build the page templates *HPUK
+   URLs, the group object IDs, the flow
+   owner's UPN and `-ClientId` (the Entra app PnP signs in with; required for
+   `-Interactive` too). Existing columns are compared with the schema and
+   any difference (type, required, default, choices) is listed as drift;
+   `-FixDrift` corrects defaults, required and missing choices (for example a
+   blank Status or Show in News default) but never a column's type or an extra
+   choice. Permissions are only checked on a normal run: the restricted
+   lists, broad claims (Everyone, Everyone except external users) and
+   individual grants are reported, never removed. `-RepairPermissions`
+   re-applies the list restrictions, keeping item-level permissions unless
+   `-ClearItemPermissions` is also given. The script ends with an error while
+   any drift is left, so a clean finish means the sites match. Add `-CreateTemplates` to build the page templates *HPUK
    News post* and *Other News post* (header, then Summary, Main content,
    Action required and deadline, Attachments, Contact; the Summary hint
    reminds publishers to fill in Page details before publishing); run it once per
@@ -113,7 +124,14 @@ flowchart LR
    rather than the publisher (who published stays in version history).
    Afterwards open each template, add a banner image, check the byline is
    empty and republish. Then have a Purview compliance admin run
-   `provisioning/Set-NewsRetention.ps1` for the 7-year retention.
+   `provisioning/Set-NewsRetention.ps1` for the 7-year retention: first with
+   no switches, which only compares the tenant with the intended policy and
+   prints a plan; then with `-Apply -ApprovalReference <records owner's
+   decision ID>`. An existing rule with a different duration, action or start
+   date is reported and left alone unless `-UpdateExistingRule` is given; a
+   site excluded from the policy stops the run. It reads the policy back and
+   fails on a distribution error; run the check again until Distribution
+   shows Success (up to 7 days).
 3. **Manual site settings.** These have no supported cmdlet:
    - Site Pages → *Settings → Audience targeting* → **On**, on both sites.
    - Page templates, only if you didn't use `-CreateTemplates`: create
@@ -197,6 +215,8 @@ is not the production permission model.
 | Two rows, one port | Two enabled Comms Distribution rows for the same port with different addresses: each gets the roundup and the urgent alert, with its own Delivery Log row (`port#ID`) |
 | Changed address | Change a row's address after its roundup was sent and re-run C2 the same week: nothing is sent. Set its row to Failed and re-run: it goes to the new address, and the Delivery Log's Destination shows the new address |
 | Sent, then log failure | Make the Delivery Log read-only for the flow identity just after a send (or break Mark sent in a copy): the row stays Reserved, support is told it was sent but not logged, and a re-run doesn't resend it |
+| Failure alert | In a test copy of C2, change Get destinations to a list name that doesn't exist and run it: the run fails and the support mailbox gets one *Flow failed* email naming the step |
+| Paging | With 150 expired test posts, one C1 run processes all of them |
 | Stop during a run | With several destinations, start C2 and set the later rows' `Enabled` to No: those rows are reported as switched off and not sent. Cancel a run in run history mid-way: any row left Reserved shows in *Needs checking* |
 | Switches off | With `DispatchEnabled` = No, publishing an urgent post and running C2 send nothing (runs show Cancelled). With `ExpiryWritesEnabled` = No, C1 emails a dry-run list and changes no page |
 | Go-live date | Editing and republishing an urgent post first published before `UrgentGoLiveDate` sends nothing |
@@ -214,11 +234,13 @@ is not the production permission model.
 | Daylight saving | Runs in the week the clocks change still fire at 06:00 and 07:00 UK time |
 | Reader boundary | Someone outside the HPUK reader group can't open pages or attachments |
 | Retention | Deleting a test page leaves a copy in the Preservation Hold library (after the policy has distributed) |
+| Retention check | With an existing rule of the wrong duration, or a KeepAndDelete rule without `-DeleteAfterRetention`, the script reports the difference and changes nothing. A rejected location update stops the run. The check passes only when both sites are in the policy and Distribution is Success |
+| Provisioning re-run | Run the script twice on a clean pair of sites: the second run reports no drift and changes nothing. On a site with a blank Status default, it reports the drift; with `-FixDrift` it sets Live. With an item given its own permissions in Delivery Log, `-RepairPermissions` keeps it and lists it |
 
-## Upgrading to 1.4.0.0
+## Upgrading from 1.3.x or earlier
 
 The dispatch keys change from `port` to `port#ID`, so rows logged by 1.3.x
-aren't matched by 1.4.0.0. Import it when nothing is in flight: after
+aren't matched by 1.4.0.0 and later. Import it when nothing is in flight: after
 Monday's roundup has finished, with no urgent post waiting to be resent
 (the **Needs checking** view empty and no Failed urgent rows), and don't
 resubmit a run from before the upgrade. In the first retry test, open the claim action (*Reserve retry*) and check its `IF-MATCH` header shows a version such as `"3"`, not `"no-etag"`: if it says no-etag, the connector didn't return the row's ETag and every retry claim will fail safe (nothing sent) until that is fixed. Re-running a week's roundup after

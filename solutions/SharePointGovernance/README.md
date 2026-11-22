@@ -52,6 +52,7 @@ SharePointGovernance/
 ├── provisioning/          Provision-GovernanceDashboard.ps1: dashboard page, views and status badges
 ├── skills/                sharepoint-governance: Claude skill that applies these rules and the SAM policies
 ├── SAM-POLICIES.md        SharePoint Advanced Management policies, settings and the D-GSA-08 decision
+├── PERMISSIONS.md         draft permission and action matrix (review R12), governance and news
 ├── diagrams/              Mermaid process diagrams
 ├── solution-config.json   solution name, version, publisher, environment variables
 └── tools/                 validate_flows.py (static checks) and build_solution.py (packager)
@@ -99,7 +100,7 @@ only changes an environment variable.
 | `InfoSecApproverEmail` | Security & Architecture (InfoSec) | Approves guest access, privileged admin roles, and sites with external sharing or Highly Confidential content; quarterly admin-role review |
 | `ITOpsOwnerEmail` | IT Operations owner | Applies and registers the Sites.Selected grant for each new site (flow 03); creates PIM assignments; agrees dispositions for excluded file shares and permission remediation; orphaned-site alerts |
 | `ServiceDeskEmail` | Service Desk shared mailbox | Fulfilment tickets: AD group changes and access removals |
-| `SupportMailboxEmail` | Communications shared mailbox (optional) | A copy of every problem email: licence check failed (01), undecided guest removal (02), provisioning failed (03), urgent alert not sent (08), and the run-failure alerts of flows 06 and 07. Empty means no copy |
+| `SupportMailboxEmail` | Communications shared mailbox (optional) | A copy of every problem email: licence check failed (01), undecided guest removal (02), provisioning failed (03), urgent alert not sent (08), and the *Flow failed* alert of every flow. Empty means no copy |
 
 The SharePoint service owner role is new for BAU, so set it to whoever IT
 names as service owner. A shared mailbox or distribution list is better than
@@ -193,6 +194,14 @@ every future build includes it.
 
 ## Behaviour worth knowing
 
+- **Failure alerts and paging** (1.8.0.0): each flow's steps sit in a main
+  scope. An error no step handles sends one high-importance *Flow failed*
+  email to `ITOpsOwnerEmail`, `SharePointServiceOwnerEmail` and (if set)
+  `SupportMailboxEmail`, with the run
+  link and the failed steps. A run that never starts sends nothing, so IT
+  Operations also does the daily run check (DEPLOY-AND-TEST.md §5). List
+  reads (flows 02 and 07) page up to 100,000 rows; that needs the flow owner's
+  Power Automate Premium licence (without it Power Automate stops at 5,000).
 - **Guest expiry and G-11**: PID v4.2 allows no silent revocation outside
   four critical classes. With `GuestAutoRemoval` = No (the default), flow 02
   asks the site owner or sponsor on the end date: Approve removes the guest,
