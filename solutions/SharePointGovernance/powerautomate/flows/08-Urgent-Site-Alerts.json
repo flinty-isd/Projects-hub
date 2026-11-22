@@ -35,6 +35,10 @@
     "UrgentAlertsEnabled": {
       "type": "Bool",
       "defaultValue": false
+    },
+    "SupportMailboxEmail": {
+      "type": "String",
+      "defaultValue": ""
     }
   },
   "triggers": {
@@ -194,7 +198,7 @@
                       "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                     },
                     "parameters": {
-                      "emailMessage/To": "@parameters('SharePointServiceOwnerEmail')",
+                      "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
                       "emailMessage/Subject": "@{concat('Urgent site alert NOT sent: ', items('For_each_changed_site')?['Title'])}",
                       "emailMessage/Body": "<p>The urgent alert for @{items('For_each_changed_site')?['Title']} (@{items('For_each_changed_site')?['SiteUrl']}) could not be sent: @{outputs('Compose_alert_key')}. Its Urgent alert sent for column now starts SEND FAILED, so it won't retry by itself. Tell the owners directly, then clear that column to let flow 08 send it again.</p>",
                       "emailMessage/Importance": "High"

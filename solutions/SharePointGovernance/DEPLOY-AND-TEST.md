@@ -1,10 +1,10 @@
-# Governance deployment and test guide (solution 1.6.0.0)
+# Governance deployment and test guide (solution 1.7.0.0)
 
 How to deploy the SharePoint governance flows, runbook, dashboard and SAM
 policies to a test environment, test them, and then go live. Work through it
 in order; each section says who does it.
 
-Deploy from the **deployment kit** (`SharePointGovernance-DeploymentKit_1_6_0_0.zip`,
+Deploy from the **deployment kit** (`SharePointGovernance-DeploymentKit_1_7_0_0.zip`,
 CI artifact *SharePointGovernance-DeploymentKit*, or `python tools/build_kit.py`).
 It holds everything this guide refers to and a `MANIFEST.json` of SHA-256
 checksums: check them before you start and keep the manifest with the test
@@ -25,7 +25,7 @@ evidence.
 - [ ] **Test site**: a copy of the IT Enterprise Governance site (or a test site collection), plus two or three throwaway test sites to provision and break.
 - [ ] **Test people**: two internal test users who can act as site owners, one unlicensed or F3 user, one external test mailbox for a guest.
 - [ ] **Licences**: the flow owner has Power Automate premium (HTTP with Entra ID and Azure Automation are premium). Confirm SAM covers each policy (restricted site creation needs SAM Plan 1).
-- [ ] **Kit**: `SharePointGovernance-DeploymentKit_1_6_0_0.zip`; checksums match `MANIFEST.json`.
+- [ ] **Kit**: `SharePointGovernance-DeploymentKit_1_7_0_0.zip`; checksums match `MANIFEST.json`.
 
 ## 2. Deploy to test
 
@@ -77,6 +77,7 @@ For the HTTP with Entra ID connection: `User.Read.All`, `GroupMember.ReadWrite.A
 | Governance site URL | The test governance site |
 | Tenant root URL | `https://hphneu.sharepoint.com` |
 | SharePoint service owner / InfoSec approver / IT Operations owner / Service Desk email | Test mailboxes you can read (not the real role mailboxes during testing) |
+| Support mailbox email | A test mailbox you can read. In production: the Communications shared mailbox, Intercommunications@fdrc.co.uk |
 | Automation subscription ID / resource group / account name | The test Automation account |
 | Site URL organisation code / location codes | Leave `hpuk` and `pof;har;ltp;ldn` |
 | Remove expired guests automatically | **No** |
@@ -143,6 +144,8 @@ Record each result (pass, fail, notes) in the UAT log. For any fail, keep the fl
 | T21 | 08 Cleared and HC | Set the site back to Active (column clears); then set Sensitivity Highly Confidential with sharing ExistingExternalUserSharingOnly | Second step: one email with InfoSec copied |
 | T22 | Dashboard | Open Governance-Dashboard.aspx | Each panel shows its view and the items created in T01–T21; Status badges coloured with words |
 | T23 | SAM | Attestation (notify only) on one test site | Owner receives the attestation email; nothing goes read-only |
+| T24 | Support copy | With *Support mailbox email* set, repeat T04a and T06b | Each problem email also reaches the support mailbox. With it empty, the same emails still reach the role mailboxes |
+| T25 | 06/07 run failure | Temporarily break the Office 365 or SharePoint connection on the test copy, run flow 06 (with *Run privileged review in any month* Yes) and flow 07 (switch Yes) | One high-importance *Governance flow 06 failed* / *07 failed* email to the service owner and support mailbox |
 
 **Exit criteria:**
 
@@ -157,7 +160,7 @@ Review findings still open (R16 for the news roundup C2, R10 paging and failure 
 1. Agree the date with the Control Board (plan: w/c 4 January 2027).
 2. Repeat 2.1 to 2.7 in production with **real** values: the real governance site, role mailboxes and Automation account. Load the full Site Register (225 sites) after the owner emails have been checked.
 3. Turn the flows on in the same order, with both switches still **No**.
-4. Run the production smoke tests: T01 with a real request, T05 and T10 with real accounts, T22, and confirm a failure alert reaches the support mailbox.
+4. Run the production smoke tests: T01 with a real request, T05 and T10 with real accounts, T22, and confirm a failure alert reaches the support mailbox (Intercommunications@fdrc.co.uk) as well as the service owner.
 5. Brief site owners (comms lead), then set **Send urgent site alerts** = Yes and, from the 1st of the next month, **Send the monthly owner digest** = Yes.
 6. Configure the SAM policies in the order in `SAM-POLICIES.md`, notify-only until the Board approves enforcement.
 7. Hand over to the SharePoint service owner's team: flows, connections (backup owner signed in), runbook, dashboard and this guide.
