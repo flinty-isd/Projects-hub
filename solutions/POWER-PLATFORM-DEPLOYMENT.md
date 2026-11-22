@@ -61,7 +61,7 @@ replaces the two service accounts decided on 23 October 2026.
 | Identity | Used for | Notes |
 |----------|----------|-------|
 | **Governance flow owner** (a named IT Operations administrator in Carl Sharman's team, to name) | Owns the governance connections: SharePoint, Office 365 Outlook, Approvals, HTTP with Microsoft Entra ID, Azure Automation | Their own licensed account (E5). Approval and notice emails come from their mailbox |
-| **News flow owner** (Nigel Bell as news support owner, or a named IT Operations administrator) | Owns the news connections: SharePoint, Office 365 Outlook, Microsoft Teams | Their own licensed account, with Send As on the Communications mailbox. Readers see the Communications mailbox and Flow bot, not the owner |
+| **News flow owner** (Nigel Bell, or a named IT Operations administrator) | Owns the news connections: SharePoint, Office 365 Outlook, Microsoft Teams | Their own licensed account, with Send As on the Communications mailbox. Readers see the Communications mailbox and Flow bot, not the owner |
 | **Backup owner** (one named person per solution) | Co-owner of every flow and connection reference | Takes over the connections if the owner leaves or is absent |
 | **Azure Automation managed identity** | The governance baseline runbook | Sites.Selected grant per site URL (G-04), recorded in the grant register; SharePoint Administrator role for the tenant-level step, as for the RCD runbook (G-03, DEP007) |
 | **Deployment app registration** (service principal) | GitHub Actions: import, export and settings | Application user with *System Customizer* in each environment. It never accesses SharePoint content; confirm with InfoSec that it falls outside D-03 |
@@ -147,7 +147,7 @@ deploys to Test automatically, then waits for an approved Production run.
 ## Operating it
 
 - **Monitoring.** Every flow already emails its failures to the support
-  owner. Also turn on Power Automate's *flow failure* email for both
+  mailbox (the Communications shared mailbox, Intercommunications@fdrc.co.uk). Also turn on Power Automate's *flow failure* email for both
   named flow owners, and review run history weekly for the first month.
   For the runbook, check the Automation jobs log daily: success is the
   `###RESULT###` object saying Success, not the flow run (G-10).

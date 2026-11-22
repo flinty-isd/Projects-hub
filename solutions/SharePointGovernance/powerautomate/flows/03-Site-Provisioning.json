@@ -53,6 +53,10 @@
       "type": "String",
       "defaultValue": "{service-desk}@{domain}"
     },
+    "SupportMailboxEmail": {
+      "type": "String",
+      "defaultValue": ""
+    },
     "AutomationSubscriptionId": {
       "type": "String",
       "defaultValue": "{subscription-id}"
@@ -583,7 +587,7 @@
                                         "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                                       },
                                       "parameters": {
-                                        "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), ';', parameters('ITOpsOwnerEmail'))}",
+                                        "emailMessage/To": "@{concat(concat(parameters('SharePointServiceOwnerEmail'), ';', parameters('ITOpsOwnerEmail')), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
                                         "emailMessage/Subject": "@{concat('Site created without a confirmed baseline: ', triggerBody()?['Title'])}",
                                         "emailMessage/Body": "<p>@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])} was created, but the governance baseline wasn't confirmed, so the site isn't in the Site Register and the request is Provisioning failed. The site may be partly configured: check what the runbook did before giving anyone access, fix the cause (often a missing Sites.Selected grant), and re-run the runbook for this URL.</p><p>@{concat('Job ', coalesce(body('Apply_governance_baseline')?['properties']?['jobId'], 'not created'), ', job status ', coalesce(body('Apply_governance_baseline')?['properties']?['status'], 'unknown'), ', runbook result ', coalesce(actions('Compose_runbook_result')?['outputs']?['Status'], 'missing or unreadable'), '. Errors: ', coalesce(join(coalesce(actions('Compose_runbook_result')?['outputs']?['Errors'], json('[]')), ' | '), 'none reported'), '. Steps done: ', coalesce(join(coalesce(actions('Compose_runbook_result')?['outputs']?['Steps'], json('[]')), ' | '), 'none'))}</p>",
                                         "emailMessage/Importance": "High"
@@ -636,7 +640,7 @@
                                     "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                                   },
                                   "parameters": {
-                                    "emailMessage/To": "@parameters('SharePointServiceOwnerEmail')",
+                                    "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
                                     "emailMessage/Subject": "@{concat('Site created without its baseline: ', triggerBody()?['Title'])}",
                                     "emailMessage/Body": "<p>@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])} was created, but IT Operations did not apply the Sites.Selected grant, so the governance baseline (groups, sharing, label) has not been applied. Restrict the site until the grant is applied and the runbook is re-run.</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_grant_ITOps')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
                                     "emailMessage/Importance": "Normal"
@@ -686,7 +690,7 @@
                                 "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                               },
                               "parameters": {
-                                "emailMessage/To": "@parameters('SharePointServiceOwnerEmail')",
+                                "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
                                 "emailMessage/Subject": "@{concat('Site provisioning failed: ', triggerBody()?['Title'])}",
                                 "emailMessage/Body": "<p>Site creation for @{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])} did not complete (SiteStatus @{body('Create_site')?['SiteStatus']}). Check that the alias is free and retry.</p>",
                                 "emailMessage/Importance": "Normal"

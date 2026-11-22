@@ -99,6 +99,7 @@ only changes an environment variable.
 | `InfoSecApproverEmail` | Security & Architecture (InfoSec) | Approves guest access, privileged admin roles, and sites with external sharing or Highly Confidential content; quarterly admin-role review |
 | `ITOpsOwnerEmail` | IT Operations owner | Applies and registers the Sites.Selected grant for each new site (flow 03); creates PIM assignments; agrees dispositions for excluded file shares and permission remediation; orphaned-site alerts |
 | `ServiceDeskEmail` | Service Desk shared mailbox | Fulfilment tickets: AD group changes and access removals |
+| `SupportMailboxEmail` | Communications shared mailbox (optional) | A copy of every problem email: licence check failed (01), undecided guest removal (02), provisioning failed (03), urgent alert not sent (08), and the run-failure alerts of flows 06 and 07. Empty means no copy |
 
 The SharePoint service owner role is new for BAU, so set it to whoever IT
 names as service owner. A shared mailbox or distribution list is better than

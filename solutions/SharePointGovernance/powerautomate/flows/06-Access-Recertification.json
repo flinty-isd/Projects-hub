@@ -50,6 +50,10 @@
       "type": "String",
       "defaultValue": "{service-desk}@{domain}"
     },
+    "SupportMailboxEmail": {
+      "type": "String",
+      "defaultValue": ""
+    },
     "PrivilegedReviewAnyMonth": {
       "type": "Bool",
       "defaultValue": false
@@ -265,6 +269,28 @@
         "Is_quarter_month": [
           "Succeeded"
         ]
+      }
+    },
+    "Alert_run_failed": {
+      "type": "OpenApiConnection",
+      "runAfter": {
+        "Condition_Quarterly_privileged_review": [
+          "Failed",
+          "TimedOut"
+        ]
+      },
+      "inputs": {
+        "host": {
+          "connectionName": "shared_office365",
+          "operationId": "SendEmailV2",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+        },
+        "parameters": {
+          "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
+          "emailMessage/Subject": "Governance flow 06 failed",
+          "emailMessage/Body": "<p>Governance flow 06 (privileged role review) did not finish. Open its run history in Power Automate (run @{workflow()?['run']?['name']}), find the first failed step and fix the cause, usually a connection that needs signing in again. Then resubmit the run. Nothing after the failed step was done.</p>",
+          "emailMessage/Importance": "High"
+        }
       }
     }
   }
