@@ -140,322 +140,324 @@
         ]
       }
     },
-    "Today_UK": {
-      "type": "Compose",
-      "inputs": "@convertTimeZone(utcNow(), 'UTC', 'GMT Standard Time', 'yyyy-MM-dd')",
-      "runAfter": {
-        "Initialize_WouldUnpublish": [
-          "Succeeded"
-        ]
-      }
-    },
-    "Sites": {
-      "type": "Compose",
-      "inputs": [
-        {
-          "key": "HPUK News",
-          "url": "@parameters('HPUKNewsSiteUrl')",
-          "expiryColumn": "Expiry_x0020_Date"
-        },
-        {
-          "key": "Other News",
-          "url": "@parameters('OtherNewsSiteUrl')",
-          "expiryColumn": "ExpiryDate"
-        }
-      ],
-      "runAfter": {
-        "Today_UK": [
-          "Succeeded"
-        ]
-      }
-    },
-    "For_each_site": {
-      "type": "Foreach",
-      "foreach": "@outputs('Sites')",
+    "Scope_Main": {
+      "type": "Scope",
       "actions": {
-        "Get_expired_pages": {
-          "type": "OpenApiConnection",
-          "inputs": {
-            "host": {
-              "connectionName": "shared_sharepointonline",
-              "operationId": "GetItems",
-              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        "Today_UK": {
+          "type": "Compose",
+          "inputs": "@convertTimeZone(utcNow(), 'UTC', 'GMT Standard Time', 'yyyy-MM-dd')",
+          "runAfter": {}
+        },
+        "Sites": {
+          "type": "Compose",
+          "inputs": [
+            {
+              "key": "HPUK News",
+              "url": "@parameters('HPUKNewsSiteUrl')",
+              "expiryColumn": "Expiry_x0020_Date"
             },
-            "parameters": {
-              "dataset": "@items('For_each_site')?['url']",
-              "table": "Site Pages",
-              "$filter": "@{concat('PromotedState eq 2 and ', items('For_each_site')?['expiryColumn'], ' lt ''', outputs('Today_UK'), '''')}"
+            {
+              "key": "Other News",
+              "url": "@parameters('OtherNewsSiteUrl')",
+              "expiryColumn": "ExpiryDate"
             }
-          },
-          "runAfter": {},
-          "runtimeConfiguration": {
-            "paginationPolicy": {
-              "minimumItemCount": 5000
-            }
+          ],
+          "runAfter": {
+            "Today_UK": [
+              "Succeeded"
+            ]
           }
         },
-        "For_each_expired_page": {
+        "For_each_site": {
           "type": "Foreach",
-          "foreach": "@outputs('Get_expired_pages')?['body/value']",
+          "foreach": "@outputs('Sites')",
           "actions": {
-            "Read_file_state": {
+            "Get_expired_pages": {
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
                   "connectionName": "shared_sharepointonline",
-                  "operationId": "HttpRequest",
+                  "operationId": "GetItems",
                   "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
                 },
                 "parameters": {
                   "dataset": "@items('For_each_site')?['url']",
-                  "parameters/method": "GET",
-                  "parameters/uri": "_api/web/lists/GetByTitle('Site Pages')/items(@{items('For_each_expired_page')?['ID']})/File?$select=Level,CheckOutType",
-                  "parameters/headers": {
-                    "Accept": "application/json;odata=nometadata",
-                    "Content-Type": "application/json;odata=nometadata"
-                  }
+                  "table": "Site Pages",
+                  "$filter": "@{concat('PromotedState eq 2 and ', items('For_each_site')?['expiryColumn'], ' lt ''', outputs('Today_UK'), '''')}",
+                  "$top": 5000
                 }
               },
-              "runAfter": {}
+              "runAfter": {},
+              "runtimeConfiguration": {
+                "paginationPolicy": {
+                  "minimumItemCount": 100000
+                }
+              }
             },
-            "Condition_already_done": {
-              "type": "If",
-              "runAfter": {
-                "Read_file_state": [
-                  "Succeeded"
-                ]
-              },
-              "expression": {
-                "and": [
-                  {
-                    "equals": [
-                      "@body('Read_file_state')?['Level']",
-                      2
-                    ]
-                  },
-                  {
-                    "equals": [
-                      "@or(not(equals(items('For_each_expired_page')?['Status']?['Value'], 'Expired')), not(equals(items('For_each_expired_page')?['ShowinNews'], false)))",
-                      false
-                    ]
-                  }
-                ]
-              },
+            "For_each_expired_page": {
+              "type": "Foreach",
+              "foreach": "@outputs('Get_expired_pages')?['body/value']",
               "actions": {
-                "Record_already_unpublished": {
-                  "type": "AppendToArrayVariable",
+                "Read_file_state": {
+                  "type": "OpenApiConnection",
                   "inputs": {
-                    "name": "AlreadyUnpublished",
-                    "value": "@{concat(items('For_each_site')?['key'], ': ', items('For_each_expired_page')?['Title'])}"
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@items('For_each_site')?['url']",
+                      "parameters/method": "GET",
+                      "parameters/uri": "_api/web/lists/GetByTitle('Site Pages')/items(@{items('For_each_expired_page')?['ID']})/File?$select=Level,CheckOutType",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata",
+                        "Content-Type": "application/json;odata=nometadata"
+                      }
+                    }
                   },
                   "runAfter": {}
-                }
-              },
-              "else": {
-                "actions": {
-                  "Condition_writes_enabled": {
-                    "type": "If",
-                    "runAfter": {},
-                    "expression": {
-                      "equals": [
-                        "@parameters('ExpiryWritesEnabled')",
-                        true
-                      ]
-                    },
-                    "else": {
-                      "actions": {
-                        "Record_would_unpublish": {
-                          "type": "AppendToArrayVariable",
-                          "inputs": {
-                            "name": "WouldUnpublish",
-                            "value": "@{concat(items('For_each_site')?['key'], ': ', items('For_each_expired_page')?['Title'])}"
-                          },
-                          "runAfter": {}
-                        }
+                },
+                "Condition_already_done": {
+                  "type": "If",
+                  "runAfter": {
+                    "Read_file_state": [
+                      "Succeeded"
+                    ]
+                  },
+                  "expression": {
+                    "and": [
+                      {
+                        "equals": [
+                          "@body('Read_file_state')?['Level']",
+                          2
+                        ]
+                      },
+                      {
+                        "equals": [
+                          "@or(not(equals(items('For_each_expired_page')?['Status']?['Value'], 'Expired')), not(equals(items('For_each_expired_page')?['ShowinNews'], false)))",
+                          false
+                        ]
                       }
-                    },
+                    ]
+                  },
+                  "actions": {
+                    "Record_already_unpublished": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "AlreadyUnpublished",
+                        "value": "@{concat(items('For_each_site')?['key'], ': ', items('For_each_expired_page')?['Title'])}"
+                      },
+                      "runAfter": {}
+                    }
+                  },
+                  "else": {
                     "actions": {
-                      "Condition_checked_out": {
+                      "Condition_writes_enabled": {
                         "type": "If",
                         "runAfter": {},
                         "expression": {
                           "equals": [
-                            "@body('Read_file_state')?['Level']",
-                            255
+                            "@parameters('ExpiryWritesEnabled')",
+                            true
                           ]
-                        },
-                        "actions": {
-                          "Record_checked_out": {
-                            "type": "AppendToArrayVariable",
-                            "inputs": {
-                              "name": "Failures",
-                              "value": "@{concat(concat(items('For_each_site')?['key'], ': ', items('For_each_expired_page')?['Title']), ' - checked out to someone: publish or discard their draft, then re-run')}"
-                            },
-                            "runAfter": {}
-                          }
                         },
                         "else": {
                           "actions": {
-                            "Condition_needs_metadata": {
-                              "type": "If",
-                              "runAfter": {},
-                              "expression": {
-                                "equals": [
-                                  "@or(not(equals(items('For_each_expired_page')?['Status']?['Value'], 'Expired')), not(equals(items('For_each_expired_page')?['ShowinNews'], false)))",
-                                  true
-                                ]
-                              },
-                              "actions": {
-                                "Expire_page": {
-                                  "type": "OpenApiConnection",
-                                  "inputs": {
-                                    "host": {
-                                      "connectionName": "shared_sharepointonline",
-                                      "operationId": "HttpRequest",
-                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                                    },
-                                    "parameters": {
-                                      "dataset": "@items('For_each_site')?['url']",
-                                      "parameters/method": "POST",
-                                      "parameters/uri": "_api/web/lists/GetByTitle('Site Pages')/items(@{items('For_each_expired_page')?['ID']})/ValidateUpdateListItem",
-                                      "parameters/headers": {
-                                        "Accept": "application/json;odata=nometadata",
-                                        "Content-Type": "application/json;odata=nometadata"
-                                      },
-                                      "parameters/body": {
-                                        "formValues": [
-                                          {
-                                            "FieldName": "Status",
-                                            "FieldValue": "Expired"
-                                          },
-                                          {
-                                            "FieldName": "ShowinNews",
-                                            "FieldValue": "0"
-                                          }
-                                        ],
-                                        "bNewDocumentUpdate": true
-                                      }
-                                    }
-                                  },
-                                  "runAfter": {}
-                                }
-                              }
-                            },
-                            "Condition_needs_unpublish": {
-                              "type": "If",
-                              "runAfter": {
-                                "Condition_needs_metadata": [
-                                  "Succeeded",
-                                  "Failed",
-                                  "TimedOut"
-                                ]
-                              },
-                              "expression": {
-                                "equals": [
-                                  "@body('Read_file_state')?['Level']",
-                                  1
-                                ]
-                              },
-                              "actions": {
-                                "Unpublish_page": {
-                                  "type": "OpenApiConnection",
-                                  "inputs": {
-                                    "host": {
-                                      "connectionName": "shared_sharepointonline",
-                                      "operationId": "HttpRequest",
-                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                                    },
-                                    "parameters": {
-                                      "dataset": "@items('For_each_site')?['url']",
-                                      "parameters/method": "POST",
-                                      "parameters/uri": "_api/web/lists/GetByTitle('Site Pages')/items(@{items('For_each_expired_page')?['ID']})/File/UnPublish(comment='ExpiredByC1')",
-                                      "parameters/headers": {
-                                        "Accept": "application/json;odata=nometadata",
-                                        "Content-Type": "application/json;odata=nometadata"
-                                      }
-                                    }
-                                  },
-                                  "runAfter": {}
-                                }
-                              }
-                            },
-                            "Read_back": {
-                              "type": "OpenApiConnection",
+                            "Record_would_unpublish": {
+                              "type": "AppendToArrayVariable",
                               "inputs": {
-                                "host": {
-                                  "connectionName": "shared_sharepointonline",
-                                  "operationId": "HttpRequest",
-                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                                },
-                                "parameters": {
-                                  "dataset": "@items('For_each_site')?['url']",
-                                  "parameters/method": "GET",
-                                  "parameters/uri": "_api/web/lists/GetByTitle('Site Pages')/items(@{items('For_each_expired_page')?['ID']})?$select=Status,ShowinNews,File/Level&$expand=File",
-                                  "parameters/headers": {
-                                    "Accept": "application/json;odata=nometadata",
-                                    "Content-Type": "application/json;odata=nometadata"
-                                  }
-                                }
+                                "name": "WouldUnpublish",
+                                "value": "@{concat(items('For_each_site')?['key'], ': ', items('For_each_expired_page')?['Title'])}"
                               },
-                              "runAfter": {
-                                "Condition_needs_unpublish": [
-                                  "Succeeded",
-                                  "Failed",
-                                  "TimedOut",
-                                  "Skipped"
-                                ]
+                              "runAfter": {}
+                            }
+                          }
+                        },
+                        "actions": {
+                          "Condition_checked_out": {
+                            "type": "If",
+                            "runAfter": {},
+                            "expression": {
+                              "equals": [
+                                "@body('Read_file_state')?['Level']",
+                                255
+                              ]
+                            },
+                            "actions": {
+                              "Record_checked_out": {
+                                "type": "AppendToArrayVariable",
+                                "inputs": {
+                                  "name": "Failures",
+                                  "value": "@{concat(concat(items('For_each_site')?['key'], ': ', items('For_each_expired_page')?['Title']), ' - checked out to someone: publish or discard their draft, then re-run')}"
+                                },
+                                "runAfter": {}
                               }
                             },
-                            "Condition_confirmed": {
-                              "type": "If",
-                              "runAfter": {
-                                "Read_back": [
-                                  "Succeeded",
-                                  "Failed",
-                                  "TimedOut"
-                                ]
-                              },
-                              "expression": {
-                                "and": [
-                                  {
+                            "else": {
+                              "actions": {
+                                "Condition_needs_metadata": {
+                                  "type": "If",
+                                  "runAfter": {},
+                                  "expression": {
                                     "equals": [
-                                      "@actions('Read_back')?['status']",
-                                      "Succeeded"
+                                      "@or(not(equals(items('For_each_expired_page')?['Status']?['Value'], 'Expired')), not(equals(items('For_each_expired_page')?['ShowinNews'], false)))",
+                                      true
                                     ]
                                   },
-                                  {
-                                    "equals": [
-                                      "@body('Read_back')?['File']?['Level']",
-                                      2
+                                  "actions": {
+                                    "Expire_page": {
+                                      "type": "OpenApiConnection",
+                                      "inputs": {
+                                        "host": {
+                                          "connectionName": "shared_sharepointonline",
+                                          "operationId": "HttpRequest",
+                                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                        },
+                                        "parameters": {
+                                          "dataset": "@items('For_each_site')?['url']",
+                                          "parameters/method": "POST",
+                                          "parameters/uri": "_api/web/lists/GetByTitle('Site Pages')/items(@{items('For_each_expired_page')?['ID']})/ValidateUpdateListItem",
+                                          "parameters/headers": {
+                                            "Accept": "application/json;odata=nometadata",
+                                            "Content-Type": "application/json;odata=nometadata"
+                                          },
+                                          "parameters/body": {
+                                            "formValues": [
+                                              {
+                                                "FieldName": "Status",
+                                                "FieldValue": "Expired"
+                                              },
+                                              {
+                                                "FieldName": "ShowinNews",
+                                                "FieldValue": "0"
+                                              }
+                                            ],
+                                            "bNewDocumentUpdate": true
+                                          }
+                                        }
+                                      },
+                                      "runAfter": {}
+                                    }
+                                  }
+                                },
+                                "Condition_needs_unpublish": {
+                                  "type": "If",
+                                  "runAfter": {
+                                    "Condition_needs_metadata": [
+                                      "Succeeded",
+                                      "Failed",
+                                      "TimedOut"
                                     ]
                                   },
-                                  {
+                                  "expression": {
                                     "equals": [
-                                      "@body('Read_back')?['Status']",
-                                      "Expired"
+                                      "@body('Read_file_state')?['Level']",
+                                      1
+                                    ]
+                                  },
+                                  "actions": {
+                                    "Unpublish_page": {
+                                      "type": "OpenApiConnection",
+                                      "inputs": {
+                                        "host": {
+                                          "connectionName": "shared_sharepointonline",
+                                          "operationId": "HttpRequest",
+                                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                        },
+                                        "parameters": {
+                                          "dataset": "@items('For_each_site')?['url']",
+                                          "parameters/method": "POST",
+                                          "parameters/uri": "_api/web/lists/GetByTitle('Site Pages')/items(@{items('For_each_expired_page')?['ID']})/File/UnPublish(comment='ExpiredByC1')",
+                                          "parameters/headers": {
+                                            "Accept": "application/json;odata=nometadata",
+                                            "Content-Type": "application/json;odata=nometadata"
+                                          }
+                                        }
+                                      },
+                                      "runAfter": {}
+                                    }
+                                  }
+                                },
+                                "Read_back": {
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "host": {
+                                      "connectionName": "shared_sharepointonline",
+                                      "operationId": "HttpRequest",
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                    },
+                                    "parameters": {
+                                      "dataset": "@items('For_each_site')?['url']",
+                                      "parameters/method": "GET",
+                                      "parameters/uri": "_api/web/lists/GetByTitle('Site Pages')/items(@{items('For_each_expired_page')?['ID']})?$select=Status,ShowinNews,File/Level&$expand=File",
+                                      "parameters/headers": {
+                                        "Accept": "application/json;odata=nometadata",
+                                        "Content-Type": "application/json;odata=nometadata"
+                                      }
+                                    }
+                                  },
+                                  "runAfter": {
+                                    "Condition_needs_unpublish": [
+                                      "Succeeded",
+                                      "Failed",
+                                      "TimedOut",
+                                      "Skipped"
                                     ]
                                   }
-                                ]
-                              },
-                              "actions": {
-                                "Record_unpublished": {
-                                  "type": "AppendToArrayVariable",
-                                  "inputs": {
-                                    "name": "Unpublished",
-                                    "value": "@{concat(items('For_each_site')?['key'], ': ', items('For_each_expired_page')?['Title'])}"
+                                },
+                                "Condition_confirmed": {
+                                  "type": "If",
+                                  "runAfter": {
+                                    "Read_back": [
+                                      "Succeeded",
+                                      "Failed",
+                                      "TimedOut"
+                                    ]
                                   },
-                                  "runAfter": {}
-                                }
-                              },
-                              "else": {
-                                "actions": {
-                                  "Record_failure": {
-                                    "type": "AppendToArrayVariable",
-                                    "inputs": {
-                                      "name": "Failures",
-                                      "value": "@{concat(concat(items('For_each_site')?['key'], ': ', items('For_each_expired_page')?['Title']), ' - read-back: level ', coalesce(string(body('Read_back')?['File']?['Level']), 'unknown'), ', status ', coalesce(string(body('Read_back')?['Status']), 'unknown'), '. Metadata: ', coalesce(actions('Expire_page')?['status'], 'not needed'), ' ', take(string(coalesce(actions('Expire_page')?['outputs']?['body'], '')), 300), '. Unpublish: ', coalesce(actions('Unpublish_page')?['status'], 'not needed'), ' ', take(string(coalesce(actions('Unpublish_page')?['outputs']?['body'], '')), 300))}"
-                                    },
-                                    "runAfter": {}
+                                  "expression": {
+                                    "and": [
+                                      {
+                                        "equals": [
+                                          "@actions('Read_back')?['status']",
+                                          "Succeeded"
+                                        ]
+                                      },
+                                      {
+                                        "equals": [
+                                          "@body('Read_back')?['File']?['Level']",
+                                          2
+                                        ]
+                                      },
+                                      {
+                                        "equals": [
+                                          "@body('Read_back')?['Status']",
+                                          "Expired"
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "actions": {
+                                    "Record_unpublished": {
+                                      "type": "AppendToArrayVariable",
+                                      "inputs": {
+                                        "name": "Unpublished",
+                                        "value": "@{concat(items('For_each_site')?['key'], ': ', items('For_each_expired_page')?['Title'])}"
+                                      },
+                                      "runAfter": {}
+                                    }
+                                  },
+                                  "else": {
+                                    "actions": {
+                                      "Record_failure": {
+                                        "type": "AppendToArrayVariable",
+                                        "inputs": {
+                                          "name": "Failures",
+                                          "value": "@{concat(concat(items('For_each_site')?['key'], ': ', items('For_each_expired_page')?['Title']), ' - read-back: level ', coalesce(string(body('Read_back')?['File']?['Level']), 'unknown'), ', status ', coalesce(string(body('Read_back')?['Status']), 'unknown'), '. Metadata: ', coalesce(actions('Expire_page')?['status'], 'not needed'), ' ', take(string(coalesce(actions('Expire_page')?['outputs']?['body'], '')), 300), '. Unpublish: ', coalesce(actions('Unpublish_page')?['status'], 'not needed'), ' ', take(string(coalesce(actions('Unpublish_page')?['outputs']?['body'], '')), 300))}"
+                                        },
+                                        "runAfter": {}
+                                      }
+                                    }
                                   }
                                 }
                               }
@@ -465,17 +467,40 @@
                       }
                     }
                   }
+                },
+                "Record_read_failed": {
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "Failures",
+                    "value": "@{concat(concat(items('For_each_site')?['key'], ': ', items('For_each_expired_page')?['Title']), ' - could not read the page state: ', take(string(coalesce(actions('Read_file_state')?['outputs']?['body'], '')), 300))}"
+                  },
+                  "runAfter": {
+                    "Read_file_state": [
+                      "Failed",
+                      "TimedOut"
+                    ]
+                  }
                 }
+              },
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 1
+                }
+              },
+              "runAfter": {
+                "Get_expired_pages": [
+                  "Succeeded"
+                ]
               }
             },
-            "Record_read_failed": {
+            "Record_site_read_failed": {
               "type": "AppendToArrayVariable",
               "inputs": {
                 "name": "Failures",
-                "value": "@{concat(concat(items('For_each_site')?['key'], ': ', items('For_each_expired_page')?['Title']), ' - could not read the page state: ', take(string(coalesce(actions('Read_file_state')?['outputs']?['body'], '')), 300))}"
+                "value": "@{concat(items('For_each_site')?['key'], ': could not list expired pages, so none were checked on this site')}"
               },
               "runAfter": {
-                "Read_file_state": [
+                "Get_expired_pages": [
                   "Failed",
                   "TimedOut"
                 ]
@@ -488,46 +513,136 @@
             }
           },
           "runAfter": {
-            "Get_expired_pages": [
+            "Sites": [
               "Succeeded"
             ]
           }
         },
-        "Record_site_read_failed": {
-          "type": "AppendToArrayVariable",
-          "inputs": {
-            "name": "Failures",
-            "value": "@{concat(items('For_each_site')?['key'], ': could not list expired pages, so none were checked on this site')}"
+        "Condition_any_failures": {
+          "type": "If",
+          "expression": {
+            "greater": [
+              "@length(variables('Failures'))",
+              0
+            ]
+          },
+          "actions": {
+            "Alert_support": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SharedMailboxSendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
+                  "emailMessage/To": "@parameters('SupportOwnerEmail')",
+                  "emailMessage/Subject": "News expiry: some expired posts are still published",
+                  "emailMessage/Body": "<p>These news posts are past their Expiry Date but couldn't be confirmed as unpublished. Readers may still see them:</p><p>@{join(variables('Failures'), '<br>')}</p><p>Each line gives the page's state on read-back and the response from SharePoint. A message saying <b>Additions to this Web site have been blocked</b> means the site is locked or full (see Troubleshooting in the news README). Fix the cause, then re-run the flow: pages already done are skipped.</p>",
+                  "emailMessage/Importance": "High"
+                }
+              },
+              "runAfter": {}
+            }
           },
           "runAfter": {
-            "Get_expired_pages": [
-              "Failed",
-              "TimedOut"
+            "For_each_site": [
+              "Succeeded",
+              "Failed"
+            ]
+          }
+        },
+        "Condition_dry_run": {
+          "type": "If",
+          "expression": {
+            "greater": [
+              "@length(variables('WouldUnpublish'))",
+              0
+            ]
+          },
+          "actions": {
+            "Report_dry_run": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SharedMailboxSendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
+                  "emailMessage/To": "@parameters('SupportOwnerEmail')",
+                  "emailMessage/Subject": "News expiry (dry run): posts that would be unpublished",
+                  "emailMessage/Body": "<p>Expiry writes are off (ExpiryWritesEnabled = No), so nothing was changed. With writes on, these posts would be set to Status Expired and Show in News No, then unpublished (back to draft, hidden from readers):</p><p>@{join(variables('WouldUnpublish'), '<br>')}</p><p>Before switching writes on, check on a test post that an unpublished page can't be opened by a reader account.</p>",
+                  "emailMessage/Importance": "Normal"
+                }
+              },
+              "runAfter": {}
+            }
+          },
+          "runAfter": {
+            "Condition_any_failures": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Condition_report_requested": {
+          "type": "If",
+          "expression": {
+            "not": {
+              "equals": [
+                "@trim(coalesce(parameters('ExpiryReportEmail'), ''))",
+                ""
+              ]
+            }
+          },
+          "actions": {
+            "Send_expiry_report": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SharedMailboxSendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
+                  "emailMessage/To": "@parameters('ExpiryReportEmail')",
+                  "emailMessage/Subject": "@{concat('News expiry report: ', string(length(variables('Unpublished'))), ' unpublished, ', string(length(variables('Failures'))), ' failed, ', string(length(variables('WouldUnpublish'))), ' in dry run')}",
+                  "emailMessage/Body": "<p>News expiry run for @{outputs('Today_UK')} (UK date). Expiry writes are @{if(equals(parameters('ExpiryWritesEnabled'), true), 'on', 'off (dry run: nothing was changed)')}.</p><p><b>Unpublished</b> (Status Expired, Show in News No, back to draft, confirmed by read-back):<br>@{if(empty(variables('Unpublished')), 'None', join(variables('Unpublished'), '<br>'))}</p><p><b>Could not be confirmed</b>:<br>@{if(empty(variables('Failures')), 'None', join(variables('Failures'), '<br>'))}</p><p><b>Would be unpublished if writes were on</b>:<br>@{if(empty(variables('WouldUnpublish')), 'None', join(variables('WouldUnpublish'), '<br>'))}</p><p>Already unpublished earlier (no change): @{length(variables('AlreadyUnpublished'))}</p><p>Pages and attachments are never deleted. An unpublished post stays in Site Pages as a draft for its 7-year retention; republishing it makes it visible again.</p>",
+                  "emailMessage/Importance": "Normal"
+                }
+              },
+              "runAfter": {}
+            }
+          },
+          "runAfter": {
+            "Condition_dry_run": [
+              "Succeeded"
             ]
           }
         }
       },
-      "runtimeConfiguration": {
-        "concurrency": {
-          "repetitions": 1
-        }
-      },
       "runAfter": {
-        "Sites": [
+        "Initialize_WouldUnpublish": [
           "Succeeded"
         ]
       }
     },
-    "Condition_any_failures": {
-      "type": "If",
-      "expression": {
-        "greater": [
-          "@length(variables('Failures'))",
-          0
-        ]
-      },
+    "Catch_run_failed": {
+      "type": "Scope",
+      "description": "Run-level failure alert: any error in Scope_Main that no step handled.",
       "actions": {
-        "Alert_support": {
+        "Select_failed_steps": {
+          "type": "Select",
+          "inputs": {
+            "from": "@result('Scope_Main')",
+            "select": "@concat('<li><b>', item()?['name'], '</b>: ', item()?['status'], ' ', coalesce(item()?['error']?['code'], item()?['outputs']?['statusCode'], ''), ' ', coalesce(item()?['error']?['message'], ''), '</li>')"
+          },
+          "runAfter": {}
+        },
+        "Alert_run_failed": {
           "type": "OpenApiConnection",
           "inputs": {
             "host": {
@@ -538,88 +653,22 @@
             "parameters": {
               "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
               "emailMessage/To": "@parameters('SupportOwnerEmail')",
-              "emailMessage/Subject": "News expiry: some expired posts are still published",
-              "emailMessage/Body": "<p>These news posts are past their Expiry Date but couldn't be confirmed as unpublished. Readers may still see them:</p><p>@{join(variables('Failures'), '<br>')}</p><p>Each line gives the page's state on read-back and the response from SharePoint. A message saying <b>Additions to this Web site have been blocked</b> means the site is locked or full (see Troubleshooting in the news README). Fix the cause, then re-run the flow: pages already done are skipped.</p>",
+              "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
+              "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error it did not handle, so some of its work may not have been done. Nothing has been retried.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a> (started @{workflow()?['run']?['startTime']})</p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Open the run, find the failed step and its raw output, fix the cause, then resubmit the run or deal with the items by hand. Check for partial changes first (see Stopping and recovery in the deployment guide).</p>",
               "emailMessage/Importance": "High"
             }
           },
-          "runAfter": {}
+          "runAfter": {
+            "Select_failed_steps": [
+              "Succeeded"
+            ]
+          }
         }
       },
       "runAfter": {
-        "For_each_site": [
-          "Succeeded",
-          "Failed"
-        ]
-      }
-    },
-    "Condition_dry_run": {
-      "type": "If",
-      "expression": {
-        "greater": [
-          "@length(variables('WouldUnpublish'))",
-          0
-        ]
-      },
-      "actions": {
-        "Report_dry_run": {
-          "type": "OpenApiConnection",
-          "inputs": {
-            "host": {
-              "connectionName": "shared_office365",
-              "operationId": "SharedMailboxSendEmailV2",
-              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
-            },
-            "parameters": {
-              "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
-              "emailMessage/To": "@parameters('SupportOwnerEmail')",
-              "emailMessage/Subject": "News expiry (dry run): posts that would be unpublished",
-              "emailMessage/Body": "<p>Expiry writes are off (ExpiryWritesEnabled = No), so nothing was changed. With writes on, these posts would be set to Status Expired and Show in News No, then unpublished (back to draft, hidden from readers):</p><p>@{join(variables('WouldUnpublish'), '<br>')}</p><p>Before switching writes on, check on a test post that an unpublished page can't be opened by a reader account.</p>",
-              "emailMessage/Importance": "Normal"
-            }
-          },
-          "runAfter": {}
-        }
-      },
-      "runAfter": {
-        "Condition_any_failures": [
-          "Succeeded"
-        ]
-      }
-    },
-    "Condition_report_requested": {
-      "type": "If",
-      "expression": {
-        "not": {
-          "equals": [
-            "@trim(coalesce(parameters('ExpiryReportEmail'), ''))",
-            ""
-          ]
-        }
-      },
-      "actions": {
-        "Send_expiry_report": {
-          "type": "OpenApiConnection",
-          "inputs": {
-            "host": {
-              "connectionName": "shared_office365",
-              "operationId": "SharedMailboxSendEmailV2",
-              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
-            },
-            "parameters": {
-              "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
-              "emailMessage/To": "@parameters('ExpiryReportEmail')",
-              "emailMessage/Subject": "@{concat('News expiry report: ', string(length(variables('Unpublished'))), ' unpublished, ', string(length(variables('Failures'))), ' failed, ', string(length(variables('WouldUnpublish'))), ' in dry run')}",
-              "emailMessage/Body": "<p>News expiry run for @{outputs('Today_UK')} (UK date). Expiry writes are @{if(equals(parameters('ExpiryWritesEnabled'), true), 'on', 'off (dry run: nothing was changed)')}.</p><p><b>Unpublished</b> (Status Expired, Show in News No, back to draft, confirmed by read-back):<br>@{if(empty(variables('Unpublished')), 'None', join(variables('Unpublished'), '<br>'))}</p><p><b>Could not be confirmed</b>:<br>@{if(empty(variables('Failures')), 'None', join(variables('Failures'), '<br>'))}</p><p><b>Would be unpublished if writes were on</b>:<br>@{if(empty(variables('WouldUnpublish')), 'None', join(variables('WouldUnpublish'), '<br>'))}</p><p>Already unpublished earlier (no change): @{length(variables('AlreadyUnpublished'))}</p><p>Pages and attachments are never deleted. An unpublished post stays in Site Pages as a draft for its 7-year retention; republishing it makes it visible again.</p>",
-              "emailMessage/Importance": "Normal"
-            }
-          },
-          "runAfter": {}
-        }
-      },
-      "runAfter": {
-        "Condition_dry_run": [
-          "Succeeded"
+        "Scope_Main": [
+          "Failed",
+          "TimedOut"
         ]
       }
     }

@@ -23,7 +23,7 @@ VERSION = CONFIG["version"]
 VTAG = VERSION.replace(".", "_")
 
 # Folders and files copied into the kit, relative to the solution folder.
-INCLUDE = ["README.md", "DEPLOY-AND-TEST.md", "SAM-POLICIES.md", "solution-config.json",
+INCLUDE = ["README.md", "DEPLOY-AND-TEST.md", "SAM-POLICIES.md", "PERMISSIONS.md", "solution-config.json",
            "powerautomate", "runbooks", "provisioning", "sharepoint", "diagrams", "skills", "tools"]
 EXTRA = {"docs/POWER-PLATFORM-DEPLOYMENT.md": REPO / "solutions" / "POWER-PLATFORM-DEPLOYMENT.md"}
 

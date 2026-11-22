@@ -118,506 +118,83 @@
         ]
       }
     },
-    "Condition_dispatch_disabled": {
-      "type": "If",
-      "expression": {
-        "not": {
-          "equals": [
-            "@parameters('DispatchEnabled')",
-            true
-          ]
-        }
-      },
+    "Scope_Main": {
+      "type": "Scope",
       "actions": {
-        "Dispatch_disabled_stop": {
-          "type": "Terminate",
-          "inputs": {
-            "runStatus": "Cancelled"
-          },
-          "runAfter": {}
-        }
-      },
-      "runAfter": {
-        "Initialize_RowId": [
-          "Succeeded"
-        ]
-      }
-    },
-    "Condition_before_go_live": {
-      "type": "If",
-      "expression": {
-        "less": [
-          "@ticks(coalesce(triggerBody()?['FirstPublishedDate'], triggerBody()?['Created']))",
-          "@ticks(parameters('UrgentGoLiveDate'))"
-        ]
-      },
-      "actions": {
-        "Before_go_live_stop": {
-          "type": "Terminate",
-          "inputs": {
-            "runStatus": "Cancelled"
-          },
-          "runAfter": {}
-        }
-      },
-      "runAfter": {
-        "Condition_dispatch_disabled": [
-          "Succeeded"
-        ]
-      }
-    },
-    "Notification_round": {
-      "type": "Compose",
-      "inputs": "@coalesce(triggerBody()?['NotificationRound'], 1)",
-      "runAfter": {
-        "Condition_before_go_live": [
-          "Succeeded"
-        ]
-      }
-    },
-    "Dispatch_prefix": {
-      "type": "Compose",
-      "inputs": "@concat('urgent|HPUK News|', string(triggerBody()?['ID']), '|r', string(outputs('Notification_round')))",
-      "runAfter": {
-        "Notification_round": [
-          "Succeeded"
-        ]
-      }
-    },
-    "Condition_urgent_publisher": {
-      "type": "If",
-      "expression": {
-        "not": {
-          "contains": [
-            "@split(toLower(replace(replace(parameters('UrgentPublisherEmails'), ' ', ''), ',', ';')), ';')",
-            "@toLower(trim(coalesce(triggerBody()?['Editor']?['Email'], '-')))"
-          ]
-        }
-      },
-      "actions": {
-        "NotAuthorised_Check_log": {
-          "type": "OpenApiConnection",
-          "inputs": {
-            "host": {
-              "connectionName": "shared_sharepointonline",
-              "operationId": "GetItems",
-              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-            },
-            "parameters": {
-              "dataset": "@parameters('HPUKNewsSiteUrl')",
-              "table": "Delivery Log",
-              "$filter": "@{concat('Title eq ''', outputs('Dispatch_prefix'), '|Skipped - not an urgent publisher''')}",
-              "$top": 1
-            }
-          },
-          "runAfter": {}
-        },
-        "NotAuthorised_Condition_first_time": {
-          "type": "If",
-          "expression": {
-            "equals": [
-              "@length(outputs('NotAuthorised_Check_log')?['body/value'])",
-              0
-            ]
-          },
-          "actions": {
-            "NotAuthorised_Log": {
-              "type": "OpenApiConnection",
-              "inputs": {
-                "host": {
-                  "connectionName": "shared_sharepointonline",
-                  "operationId": "PostItem",
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                },
-                "parameters": {
-                  "dataset": "@parameters('HPUKNewsSiteUrl')",
-                  "table": "Delivery Log",
-                  "item/Title": "@{concat(outputs('Dispatch_prefix'), '|Skipped - not an urgent publisher')}",
-                  "item/SourceSite": "HPUK News",
-                  "item/PageId": "@triggerBody()?['ID']",
-                  "item/PublishedVersion": "@triggerBody()?['{VersionNumber}']",
-                  "item/NotificationRound": "@outputs('Notification_round')",
-                  "item/Destination": "(none)",
-                  "item/DeliveryStatus/Value": "Skipped - not an urgent publisher",
-                  "item/DeliveredAt": "@utcNow()",
-                  "item/FlowRunId": "@{workflow()?['run']?['name']}"
-                }
-              },
-              "runAfter": {}
-            },
-            "NotAuthorised_Tell_Comms": {
-              "type": "OpenApiConnection",
-              "inputs": {
-                "host": {
-                  "connectionName": "shared_office365",
-                  "operationId": "SharedMailboxSendEmailV2",
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
-                },
-                "parameters": {
-                  "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
-                  "emailMessage/To": "@parameters('CommsTeamEmail')",
-                  "emailMessage/Subject": "Urgent notice not sent: publisher not authorised",
-                  "emailMessage/Body": "<p><a href=\"@{triggerBody()?['{Link}']}\">@{triggerBody()?['Title']}</a> (HPUK News)</p><p>This post is marked Urgent, but neither its author (@{triggerBody()?['Author']?['Email']}) nor its last editor (@{triggerBody()?['Editor']?['Email']}) is an authorised urgent publisher, so nothing was sent. If it should go out, an urgent publisher can republish it.</p>",
-                  "emailMessage/Importance": "Normal"
-                }
-              },
-              "runAfter": {
-                "NotAuthorised_Log": [
-                  "Succeeded"
-                ]
-              }
-            }
-          },
-          "runAfter": {
-            "NotAuthorised_Check_log": [
-              "Succeeded"
-            ]
-          }
-        },
-        "NotAuthorised_Stop": {
-          "type": "Terminate",
-          "inputs": {
-            "runStatus": "Succeeded"
-          },
-          "runAfter": {
-            "NotAuthorised_Condition_first_time": [
-              "Succeeded"
-            ]
-          }
-        }
-      },
-      "runAfter": {
-        "Dispatch_prefix": [
-          "Succeeded"
-        ]
-      }
-    },
-    "Condition_audience_targeted": {
-      "type": "If",
-      "expression": {
-        "greater": [
-          "@length(coalesce(triggerBody()?['_ModernAudienceTargetUserField'], json('[]')))",
-          0
-        ]
-      },
-      "actions": {
-        "Audience_Check_log": {
-          "type": "OpenApiConnection",
-          "inputs": {
-            "host": {
-              "connectionName": "shared_sharepointonline",
-              "operationId": "GetItems",
-              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-            },
-            "parameters": {
-              "dataset": "@parameters('HPUKNewsSiteUrl')",
-              "table": "Delivery Log",
-              "$filter": "@{concat('Title eq ''', outputs('Dispatch_prefix'), '|Skipped - audience targeted''')}",
-              "$top": 1
-            }
-          },
-          "runAfter": {}
-        },
-        "Audience_Condition_first_time": {
-          "type": "If",
-          "expression": {
-            "equals": [
-              "@length(outputs('Audience_Check_log')?['body/value'])",
-              0
-            ]
-          },
-          "actions": {
-            "Audience_Log": {
-              "type": "OpenApiConnection",
-              "inputs": {
-                "host": {
-                  "connectionName": "shared_sharepointonline",
-                  "operationId": "PostItem",
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                },
-                "parameters": {
-                  "dataset": "@parameters('HPUKNewsSiteUrl')",
-                  "table": "Delivery Log",
-                  "item/Title": "@{concat(outputs('Dispatch_prefix'), '|Skipped - audience targeted')}",
-                  "item/SourceSite": "HPUK News",
-                  "item/PageId": "@triggerBody()?['ID']",
-                  "item/PublishedVersion": "@triggerBody()?['{VersionNumber}']",
-                  "item/NotificationRound": "@outputs('Notification_round')",
-                  "item/Destination": "(none)",
-                  "item/DeliveryStatus/Value": "Skipped - audience targeted",
-                  "item/DeliveredAt": "@utcNow()",
-                  "item/FlowRunId": "@{workflow()?['run']?['name']}"
-                }
-              },
-              "runAfter": {}
-            },
-            "Audience_Tell_Comms": {
-              "type": "OpenApiConnection",
-              "inputs": {
-                "host": {
-                  "connectionName": "shared_office365",
-                  "operationId": "SharedMailboxSendEmailV2",
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
-                },
-                "parameters": {
-                  "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
-                  "emailMessage/To": "@parameters('CommsTeamEmail')",
-                  "emailMessage/Subject": "Urgent notice not broadcast: audience-targeted",
-                  "emailMessage/Body": "<p><a href=\"@{triggerBody()?['{Link}']}\">@{triggerBody()?['Title']}</a> (HPUK News)</p><p>This urgent notice is targeted to an audience, so it was not sent to whole ports. Send it to the intended group directly, or remove the audience and set NotificationRound up by one to broadcast it.</p>",
-                  "emailMessage/Importance": "Normal"
-                }
-              },
-              "runAfter": {
-                "Audience_Log": [
-                  "Succeeded"
-                ]
-              }
-            }
-          },
-          "runAfter": {
-            "Audience_Check_log": [
-              "Succeeded"
-            ]
-          }
-        },
-        "Audience_Stop": {
-          "type": "Terminate",
-          "inputs": {
-            "runStatus": "Succeeded"
-          },
-          "runAfter": {
-            "Audience_Condition_first_time": [
-              "Succeeded"
-            ]
-          }
-        }
-      },
-      "runAfter": {
-        "Condition_urgent_publisher": [
-          "Succeeded"
-        ]
-      }
-    },
-    "Get_destinations": {
-      "type": "OpenApiConnection",
-      "inputs": {
-        "host": {
-          "connectionName": "shared_sharepointonline",
-          "operationId": "GetItems",
-          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-        },
-        "parameters": {
-          "dataset": "@parameters('HPUKNewsSiteUrl')",
-          "table": "Comms Distribution",
-          "$filter": "Enabled eq 1"
-        }
-      },
-      "runAfter": {
-        "Condition_audience_targeted": [
-          "Succeeded"
-        ]
-      }
-    },
-    "Destinations_for_post": {
-      "type": "Query",
-      "inputs": {
-        "from": "@outputs('Get_destinations')?['body/value']",
-        "where": "@and(not(equals(item()?['Port']?['Value'], 'All ports')), or(contains(string(triggerBody()?['Port']), '\"All ports\"'), contains(string(triggerBody()?['Port']), concat('\"', item()?['Port']?['Value'], '\"'))))"
-      },
-      "runAfter": {
-        "Get_destinations": [
-          "Succeeded"
-        ]
-      }
-    },
-    "Condition_no_destinations": {
-      "type": "If",
-      "expression": {
-        "equals": [
-          "@length(body('Destinations_for_post'))",
-          0
-        ]
-      },
-      "actions": {
-        "NoDestination_Check_log": {
-          "type": "OpenApiConnection",
-          "inputs": {
-            "host": {
-              "connectionName": "shared_sharepointonline",
-              "operationId": "GetItems",
-              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-            },
-            "parameters": {
-              "dataset": "@parameters('HPUKNewsSiteUrl')",
-              "table": "Delivery Log",
-              "$filter": "@{concat('Title eq ''', outputs('Dispatch_prefix'), '|Skipped - no destinations''')}",
-              "$top": 1
-            }
-          },
-          "runAfter": {}
-        },
-        "NoDestination_Condition_first_time": {
-          "type": "If",
-          "expression": {
-            "equals": [
-              "@length(outputs('NoDestination_Check_log')?['body/value'])",
-              0
-            ]
-          },
-          "actions": {
-            "NoDestination_Log": {
-              "type": "OpenApiConnection",
-              "inputs": {
-                "host": {
-                  "connectionName": "shared_sharepointonline",
-                  "operationId": "PostItem",
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                },
-                "parameters": {
-                  "dataset": "@parameters('HPUKNewsSiteUrl')",
-                  "table": "Delivery Log",
-                  "item/Title": "@{concat(outputs('Dispatch_prefix'), '|Skipped - no destinations')}",
-                  "item/SourceSite": "HPUK News",
-                  "item/PageId": "@triggerBody()?['ID']",
-                  "item/PublishedVersion": "@triggerBody()?['{VersionNumber}']",
-                  "item/NotificationRound": "@outputs('Notification_round')",
-                  "item/Destination": "(none)",
-                  "item/DeliveryStatus/Value": "Skipped - no destinations",
-                  "item/DeliveredAt": "@utcNow()",
-                  "item/FlowRunId": "@{workflow()?['run']?['name']}"
-                }
-              },
-              "runAfter": {}
-            },
-            "NoDestination_Tell_Comms": {
-              "type": "OpenApiConnection",
-              "inputs": {
-                "host": {
-                  "connectionName": "shared_office365",
-                  "operationId": "SharedMailboxSendEmailV2",
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
-                },
-                "parameters": {
-                  "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
-                  "emailMessage/To": "@parameters('CommsTeamEmail')",
-                  "emailMessage/Subject": "Urgent notice not sent: no enabled destination",
-                  "emailMessage/Body": "<p><a href=\"@{triggerBody()?['{Link}']}\">@{triggerBody()?['Title']}</a> (HPUK News)</p><p>No enabled Comms Distribution row matches this notice's Port. Check the Port value on the post and the Enabled rows in Comms Distribution.</p>",
-                  "emailMessage/Importance": "Normal"
-                }
-              },
-              "runAfter": {
-                "NoDestination_Log": [
-                  "Succeeded"
-                ]
-              }
-            }
-          },
-          "runAfter": {
-            "NoDestination_Check_log": [
-              "Succeeded"
-            ]
-          }
-        },
-        "NoDestination_Stop": {
-          "type": "Terminate",
-          "inputs": {
-            "runStatus": "Succeeded"
-          },
-          "runAfter": {
-            "NoDestination_Condition_first_time": [
-              "Succeeded"
-            ]
-          }
-        }
-      },
-      "runAfter": {
-        "Destinations_for_post": [
-          "Succeeded"
-        ]
-      }
-    },
-    "For_each_destination": {
-      "type": "Foreach",
-      "foreach": "@body('Destinations_for_post')",
-      "actions": {
-        "Get_destination_now": {
-          "type": "OpenApiConnection",
-          "description": "Reads the Comms Distribution row again just before sending, so switching a row's Enabled to No stops it even in a run already going, and the current address is used.",
-          "inputs": {
-            "host": {
-              "connectionName": "shared_sharepointonline",
-              "operationId": "GetItem",
-              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-            },
-            "parameters": {
-              "dataset": "@parameters('HPUKNewsSiteUrl')",
-              "table": "Comms Distribution",
-              "id": "@items('For_each_destination')?['ID']"
-            }
-          },
-          "runAfter": {}
-        },
-        "Record_destination_read_failure": {
-          "type": "AppendToArrayVariable",
-          "inputs": {
-            "name": "Failures",
-            "value": "@{concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), ': not sent, its Comms Distribution row could not be read')}"
-          },
-          "runAfter": {
-            "Get_destination_now": [
-              "Failed",
-              "TimedOut"
-            ]
-          }
-        },
-        "Condition_switched_off": {
+        "Condition_dispatch_disabled": {
           "type": "If",
           "expression": {
             "not": {
               "equals": [
-                "@body('Get_destination_now')?['Enabled']",
+                "@parameters('DispatchEnabled')",
                 true
               ]
             }
           },
           "actions": {
-            "Record_switched_off": {
-              "type": "AppendToArrayVariable",
+            "Dispatch_disabled_stop": {
+              "type": "Terminate",
               "inputs": {
-                "name": "Failures",
-                "value": "@{concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), ': not sent, the destination was switched off during the run')}"
+                "runStatus": "Cancelled"
+              },
+              "runAfter": {}
+            }
+          },
+          "runAfter": {}
+        },
+        "Condition_before_go_live": {
+          "type": "If",
+          "expression": {
+            "less": [
+              "@ticks(coalesce(triggerBody()?['FirstPublishedDate'], triggerBody()?['Created']))",
+              "@ticks(parameters('UrgentGoLiveDate'))"
+            ]
+          },
+          "actions": {
+            "Before_go_live_stop": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Cancelled"
               },
               "runAfter": {}
             }
           },
           "runAfter": {
-            "Get_destination_now": [
+            "Condition_dispatch_disabled": [
               "Succeeded"
             ]
           }
         },
-        "Condition_email_destination": {
+        "Notification_round": {
+          "type": "Compose",
+          "inputs": "@coalesce(triggerBody()?['NotificationRound'], 1)",
+          "runAfter": {
+            "Condition_before_go_live": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Dispatch_prefix": {
+          "type": "Compose",
+          "inputs": "@concat('urgent|HPUK News|', string(triggerBody()?['ID']), '|r', string(outputs('Notification_round')))",
+          "runAfter": {
+            "Notification_round": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Condition_urgent_publisher": {
           "type": "If",
           "expression": {
-            "and": [
-              {
-                "equals": [
-                  "@body('Get_destination_now')?['Enabled']",
-                  true
-                ]
-              },
-              {
-                "not": {
-                  "equals": [
-                    "@coalesce(body('Get_destination_now')?['EmailGroup'], '')",
-                    ""
-                  ]
-                }
-              }
-            ]
+            "not": {
+              "contains": [
+                "@split(toLower(replace(replace(parameters('UrgentPublisherEmails'), ' ', ''), ',', ';')), ';')",
+                "@toLower(trim(coalesce(triggerBody()?['Editor']?['Email'], '-')))"
+              ]
+            }
           },
           "actions": {
-            "Email_Check_log": {
+            "NotAuthorised_Check_log": {
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
@@ -628,145 +205,46 @@
                 "parameters": {
                   "dataset": "@parameters('HPUKNewsSiteUrl')",
                   "table": "Delivery Log",
-                  "$filter": "@{concat('Title eq ''', concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Email'), '''')}",
+                  "$filter": "@{concat('Title eq ''', outputs('Dispatch_prefix'), '|Skipped - not an urgent publisher''')}",
                   "$top": 1
                 }
               },
               "runAfter": {}
             },
-            "Email_Condition_can_send": {
+            "NotAuthorised_Condition_first_time": {
               "type": "If",
               "expression": {
-                "or": [
-                  {
-                    "equals": [
-                      "@length(outputs('Email_Check_log')?['body/value'])",
-                      0
-                    ]
-                  },
-                  {
-                    "equals": [
-                      "@first(outputs('Email_Check_log')?['body/value'])?['DeliveryStatus']?['Value']",
-                      "Failed"
-                    ]
-                  }
+                "equals": [
+                  "@length(outputs('NotAuthorised_Check_log')?['body/value'])",
+                  0
                 ]
               },
               "actions": {
-                "Email_Condition_new_key": {
-                  "type": "If",
-                  "expression": {
-                    "equals": [
-                      "@length(outputs('Email_Check_log')?['body/value'])",
-                      0
-                    ]
-                  },
-                  "actions": {
-                    "Email_Reserve_new": {
-                      "type": "OpenApiConnection",
-                      "inputs": {
-                        "host": {
-                          "connectionName": "shared_sharepointonline",
-                          "operationId": "PostItem",
-                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                        },
-                        "parameters": {
-                          "dataset": "@parameters('HPUKNewsSiteUrl')",
-                          "table": "Delivery Log",
-                          "item/Title": "@{concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Email')}",
-                          "item/DeliveryStatus/Value": "Reserved",
-                          "item/DeliveredAt": "@utcNow()",
-                          "item/SourceSite": "HPUK News",
-                          "item/PageId": "@triggerBody()?['ID']",
-                          "item/PublishedVersion": "@triggerBody()?['{VersionNumber}']",
-                          "item/NotificationRound": "@outputs('Notification_round')",
-                          "item/Destination": "@body('Get_destination_now')?['EmailGroup']",
-                          "item/Channel/Value": "Email",
-                          "item/FlowRunId": "@{workflow()?['run']?['name']}"
-                        },
-                        "retryPolicy": {
-                          "type": "none"
-                        }
-                      },
-                      "runAfter": {}
+                "NotAuthorised_Log": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "PostItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
                     },
-                    "Email_Set_row_new": {
-                      "type": "SetVariable",
-                      "inputs": {
-                        "name": "RowId",
-                        "value": "@outputs('Email_Reserve_new')?['body/ID']"
-                      },
-                      "runAfter": {
-                        "Email_Reserve_new": [
-                          "Succeeded"
-                        ]
-                      }
-                    }
-                  },
-                  "else": {
-                    "actions": {
-                      "Email_Reserve_retry": {
-                        "type": "OpenApiConnection",
-                        "description": "Claims the Failed row only if nobody has changed it since it was read (If-Match on its ETag). Another run that claimed it first makes this fail with 412, and nothing is sent.",
-                        "inputs": {
-                          "host": {
-                            "connectionName": "shared_sharepointonline",
-                            "operationId": "HttpRequest",
-                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                          },
-                          "parameters": {
-                            "dataset": "@parameters('HPUKNewsSiteUrl')",
-                            "parameters/method": "POST",
-                            "parameters/uri": "_api/web/lists/GetByTitle('Delivery Log')/items(@{first(outputs('Email_Check_log')?['body/value'])?['ID']})",
-                            "parameters/headers": {
-                              "Accept": "application/json;odata=nometadata",
-                              "Content-Type": "application/json;odata=nometadata",
-                              "X-HTTP-Method": "MERGE",
-                              "IF-MATCH": "@{coalesce(first(outputs('Email_Check_log')?['body/value'])?['@odata.etag'], '\"no-etag\"')}"
-                            },
-                            "parameters/body": {
-                              "DeliveryStatus": "Reserved",
-                              "DeliveredAt": "@{utcNow()}",
-                              "FlowRunId": "@{workflow()?['run']?['name']}",
-                              "Destination": "@body('Get_destination_now')?['EmailGroup']"
-                            }
-                          },
-                          "retryPolicy": {
-                            "type": "none"
-                          }
-                        },
-                        "runAfter": {}
-                      },
-                      "Email_Set_row_retry": {
-                        "type": "SetVariable",
-                        "inputs": {
-                          "name": "RowId",
-                          "value": "@first(outputs('Email_Check_log')?['body/value'])?['ID']"
-                        },
-                        "runAfter": {
-                          "Email_Reserve_retry": [
-                            "Succeeded"
-                          ]
-                        }
-                      }
+                    "parameters": {
+                      "dataset": "@parameters('HPUKNewsSiteUrl')",
+                      "table": "Delivery Log",
+                      "item/Title": "@{concat(outputs('Dispatch_prefix'), '|Skipped - not an urgent publisher')}",
+                      "item/SourceSite": "HPUK News",
+                      "item/PageId": "@triggerBody()?['ID']",
+                      "item/PublishedVersion": "@triggerBody()?['{VersionNumber}']",
+                      "item/NotificationRound": "@outputs('Notification_round')",
+                      "item/Destination": "(none)",
+                      "item/DeliveryStatus/Value": "Skipped - not an urgent publisher",
+                      "item/DeliveredAt": "@utcNow()",
+                      "item/FlowRunId": "@{workflow()?['run']?['name']}"
                     }
                   },
                   "runAfter": {}
                 },
-                "Email_Record_reservation_failure": {
-                  "type": "AppendToArrayVariable",
-                  "inputs": {
-                    "name": "Failures",
-                    "value": "@{concat(concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Email'), ': not sent, the Delivery Log reservation failed')}"
-                  },
-                  "runAfter": {
-                    "Email_Condition_new_key": [
-                      "Failed",
-                      "TimedOut"
-                    ]
-                  }
-                },
-                "Email_Send": {
+                "NotAuthorised_Tell_Comms": {
                   "type": "OpenApiConnection",
                   "inputs": {
                     "host": {
@@ -776,138 +254,53 @@
                     },
                     "parameters": {
                       "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
-                      "emailMessage/To": "@body('Get_destination_now')?['EmailGroup']",
-                      "emailMessage/Subject": "@{concat('Urgent: ', triggerBody()?['Title'])}",
-                      "emailMessage/Body": "<p><b>@{triggerBody()?['Title']}</b></p><p>@{coalesce(triggerBody()?['Description'], '')}</p><p><a href=\"@{triggerBody()?['{Link}']}\">Read the full notice</a></p>",
-                      "emailMessage/Importance": "High"
-                    },
-                    "retryPolicy": {
-                      "type": "none"
+                      "emailMessage/To": "@parameters('CommsTeamEmail')",
+                      "emailMessage/Subject": "Urgent notice not sent: publisher not authorised",
+                      "emailMessage/Body": "<p><a href=\"@{triggerBody()?['{Link}']}\">@{triggerBody()?['Title']}</a> (HPUK News)</p><p>This post is marked Urgent, but neither its author (@{triggerBody()?['Author']?['Email']}) nor its last editor (@{triggerBody()?['Editor']?['Email']}) is an authorised urgent publisher, so nothing was sent. If it should go out, an urgent publisher can republish it.</p>",
+                      "emailMessage/Importance": "Normal"
                     }
                   },
                   "runAfter": {
-                    "Email_Condition_new_key": [
+                    "NotAuthorised_Log": [
                       "Succeeded"
-                    ]
-                  }
-                },
-                "Email_Mark_sent": {
-                  "type": "OpenApiConnection",
-                  "inputs": {
-                    "host": {
-                      "connectionName": "shared_sharepointonline",
-                      "operationId": "PatchItem",
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                    },
-                    "parameters": {
-                      "dataset": "@parameters('HPUKNewsSiteUrl')",
-                      "table": "Delivery Log",
-                      "id": "@variables('RowId')",
-                      "item/DeliveryStatus/Value": "Sent",
-                      "item/DeliveredAt": "@utcNow()"
-                    }
-                  },
-                  "runAfter": {
-                    "Email_Send": [
-                      "Succeeded"
-                    ]
-                  }
-                },
-                "Email_Record_unlogged_send": {
-                  "type": "AppendToArrayVariable",
-                  "inputs": {
-                    "name": "Failures",
-                    "value": "@{concat(concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Email'), ': sent, but its Delivery Log row is still Reserved')}"
-                  },
-                  "runAfter": {
-                    "Email_Mark_sent": [
-                      "Failed",
-                      "TimedOut"
-                    ]
-                  }
-                },
-                "Email_Mark_not_sent": {
-                  "type": "OpenApiConnection",
-                  "inputs": {
-                    "host": {
-                      "connectionName": "shared_sharepointonline",
-                      "operationId": "PatchItem",
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                    },
-                    "parameters": {
-                      "dataset": "@parameters('HPUKNewsSiteUrl')",
-                      "table": "Delivery Log",
-                      "id": "@variables('RowId')",
-                      "item/DeliveryStatus/Value": "@{if(and(greaterOrEquals(coalesce(actions('Email_Send')?['outputs']?['statusCode'], 0), 400), less(coalesce(actions('Email_Send')?['outputs']?['statusCode'], 0), 500), not(equals(actions('Email_Send')?['outputs']?['statusCode'], 408)), not(equals(actions('Email_Send')?['outputs']?['statusCode'], 429))), 'Failed', 'Reconcile')}",
-                      "item/DeliveredAt": "@utcNow()",
-                      "item/ErrorDetail": "@{string(actions('Email_Send')?['outputs']?['body'])}"
-                    }
-                  },
-                  "runAfter": {
-                    "Email_Send": [
-                      "Failed",
-                      "TimedOut"
-                    ]
-                  }
-                },
-                "Email_Record_failure": {
-                  "type": "AppendToArrayVariable",
-                  "inputs": {
-                    "name": "Failures",
-                    "value": "@{concat(concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Email'), ': ', if(and(greaterOrEquals(coalesce(actions('Email_Send')?['outputs']?['statusCode'], 0), 400), less(coalesce(actions('Email_Send')?['outputs']?['statusCode'], 0), 500), not(equals(actions('Email_Send')?['outputs']?['statusCode'], 408)), not(equals(actions('Email_Send')?['outputs']?['statusCode'], 429))), 'rejected, logged as Failed', 'outcome unknown, logged as Reconcile'), ' (', string(actions('Email_Send')?['outputs']?['statusCode']), ')')}"
-                  },
-                  "runAfter": {
-                    "Email_Mark_not_sent": [
-                      "Succeeded",
-                      "Failed",
-                      "TimedOut"
                     ]
                   }
                 }
               },
               "runAfter": {
-                "Email_Check_log": [
+                "NotAuthorised_Check_log": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "NotAuthorised_Stop": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              },
+              "runAfter": {
+                "NotAuthorised_Condition_first_time": [
                   "Succeeded"
                 ]
               }
             }
           },
           "runAfter": {
-            "Get_destination_now": [
+            "Dispatch_prefix": [
               "Succeeded"
             ]
           }
         },
-        "Condition_teams_destination": {
+        "Condition_audience_targeted": {
           "type": "If",
           "expression": {
-            "and": [
-              {
-                "equals": [
-                  "@body('Get_destination_now')?['Enabled']",
-                  true
-                ]
-              },
-              {
-                "not": {
-                  "equals": [
-                    "@coalesce(body('Get_destination_now')?['TeamId'], '')",
-                    ""
-                  ]
-                }
-              },
-              {
-                "not": {
-                  "equals": [
-                    "@coalesce(body('Get_destination_now')?['ChannelId'], '')",
-                    ""
-                  ]
-                }
-              }
+            "greater": [
+              "@length(coalesce(triggerBody()?['_ModernAudienceTargetUserField'], json('[]')))",
+              0
             ]
           },
           "actions": {
-            "Teams_Check_log": {
+            "Audience_Check_log": {
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
@@ -918,474 +311,1114 @@
                 "parameters": {
                   "dataset": "@parameters('HPUKNewsSiteUrl')",
                   "table": "Delivery Log",
-                  "$filter": "@{concat('Title eq ''', concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Teams'), '''')}",
+                  "$filter": "@{concat('Title eq ''', outputs('Dispatch_prefix'), '|Skipped - audience targeted''')}",
                   "$top": 1
                 }
               },
               "runAfter": {}
             },
-            "Teams_Condition_can_send": {
+            "Audience_Condition_first_time": {
               "type": "If",
               "expression": {
-                "or": [
-                  {
-                    "equals": [
-                      "@length(outputs('Teams_Check_log')?['body/value'])",
-                      0
-                    ]
-                  },
-                  {
-                    "equals": [
-                      "@first(outputs('Teams_Check_log')?['body/value'])?['DeliveryStatus']?['Value']",
-                      "Failed"
-                    ]
-                  }
+                "equals": [
+                  "@length(outputs('Audience_Check_log')?['body/value'])",
+                  0
                 ]
               },
               "actions": {
-                "Teams_Condition_new_key": {
-                  "type": "If",
-                  "expression": {
-                    "equals": [
-                      "@length(outputs('Teams_Check_log')?['body/value'])",
-                      0
-                    ]
-                  },
-                  "actions": {
-                    "Teams_Reserve_new": {
-                      "type": "OpenApiConnection",
-                      "inputs": {
-                        "host": {
-                          "connectionName": "shared_sharepointonline",
-                          "operationId": "PostItem",
-                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                        },
-                        "parameters": {
-                          "dataset": "@parameters('HPUKNewsSiteUrl')",
-                          "table": "Delivery Log",
-                          "item/Title": "@{concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Teams')}",
-                          "item/DeliveryStatus/Value": "Reserved",
-                          "item/DeliveredAt": "@utcNow()",
-                          "item/SourceSite": "HPUK News",
-                          "item/PageId": "@triggerBody()?['ID']",
-                          "item/PublishedVersion": "@triggerBody()?['{VersionNumber}']",
-                          "item/NotificationRound": "@outputs('Notification_round')",
-                          "item/Destination": "@{concat(body('Get_destination_now')?['TeamId'], '/', body('Get_destination_now')?['ChannelId'])}",
-                          "item/Channel/Value": "Teams",
-                          "item/FlowRunId": "@{workflow()?['run']?['name']}"
-                        },
-                        "retryPolicy": {
-                          "type": "none"
-                        }
-                      },
-                      "runAfter": {}
+                "Audience_Log": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "PostItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
                     },
-                    "Teams_Set_row_new": {
-                      "type": "SetVariable",
-                      "inputs": {
-                        "name": "RowId",
-                        "value": "@outputs('Teams_Reserve_new')?['body/ID']"
-                      },
-                      "runAfter": {
-                        "Teams_Reserve_new": [
-                          "Succeeded"
-                        ]
-                      }
-                    }
-                  },
-                  "else": {
-                    "actions": {
-                      "Teams_Reserve_retry": {
-                        "type": "OpenApiConnection",
-                        "description": "Claims the Failed row only if nobody has changed it since it was read (If-Match on its ETag). Another run that claimed it first makes this fail with 412, and nothing is sent.",
-                        "inputs": {
-                          "host": {
-                            "connectionName": "shared_sharepointonline",
-                            "operationId": "HttpRequest",
-                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                          },
-                          "parameters": {
-                            "dataset": "@parameters('HPUKNewsSiteUrl')",
-                            "parameters/method": "POST",
-                            "parameters/uri": "_api/web/lists/GetByTitle('Delivery Log')/items(@{first(outputs('Teams_Check_log')?['body/value'])?['ID']})",
-                            "parameters/headers": {
-                              "Accept": "application/json;odata=nometadata",
-                              "Content-Type": "application/json;odata=nometadata",
-                              "X-HTTP-Method": "MERGE",
-                              "IF-MATCH": "@{coalesce(first(outputs('Teams_Check_log')?['body/value'])?['@odata.etag'], '\"no-etag\"')}"
-                            },
-                            "parameters/body": {
-                              "DeliveryStatus": "Reserved",
-                              "DeliveredAt": "@{utcNow()}",
-                              "FlowRunId": "@{workflow()?['run']?['name']}",
-                              "Destination": "@{concat(body('Get_destination_now')?['TeamId'], '/', body('Get_destination_now')?['ChannelId'])}"
-                            }
-                          },
-                          "retryPolicy": {
-                            "type": "none"
-                          }
-                        },
-                        "runAfter": {}
-                      },
-                      "Teams_Set_row_retry": {
-                        "type": "SetVariable",
-                        "inputs": {
-                          "name": "RowId",
-                          "value": "@first(outputs('Teams_Check_log')?['body/value'])?['ID']"
-                        },
-                        "runAfter": {
-                          "Teams_Reserve_retry": [
-                            "Succeeded"
-                          ]
-                        }
-                      }
+                    "parameters": {
+                      "dataset": "@parameters('HPUKNewsSiteUrl')",
+                      "table": "Delivery Log",
+                      "item/Title": "@{concat(outputs('Dispatch_prefix'), '|Skipped - audience targeted')}",
+                      "item/SourceSite": "HPUK News",
+                      "item/PageId": "@triggerBody()?['ID']",
+                      "item/PublishedVersion": "@triggerBody()?['{VersionNumber}']",
+                      "item/NotificationRound": "@outputs('Notification_round')",
+                      "item/Destination": "(none)",
+                      "item/DeliveryStatus/Value": "Skipped - audience targeted",
+                      "item/DeliveredAt": "@utcNow()",
+                      "item/FlowRunId": "@{workflow()?['run']?['name']}"
                     }
                   },
                   "runAfter": {}
                 },
-                "Teams_Record_reservation_failure": {
-                  "type": "AppendToArrayVariable",
-                  "inputs": {
-                    "name": "Failures",
-                    "value": "@{concat(concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Teams'), ': not sent, the Delivery Log reservation failed')}"
-                  },
-                  "runAfter": {
-                    "Teams_Condition_new_key": [
-                      "Failed",
-                      "TimedOut"
-                    ]
-                  }
-                },
-                "Teams_Send": {
+                "Audience_Tell_Comms": {
                   "type": "OpenApiConnection",
                   "inputs": {
                     "host": {
-                      "connectionName": "shared_teams",
-                      "operationId": "PostMessageToConversation",
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+                      "connectionName": "shared_office365",
+                      "operationId": "SharedMailboxSendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                     },
                     "parameters": {
-                      "poster": "Flow bot",
-                      "location": "Channel",
-                      "body/recipient/groupId": "@body('Get_destination_now')?['TeamId']",
-                      "body/recipient/channelId": "@body('Get_destination_now')?['ChannelId']",
-                      "body/messageBody": "<p><b>Urgent</b></p><p><b>@{triggerBody()?['Title']}</b></p><p>@{coalesce(triggerBody()?['Description'], '')}</p><p><a href=\"@{triggerBody()?['{Link}']}\">Read the full notice</a></p>"
-                    },
-                    "retryPolicy": {
-                      "type": "none"
+                      "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
+                      "emailMessage/To": "@parameters('CommsTeamEmail')",
+                      "emailMessage/Subject": "Urgent notice not broadcast: audience-targeted",
+                      "emailMessage/Body": "<p><a href=\"@{triggerBody()?['{Link}']}\">@{triggerBody()?['Title']}</a> (HPUK News)</p><p>This urgent notice is targeted to an audience, so it was not sent to whole ports. Send it to the intended group directly, or remove the audience and set NotificationRound up by one to broadcast it.</p>",
+                      "emailMessage/Importance": "Normal"
                     }
                   },
                   "runAfter": {
-                    "Teams_Condition_new_key": [
+                    "Audience_Log": [
                       "Succeeded"
-                    ]
-                  }
-                },
-                "Teams_Mark_sent": {
-                  "type": "OpenApiConnection",
-                  "inputs": {
-                    "host": {
-                      "connectionName": "shared_sharepointonline",
-                      "operationId": "PatchItem",
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                    },
-                    "parameters": {
-                      "dataset": "@parameters('HPUKNewsSiteUrl')",
-                      "table": "Delivery Log",
-                      "id": "@variables('RowId')",
-                      "item/DeliveryStatus/Value": "Sent",
-                      "item/DeliveredAt": "@utcNow()"
-                    }
-                  },
-                  "runAfter": {
-                    "Teams_Send": [
-                      "Succeeded"
-                    ]
-                  }
-                },
-                "Teams_Record_unlogged_send": {
-                  "type": "AppendToArrayVariable",
-                  "inputs": {
-                    "name": "Failures",
-                    "value": "@{concat(concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Teams'), ': sent, but its Delivery Log row is still Reserved')}"
-                  },
-                  "runAfter": {
-                    "Teams_Mark_sent": [
-                      "Failed",
-                      "TimedOut"
-                    ]
-                  }
-                },
-                "Teams_Mark_not_sent": {
-                  "type": "OpenApiConnection",
-                  "inputs": {
-                    "host": {
-                      "connectionName": "shared_sharepointonline",
-                      "operationId": "PatchItem",
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                    },
-                    "parameters": {
-                      "dataset": "@parameters('HPUKNewsSiteUrl')",
-                      "table": "Delivery Log",
-                      "id": "@variables('RowId')",
-                      "item/DeliveryStatus/Value": "@{if(and(greaterOrEquals(coalesce(actions('Teams_Send')?['outputs']?['statusCode'], 0), 400), less(coalesce(actions('Teams_Send')?['outputs']?['statusCode'], 0), 500), not(equals(actions('Teams_Send')?['outputs']?['statusCode'], 408)), not(equals(actions('Teams_Send')?['outputs']?['statusCode'], 429))), 'Failed', 'Reconcile')}",
-                      "item/DeliveredAt": "@utcNow()",
-                      "item/ErrorDetail": "@{string(actions('Teams_Send')?['outputs']?['body'])}"
-                    }
-                  },
-                  "runAfter": {
-                    "Teams_Send": [
-                      "Failed",
-                      "TimedOut"
-                    ]
-                  }
-                },
-                "Teams_Record_failure": {
-                  "type": "AppendToArrayVariable",
-                  "inputs": {
-                    "name": "Failures",
-                    "value": "@{concat(concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Teams'), ': ', if(and(greaterOrEquals(coalesce(actions('Teams_Send')?['outputs']?['statusCode'], 0), 400), less(coalesce(actions('Teams_Send')?['outputs']?['statusCode'], 0), 500), not(equals(actions('Teams_Send')?['outputs']?['statusCode'], 408)), not(equals(actions('Teams_Send')?['outputs']?['statusCode'], 429))), 'rejected, logged as Failed', 'outcome unknown, logged as Reconcile'), ' (', string(actions('Teams_Send')?['outputs']?['statusCode']), ')')}"
-                  },
-                  "runAfter": {
-                    "Teams_Mark_not_sent": [
-                      "Succeeded",
-                      "Failed",
-                      "TimedOut"
                     ]
                   }
                 }
               },
               "runAfter": {
-                "Teams_Check_log": [
+                "Audience_Check_log": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Audience_Stop": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              },
+              "runAfter": {
+                "Audience_Condition_first_time": [
                   "Succeeded"
                 ]
               }
             }
           },
           "runAfter": {
-            "Condition_email_destination": [
-              "Succeeded",
-              "Failed",
-              "TimedOut"
+            "Condition_urgent_publisher": [
+              "Succeeded"
             ]
           }
-        }
-      },
-      "runtimeConfiguration": {
-        "concurrency": {
-          "repetitions": 1
-        }
-      },
-      "runAfter": {
-        "Condition_no_destinations": [
-          "Succeeded"
-        ]
-      }
-    },
-    "Select_expected_email_keys": {
-      "type": "Select",
-      "runAfter": {
-        "For_each_destination": [
-          "Succeeded",
-          "Failed",
-          "TimedOut",
-          "Skipped"
-        ]
-      },
-      "inputs": {
-        "from": "@body('Destinations_for_post')",
-        "select": "@if(equals(coalesce(item()?['EmailGroup'], ''), ''), '', concat(outputs('Dispatch_prefix'), '|', item()?['Port']?['Value'], '#', string(item()?['ID']), '|Email'))"
-      }
-    },
-    "Select_expected_teams_keys": {
-      "type": "Select",
-      "runAfter": {
-        "Select_expected_email_keys": [
-          "Succeeded"
-        ]
-      },
-      "inputs": {
-        "from": "@body('Destinations_for_post')",
-        "select": "@if(or(equals(coalesce(item()?['TeamId'], ''), ''), equals(coalesce(item()?['ChannelId'], ''), '')), '', concat(outputs('Dispatch_prefix'), '|', item()?['Port']?['Value'], '#', string(item()?['ID']), '|Teams'))"
-      }
-    },
-    "Filter_expected_keys": {
-      "type": "Query",
-      "runAfter": {
-        "Select_expected_teams_keys": [
-          "Succeeded"
-        ]
-      },
-      "inputs": {
-        "from": "@union(body('Select_expected_email_keys'), body('Select_expected_teams_keys'))",
-        "where": "@not(equals(item(), ''))"
-      }
-    },
-    "Get_delivery_rows": {
-      "type": "OpenApiConnection",
-      "runAfter": {
-        "Filter_expected_keys": [
-          "Succeeded"
-        ]
-      },
-      "inputs": {
-        "host": {
-          "connectionName": "shared_sharepointonline",
-          "operationId": "GetItems",
-          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
         },
-        "parameters": {
-          "dataset": "@parameters('HPUKNewsSiteUrl')",
-          "table": "Delivery Log",
-          "$filter": "@{concat('startswith(Title, ''', outputs('Dispatch_prefix'), '|'')')}",
-          "$top": 5000
-        }
-      }
-    },
-    "Filter_sent_rows": {
-      "type": "Query",
-      "runAfter": {
-        "Get_delivery_rows": [
-          "Succeeded"
-        ]
-      },
-      "inputs": {
-        "from": "@outputs('Get_delivery_rows')?['body/value']",
-        "where": "@equals(item()?['DeliveryStatus']?['Value'], 'Sent')"
-      }
-    },
-    "Select_sent_keys": {
-      "type": "Select",
-      "runAfter": {
-        "Filter_sent_rows": [
-          "Succeeded"
-        ]
-      },
-      "inputs": {
-        "from": "@body('Filter_sent_rows')",
-        "select": "@item()?['Title']"
-      }
-    },
-    "Filter_not_yet_sent": {
-      "type": "Query",
-      "runAfter": {
-        "Select_sent_keys": [
-          "Succeeded"
-        ]
-      },
-      "inputs": {
-        "from": "@body('Filter_expected_keys')",
-        "where": "@not(contains(body('Select_sent_keys'), item()))"
-      }
-    },
-    "Condition_all_sent": {
-      "type": "If",
-      "runAfter": {
-        "Filter_not_yet_sent": [
-          "Succeeded",
-          "Failed",
-          "TimedOut",
-          "Skipped"
-        ]
-      },
-      "expression": {
-        "equals": [
-          "@and(equals(actions('Filter_not_yet_sent')?['status'], 'Succeeded'), greater(length(body('Filter_expected_keys')), 0), equals(length(body('Filter_not_yet_sent')), 0), equals(length(variables('Failures')), 0))",
-          true
-        ]
-      },
-      "actions": {
-        "Mark_urgent_sent": {
+        "Get_destinations": {
           "type": "OpenApiConnection",
           "inputs": {
             "host": {
               "connectionName": "shared_sharepointonline",
-              "operationId": "HttpRequest",
+              "operationId": "GetItems",
               "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
             },
             "parameters": {
               "dataset": "@parameters('HPUKNewsSiteUrl')",
-              "parameters/method": "POST",
-              "parameters/uri": "_api/web/lists/GetByTitle('Site Pages')/items(@{triggerBody()?['ID']})/ValidateUpdateListItem",
-              "parameters/headers": {
-                "Accept": "application/json;odata=nometadata",
-                "Content-Type": "application/json;odata=nometadata"
+              "table": "Comms Distribution",
+              "$filter": "Enabled eq 1",
+              "$top": 5000
+            }
+          },
+          "runAfter": {
+            "Condition_audience_targeted": [
+              "Succeeded"
+            ]
+          },
+          "runtimeConfiguration": {
+            "paginationPolicy": {
+              "minimumItemCount": 100000
+            }
+          }
+        },
+        "Destinations_for_post": {
+          "type": "Query",
+          "inputs": {
+            "from": "@outputs('Get_destinations')?['body/value']",
+            "where": "@and(not(equals(item()?['Port']?['Value'], 'All ports')), or(contains(string(triggerBody()?['Port']), '\"All ports\"'), contains(string(triggerBody()?['Port']), concat('\"', item()?['Port']?['Value'], '\"'))))"
+          },
+          "runAfter": {
+            "Get_destinations": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Condition_no_destinations": {
+          "type": "If",
+          "expression": {
+            "equals": [
+              "@length(body('Destinations_for_post'))",
+              0
+            ]
+          },
+          "actions": {
+            "NoDestination_Check_log": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetItems",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('HPUKNewsSiteUrl')",
+                  "table": "Delivery Log",
+                  "$filter": "@{concat('Title eq ''', outputs('Dispatch_prefix'), '|Skipped - no destinations''')}",
+                  "$top": 1
+                }
               },
-              "parameters/body": {
-                "formValues": [
-                  {
-                    "FieldName": "UrgentSent",
-                    "FieldValue": "1"
+              "runAfter": {}
+            },
+            "NoDestination_Condition_first_time": {
+              "type": "If",
+              "expression": {
+                "equals": [
+                  "@length(outputs('NoDestination_Check_log')?['body/value'])",
+                  0
+                ]
+              },
+              "actions": {
+                "NoDestination_Log": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "PostItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('HPUKNewsSiteUrl')",
+                      "table": "Delivery Log",
+                      "item/Title": "@{concat(outputs('Dispatch_prefix'), '|Skipped - no destinations')}",
+                      "item/SourceSite": "HPUK News",
+                      "item/PageId": "@triggerBody()?['ID']",
+                      "item/PublishedVersion": "@triggerBody()?['{VersionNumber}']",
+                      "item/NotificationRound": "@outputs('Notification_round')",
+                      "item/Destination": "(none)",
+                      "item/DeliveryStatus/Value": "Skipped - no destinations",
+                      "item/DeliveredAt": "@utcNow()",
+                      "item/FlowRunId": "@{workflow()?['run']?['name']}"
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "NoDestination_Tell_Comms": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SharedMailboxSendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
+                      "emailMessage/To": "@parameters('CommsTeamEmail')",
+                      "emailMessage/Subject": "Urgent notice not sent: no enabled destination",
+                      "emailMessage/Body": "<p><a href=\"@{triggerBody()?['{Link}']}\">@{triggerBody()?['Title']}</a> (HPUK News)</p><p>No enabled Comms Distribution row matches this notice's Port. Check the Port value on the post and the Enabled rows in Comms Distribution.</p>",
+                      "emailMessage/Importance": "Normal"
+                    }
+                  },
+                  "runAfter": {
+                    "NoDestination_Log": [
+                      "Succeeded"
+                    ]
                   }
-                ],
-                "bNewDocumentUpdate": true
+                }
+              },
+              "runAfter": {
+                "NoDestination_Check_log": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "NoDestination_Stop": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              },
+              "runAfter": {
+                "NoDestination_Condition_first_time": [
+                  "Succeeded"
+                ]
               }
             }
           },
-          "runAfter": {}
+          "runAfter": {
+            "Destinations_for_post": [
+              "Succeeded"
+            ]
+          }
         },
-        "Read_back_UrgentSent": {
+        "For_each_destination": {
+          "type": "Foreach",
+          "foreach": "@body('Destinations_for_post')",
+          "actions": {
+            "Get_destination_now": {
+              "type": "OpenApiConnection",
+              "description": "Reads the Comms Distribution row again just before sending, so switching a row's Enabled to No stops it even in a run already going, and the current address is used.",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('HPUKNewsSiteUrl')",
+                  "table": "Comms Distribution",
+                  "id": "@items('For_each_destination')?['ID']"
+                }
+              },
+              "runAfter": {}
+            },
+            "Record_destination_read_failure": {
+              "type": "AppendToArrayVariable",
+              "inputs": {
+                "name": "Failures",
+                "value": "@{concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), ': not sent, its Comms Distribution row could not be read')}"
+              },
+              "runAfter": {
+                "Get_destination_now": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              }
+            },
+            "Condition_switched_off": {
+              "type": "If",
+              "expression": {
+                "not": {
+                  "equals": [
+                    "@body('Get_destination_now')?['Enabled']",
+                    true
+                  ]
+                }
+              },
+              "actions": {
+                "Record_switched_off": {
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "Failures",
+                    "value": "@{concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), ': not sent, the destination was switched off during the run')}"
+                  },
+                  "runAfter": {}
+                }
+              },
+              "runAfter": {
+                "Get_destination_now": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Condition_email_destination": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@body('Get_destination_now')?['Enabled']",
+                      true
+                    ]
+                  },
+                  {
+                    "not": {
+                      "equals": [
+                        "@coalesce(body('Get_destination_now')?['EmailGroup'], '')",
+                        ""
+                      ]
+                    }
+                  }
+                ]
+              },
+              "actions": {
+                "Email_Check_log": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "GetItems",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('HPUKNewsSiteUrl')",
+                      "table": "Delivery Log",
+                      "$filter": "@{concat('Title eq ''', concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Email'), '''')}",
+                      "$top": 1
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Email_Condition_can_send": {
+                  "type": "If",
+                  "expression": {
+                    "or": [
+                      {
+                        "equals": [
+                          "@length(outputs('Email_Check_log')?['body/value'])",
+                          0
+                        ]
+                      },
+                      {
+                        "equals": [
+                          "@first(outputs('Email_Check_log')?['body/value'])?['DeliveryStatus']?['Value']",
+                          "Failed"
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Email_Condition_new_key": {
+                      "type": "If",
+                      "expression": {
+                        "equals": [
+                          "@length(outputs('Email_Check_log')?['body/value'])",
+                          0
+                        ]
+                      },
+                      "actions": {
+                        "Email_Reserve_new": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_sharepointonline",
+                              "operationId": "PostItem",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                            },
+                            "parameters": {
+                              "dataset": "@parameters('HPUKNewsSiteUrl')",
+                              "table": "Delivery Log",
+                              "item/Title": "@{concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Email')}",
+                              "item/DeliveryStatus/Value": "Reserved",
+                              "item/DeliveredAt": "@utcNow()",
+                              "item/SourceSite": "HPUK News",
+                              "item/PageId": "@triggerBody()?['ID']",
+                              "item/PublishedVersion": "@triggerBody()?['{VersionNumber}']",
+                              "item/NotificationRound": "@outputs('Notification_round')",
+                              "item/Destination": "@body('Get_destination_now')?['EmailGroup']",
+                              "item/Channel/Value": "Email",
+                              "item/FlowRunId": "@{workflow()?['run']?['name']}"
+                            },
+                            "retryPolicy": {
+                              "type": "none"
+                            }
+                          },
+                          "runAfter": {}
+                        },
+                        "Email_Set_row_new": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "RowId",
+                            "value": "@outputs('Email_Reserve_new')?['body/ID']"
+                          },
+                          "runAfter": {
+                            "Email_Reserve_new": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "Email_Reserve_retry": {
+                            "type": "OpenApiConnection",
+                            "description": "Claims the Failed row only if nobody has changed it since it was read (If-Match on its ETag). Another run that claimed it first makes this fail with 412, and nothing is sent.",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_sharepointonline",
+                                "operationId": "HttpRequest",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                              },
+                              "parameters": {
+                                "dataset": "@parameters('HPUKNewsSiteUrl')",
+                                "parameters/method": "POST",
+                                "parameters/uri": "_api/web/lists/GetByTitle('Delivery Log')/items(@{first(outputs('Email_Check_log')?['body/value'])?['ID']})",
+                                "parameters/headers": {
+                                  "Accept": "application/json;odata=nometadata",
+                                  "Content-Type": "application/json;odata=nometadata",
+                                  "X-HTTP-Method": "MERGE",
+                                  "IF-MATCH": "@{coalesce(first(outputs('Email_Check_log')?['body/value'])?['@odata.etag'], '\"no-etag\"')}"
+                                },
+                                "parameters/body": {
+                                  "DeliveryStatus": "Reserved",
+                                  "DeliveredAt": "@{utcNow()}",
+                                  "FlowRunId": "@{workflow()?['run']?['name']}",
+                                  "Destination": "@body('Get_destination_now')?['EmailGroup']"
+                                }
+                              },
+                              "retryPolicy": {
+                                "type": "none"
+                              }
+                            },
+                            "runAfter": {}
+                          },
+                          "Email_Set_row_retry": {
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "RowId",
+                              "value": "@first(outputs('Email_Check_log')?['body/value'])?['ID']"
+                            },
+                            "runAfter": {
+                              "Email_Reserve_retry": [
+                                "Succeeded"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {}
+                    },
+                    "Email_Record_reservation_failure": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "Failures",
+                        "value": "@{concat(concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Email'), ': not sent, the Delivery Log reservation failed')}"
+                      },
+                      "runAfter": {
+                        "Email_Condition_new_key": [
+                          "Failed",
+                          "TimedOut"
+                        ]
+                      }
+                    },
+                    "Email_Send": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365",
+                          "operationId": "SharedMailboxSendEmailV2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
+                          "emailMessage/To": "@body('Get_destination_now')?['EmailGroup']",
+                          "emailMessage/Subject": "@{concat('Urgent: ', triggerBody()?['Title'])}",
+                          "emailMessage/Body": "<p><b>@{triggerBody()?['Title']}</b></p><p>@{coalesce(triggerBody()?['Description'], '')}</p><p><a href=\"@{triggerBody()?['{Link}']}\">Read the full notice</a></p>",
+                          "emailMessage/Importance": "High"
+                        },
+                        "retryPolicy": {
+                          "type": "none"
+                        }
+                      },
+                      "runAfter": {
+                        "Email_Condition_new_key": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Email_Mark_sent": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PatchItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('HPUKNewsSiteUrl')",
+                          "table": "Delivery Log",
+                          "id": "@variables('RowId')",
+                          "item/DeliveryStatus/Value": "Sent",
+                          "item/DeliveredAt": "@utcNow()"
+                        }
+                      },
+                      "runAfter": {
+                        "Email_Send": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Email_Record_unlogged_send": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "Failures",
+                        "value": "@{concat(concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Email'), ': sent, but its Delivery Log row is still Reserved')}"
+                      },
+                      "runAfter": {
+                        "Email_Mark_sent": [
+                          "Failed",
+                          "TimedOut"
+                        ]
+                      }
+                    },
+                    "Email_Mark_not_sent": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PatchItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('HPUKNewsSiteUrl')",
+                          "table": "Delivery Log",
+                          "id": "@variables('RowId')",
+                          "item/DeliveryStatus/Value": "@{if(and(greaterOrEquals(coalesce(actions('Email_Send')?['outputs']?['statusCode'], 0), 400), less(coalesce(actions('Email_Send')?['outputs']?['statusCode'], 0), 500), not(equals(actions('Email_Send')?['outputs']?['statusCode'], 408)), not(equals(actions('Email_Send')?['outputs']?['statusCode'], 429))), 'Failed', 'Reconcile')}",
+                          "item/DeliveredAt": "@utcNow()",
+                          "item/ErrorDetail": "@{string(actions('Email_Send')?['outputs']?['body'])}"
+                        }
+                      },
+                      "runAfter": {
+                        "Email_Send": [
+                          "Failed",
+                          "TimedOut"
+                        ]
+                      }
+                    },
+                    "Email_Record_failure": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "Failures",
+                        "value": "@{concat(concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Email'), ': ', if(and(greaterOrEquals(coalesce(actions('Email_Send')?['outputs']?['statusCode'], 0), 400), less(coalesce(actions('Email_Send')?['outputs']?['statusCode'], 0), 500), not(equals(actions('Email_Send')?['outputs']?['statusCode'], 408)), not(equals(actions('Email_Send')?['outputs']?['statusCode'], 429))), 'rejected, logged as Failed', 'outcome unknown, logged as Reconcile'), ' (', string(actions('Email_Send')?['outputs']?['statusCode']), ')')}"
+                      },
+                      "runAfter": {
+                        "Email_Mark_not_sent": [
+                          "Succeeded",
+                          "Failed",
+                          "TimedOut"
+                        ]
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Email_Check_log": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "runAfter": {
+                "Get_destination_now": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Condition_teams_destination": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@body('Get_destination_now')?['Enabled']",
+                      true
+                    ]
+                  },
+                  {
+                    "not": {
+                      "equals": [
+                        "@coalesce(body('Get_destination_now')?['TeamId'], '')",
+                        ""
+                      ]
+                    }
+                  },
+                  {
+                    "not": {
+                      "equals": [
+                        "@coalesce(body('Get_destination_now')?['ChannelId'], '')",
+                        ""
+                      ]
+                    }
+                  }
+                ]
+              },
+              "actions": {
+                "Teams_Check_log": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "GetItems",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('HPUKNewsSiteUrl')",
+                      "table": "Delivery Log",
+                      "$filter": "@{concat('Title eq ''', concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Teams'), '''')}",
+                      "$top": 1
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Teams_Condition_can_send": {
+                  "type": "If",
+                  "expression": {
+                    "or": [
+                      {
+                        "equals": [
+                          "@length(outputs('Teams_Check_log')?['body/value'])",
+                          0
+                        ]
+                      },
+                      {
+                        "equals": [
+                          "@first(outputs('Teams_Check_log')?['body/value'])?['DeliveryStatus']?['Value']",
+                          "Failed"
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Teams_Condition_new_key": {
+                      "type": "If",
+                      "expression": {
+                        "equals": [
+                          "@length(outputs('Teams_Check_log')?['body/value'])",
+                          0
+                        ]
+                      },
+                      "actions": {
+                        "Teams_Reserve_new": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_sharepointonline",
+                              "operationId": "PostItem",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                            },
+                            "parameters": {
+                              "dataset": "@parameters('HPUKNewsSiteUrl')",
+                              "table": "Delivery Log",
+                              "item/Title": "@{concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Teams')}",
+                              "item/DeliveryStatus/Value": "Reserved",
+                              "item/DeliveredAt": "@utcNow()",
+                              "item/SourceSite": "HPUK News",
+                              "item/PageId": "@triggerBody()?['ID']",
+                              "item/PublishedVersion": "@triggerBody()?['{VersionNumber}']",
+                              "item/NotificationRound": "@outputs('Notification_round')",
+                              "item/Destination": "@{concat(body('Get_destination_now')?['TeamId'], '/', body('Get_destination_now')?['ChannelId'])}",
+                              "item/Channel/Value": "Teams",
+                              "item/FlowRunId": "@{workflow()?['run']?['name']}"
+                            },
+                            "retryPolicy": {
+                              "type": "none"
+                            }
+                          },
+                          "runAfter": {}
+                        },
+                        "Teams_Set_row_new": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "RowId",
+                            "value": "@outputs('Teams_Reserve_new')?['body/ID']"
+                          },
+                          "runAfter": {
+                            "Teams_Reserve_new": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "Teams_Reserve_retry": {
+                            "type": "OpenApiConnection",
+                            "description": "Claims the Failed row only if nobody has changed it since it was read (If-Match on its ETag). Another run that claimed it first makes this fail with 412, and nothing is sent.",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_sharepointonline",
+                                "operationId": "HttpRequest",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                              },
+                              "parameters": {
+                                "dataset": "@parameters('HPUKNewsSiteUrl')",
+                                "parameters/method": "POST",
+                                "parameters/uri": "_api/web/lists/GetByTitle('Delivery Log')/items(@{first(outputs('Teams_Check_log')?['body/value'])?['ID']})",
+                                "parameters/headers": {
+                                  "Accept": "application/json;odata=nometadata",
+                                  "Content-Type": "application/json;odata=nometadata",
+                                  "X-HTTP-Method": "MERGE",
+                                  "IF-MATCH": "@{coalesce(first(outputs('Teams_Check_log')?['body/value'])?['@odata.etag'], '\"no-etag\"')}"
+                                },
+                                "parameters/body": {
+                                  "DeliveryStatus": "Reserved",
+                                  "DeliveredAt": "@{utcNow()}",
+                                  "FlowRunId": "@{workflow()?['run']?['name']}",
+                                  "Destination": "@{concat(body('Get_destination_now')?['TeamId'], '/', body('Get_destination_now')?['ChannelId'])}"
+                                }
+                              },
+                              "retryPolicy": {
+                                "type": "none"
+                              }
+                            },
+                            "runAfter": {}
+                          },
+                          "Teams_Set_row_retry": {
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "RowId",
+                              "value": "@first(outputs('Teams_Check_log')?['body/value'])?['ID']"
+                            },
+                            "runAfter": {
+                              "Teams_Reserve_retry": [
+                                "Succeeded"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {}
+                    },
+                    "Teams_Record_reservation_failure": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "Failures",
+                        "value": "@{concat(concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Teams'), ': not sent, the Delivery Log reservation failed')}"
+                      },
+                      "runAfter": {
+                        "Teams_Condition_new_key": [
+                          "Failed",
+                          "TimedOut"
+                        ]
+                      }
+                    },
+                    "Teams_Send": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_teams",
+                          "operationId": "PostMessageToConversation",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+                        },
+                        "parameters": {
+                          "poster": "Flow bot",
+                          "location": "Channel",
+                          "body/recipient/groupId": "@body('Get_destination_now')?['TeamId']",
+                          "body/recipient/channelId": "@body('Get_destination_now')?['ChannelId']",
+                          "body/messageBody": "<p><b>Urgent</b></p><p><b>@{triggerBody()?['Title']}</b></p><p>@{coalesce(triggerBody()?['Description'], '')}</p><p><a href=\"@{triggerBody()?['{Link}']}\">Read the full notice</a></p>"
+                        },
+                        "retryPolicy": {
+                          "type": "none"
+                        }
+                      },
+                      "runAfter": {
+                        "Teams_Condition_new_key": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Teams_Mark_sent": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PatchItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('HPUKNewsSiteUrl')",
+                          "table": "Delivery Log",
+                          "id": "@variables('RowId')",
+                          "item/DeliveryStatus/Value": "Sent",
+                          "item/DeliveredAt": "@utcNow()"
+                        }
+                      },
+                      "runAfter": {
+                        "Teams_Send": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Teams_Record_unlogged_send": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "Failures",
+                        "value": "@{concat(concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Teams'), ': sent, but its Delivery Log row is still Reserved')}"
+                      },
+                      "runAfter": {
+                        "Teams_Mark_sent": [
+                          "Failed",
+                          "TimedOut"
+                        ]
+                      }
+                    },
+                    "Teams_Mark_not_sent": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PatchItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('HPUKNewsSiteUrl')",
+                          "table": "Delivery Log",
+                          "id": "@variables('RowId')",
+                          "item/DeliveryStatus/Value": "@{if(and(greaterOrEquals(coalesce(actions('Teams_Send')?['outputs']?['statusCode'], 0), 400), less(coalesce(actions('Teams_Send')?['outputs']?['statusCode'], 0), 500), not(equals(actions('Teams_Send')?['outputs']?['statusCode'], 408)), not(equals(actions('Teams_Send')?['outputs']?['statusCode'], 429))), 'Failed', 'Reconcile')}",
+                          "item/DeliveredAt": "@utcNow()",
+                          "item/ErrorDetail": "@{string(actions('Teams_Send')?['outputs']?['body'])}"
+                        }
+                      },
+                      "runAfter": {
+                        "Teams_Send": [
+                          "Failed",
+                          "TimedOut"
+                        ]
+                      }
+                    },
+                    "Teams_Record_failure": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "Failures",
+                        "value": "@{concat(concat(outputs('Dispatch_prefix'), '|', items('For_each_destination')?['Port']?['Value'], '#', string(items('For_each_destination')?['ID']), '|Teams'), ': ', if(and(greaterOrEquals(coalesce(actions('Teams_Send')?['outputs']?['statusCode'], 0), 400), less(coalesce(actions('Teams_Send')?['outputs']?['statusCode'], 0), 500), not(equals(actions('Teams_Send')?['outputs']?['statusCode'], 408)), not(equals(actions('Teams_Send')?['outputs']?['statusCode'], 429))), 'rejected, logged as Failed', 'outcome unknown, logged as Reconcile'), ' (', string(actions('Teams_Send')?['outputs']?['statusCode']), ')')}"
+                      },
+                      "runAfter": {
+                        "Teams_Mark_not_sent": [
+                          "Succeeded",
+                          "Failed",
+                          "TimedOut"
+                        ]
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Teams_Check_log": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "runAfter": {
+                "Condition_email_destination": [
+                  "Succeeded",
+                  "Failed",
+                  "TimedOut"
+                ]
+              }
+            }
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 1
+            }
+          },
+          "runAfter": {
+            "Condition_no_destinations": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Select_expected_email_keys": {
+          "type": "Select",
+          "runAfter": {
+            "For_each_destination": [
+              "Succeeded",
+              "Failed",
+              "TimedOut",
+              "Skipped"
+            ]
+          },
+          "inputs": {
+            "from": "@body('Destinations_for_post')",
+            "select": "@if(equals(coalesce(item()?['EmailGroup'], ''), ''), '', concat(outputs('Dispatch_prefix'), '|', item()?['Port']?['Value'], '#', string(item()?['ID']), '|Email'))"
+          }
+        },
+        "Select_expected_teams_keys": {
+          "type": "Select",
+          "runAfter": {
+            "Select_expected_email_keys": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "from": "@body('Destinations_for_post')",
+            "select": "@if(or(equals(coalesce(item()?['TeamId'], ''), ''), equals(coalesce(item()?['ChannelId'], ''), '')), '', concat(outputs('Dispatch_prefix'), '|', item()?['Port']?['Value'], '#', string(item()?['ID']), '|Teams'))"
+          }
+        },
+        "Filter_expected_keys": {
+          "type": "Query",
+          "runAfter": {
+            "Select_expected_teams_keys": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "from": "@union(body('Select_expected_email_keys'), body('Select_expected_teams_keys'))",
+            "where": "@not(equals(item(), ''))"
+          }
+        },
+        "Get_delivery_rows": {
           "type": "OpenApiConnection",
           "runAfter": {
-            "Mark_urgent_sent": [
+            "Filter_expected_keys": [
               "Succeeded"
             ]
           },
           "inputs": {
             "host": {
               "connectionName": "shared_sharepointonline",
-              "operationId": "HttpRequest",
+              "operationId": "GetItems",
               "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
             },
             "parameters": {
               "dataset": "@parameters('HPUKNewsSiteUrl')",
-              "parameters/method": "GET",
-              "parameters/uri": "_api/web/lists/GetByTitle('Site Pages')/items(@{triggerBody()?['ID']})?$select=UrgentSent",
-              "parameters/headers": {
-                "Accept": "application/json;odata=nometadata"
-              }
+              "table": "Delivery Log",
+              "$filter": "@{concat('startswith(Title, ''', outputs('Dispatch_prefix'), '|'')')}",
+              "$top": 5000
+            }
+          },
+          "runtimeConfiguration": {
+            "paginationPolicy": {
+              "minimumItemCount": 100000
             }
           }
         },
-        "Condition_update_confirmed": {
+        "Filter_sent_rows": {
+          "type": "Query",
+          "runAfter": {
+            "Get_delivery_rows": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "from": "@outputs('Get_delivery_rows')?['body/value']",
+            "where": "@equals(item()?['DeliveryStatus']?['Value'], 'Sent')"
+          }
+        },
+        "Select_sent_keys": {
+          "type": "Select",
+          "runAfter": {
+            "Filter_sent_rows": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "from": "@body('Filter_sent_rows')",
+            "select": "@item()?['Title']"
+          }
+        },
+        "Filter_not_yet_sent": {
+          "type": "Query",
+          "runAfter": {
+            "Select_sent_keys": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "from": "@body('Filter_expected_keys')",
+            "where": "@not(contains(body('Select_sent_keys'), item()))"
+          }
+        },
+        "Condition_all_sent": {
           "type": "If",
           "runAfter": {
-            "Read_back_UrgentSent": [
+            "Filter_not_yet_sent": [
               "Succeeded",
               "Failed",
-              "TimedOut"
+              "TimedOut",
+              "Skipped"
             ]
           },
           "expression": {
-            "and": [
-              {
-                "equals": [
-                  "@actions('Read_back_UrgentSent')?['status']",
+            "equals": [
+              "@and(equals(actions('Filter_not_yet_sent')?['status'], 'Succeeded'), greater(length(body('Filter_expected_keys')), 0), equals(length(body('Filter_not_yet_sent')), 0), equals(length(variables('Failures')), 0))",
+              true
+            ]
+          },
+          "actions": {
+            "Mark_urgent_sent": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('HPUKNewsSiteUrl')",
+                  "parameters/method": "POST",
+                  "parameters/uri": "_api/web/lists/GetByTitle('Site Pages')/items(@{triggerBody()?['ID']})/ValidateUpdateListItem",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=nometadata",
+                    "Content-Type": "application/json;odata=nometadata"
+                  },
+                  "parameters/body": {
+                    "formValues": [
+                      {
+                        "FieldName": "UrgentSent",
+                        "FieldValue": "1"
+                      }
+                    ],
+                    "bNewDocumentUpdate": true
+                  }
+                }
+              },
+              "runAfter": {}
+            },
+            "Read_back_UrgentSent": {
+              "type": "OpenApiConnection",
+              "runAfter": {
+                "Mark_urgent_sent": [
                   "Succeeded"
                 ]
               },
-              {
-                "not": {
-                  "contains": [
-                    "@string(body('Mark_urgent_sent'))",
-                    "\"HasException\":true"
-                  ]
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('HPUKNewsSiteUrl')",
+                  "parameters/method": "GET",
+                  "parameters/uri": "_api/web/lists/GetByTitle('Site Pages')/items(@{triggerBody()?['ID']})?$select=UrgentSent",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=nometadata"
+                  }
                 }
-              },
-              {
-                "equals": [
-                  "@body('Read_back_UrgentSent')?['UrgentSent']",
-                  true
-                ]
               }
-            ]
+            },
+            "Condition_update_confirmed": {
+              "type": "If",
+              "runAfter": {
+                "Read_back_UrgentSent": [
+                  "Succeeded",
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@actions('Read_back_UrgentSent')?['status']",
+                      "Succeeded"
+                    ]
+                  },
+                  {
+                    "not": {
+                      "contains": [
+                        "@string(body('Mark_urgent_sent'))",
+                        "\"HasException\":true"
+                      ]
+                    }
+                  },
+                  {
+                    "equals": [
+                      "@body('Read_back_UrgentSent')?['UrgentSent']",
+                      true
+                    ]
+                  }
+                ]
+              },
+              "actions": {},
+              "else": {
+                "actions": {
+                  "Alert_update_failed": {
+                    "type": "OpenApiConnection",
+                    "runAfter": {},
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_office365",
+                        "operationId": "SharedMailboxSendEmailV2",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                      },
+                      "parameters": {
+                        "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
+                        "emailMessage/To": "@{concat(parameters('SupportOwnerEmail'), ';', parameters('CommsTeamEmail'))}",
+                        "emailMessage/Subject": "Urgent notice sent, but UrgentSent could not be set",
+                        "emailMessage/Body": "<p><a href=\"@{triggerBody()?['{Link}']}\">@{triggerBody()?['Title']}</a> (HPUK News)</p><p>Every delivery is logged as Sent, but setting UrgentSent to Yes failed or didn't read back. Set UrgentSent to Yes on the page by hand. Nothing will be resent: every destination is already reserved as Sent in the Delivery Log.</p>",
+                        "emailMessage/Importance": "High"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
-          "actions": {},
           "else": {
             "actions": {
-              "Alert_update_failed": {
+              "Alert_support": {
                 "type": "OpenApiConnection",
-                "runAfter": {},
                 "inputs": {
                   "host": {
                     "connectionName": "shared_office365",
@@ -1395,37 +1428,63 @@
                   "parameters": {
                     "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
                     "emailMessage/To": "@{concat(parameters('SupportOwnerEmail'), ';', parameters('CommsTeamEmail'))}",
-                    "emailMessage/Subject": "Urgent notice sent, but UrgentSent could not be set",
-                    "emailMessage/Body": "<p><a href=\"@{triggerBody()?['{Link}']}\">@{triggerBody()?['Title']}</a> (HPUK News)</p><p>Every delivery is logged as Sent, but setting UrgentSent to Yes failed or didn't read back. Set UrgentSent to Yes on the page by hand. Nothing will be resent: every destination is already reserved as Sent in the Delivery Log.</p>",
-                    "emailMessage/Importance": "High"
+                    "emailMessage/Subject": "Urgent notice: some deliveries failed",
+                    "emailMessage/Body": "<p><a href=\"@{triggerBody()?['{Link}']}\">@{triggerBody()?['Title']}</a> (HPUK News)</p><p>These deliveries did not complete:</p><p>@{join(variables('Failures'), '<br>')}</p><p>Not yet logged as Sent: @{if(equals(actions('Filter_not_yet_sent')?['status'], 'Succeeded'), join(coalesce(actions('Filter_not_yet_sent')?['outputs']?['body'], json('[]')), '<br>'), 'the Delivery Log could not be read, so completion is unknown')}</p><p>UrgentSent has been left at No.</p><p>A row logged as <b>Reconcile</b> may or may not have arrived: check with the recipient. If it didn't arrive, set the row's Delivery status to Failed and resubmit this run. Only Failed rows are ever retried. A row still <b>Reserved</b> was sent but not logged: set it to Sent.</p>",
+                    "emailMessage/Importance": "Normal"
                   }
-                }
+                },
+                "runAfter": {}
               }
             }
           }
         }
       },
-      "else": {
-        "actions": {
-          "Alert_support": {
-            "type": "OpenApiConnection",
-            "inputs": {
-              "host": {
-                "connectionName": "shared_office365",
-                "operationId": "SharedMailboxSendEmailV2",
-                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
-              },
-              "parameters": {
-                "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
-                "emailMessage/To": "@{concat(parameters('SupportOwnerEmail'), ';', parameters('CommsTeamEmail'))}",
-                "emailMessage/Subject": "Urgent notice: some deliveries failed",
-                "emailMessage/Body": "<p><a href=\"@{triggerBody()?['{Link}']}\">@{triggerBody()?['Title']}</a> (HPUK News)</p><p>These deliveries did not complete:</p><p>@{join(variables('Failures'), '<br>')}</p><p>Not yet logged as Sent: @{if(equals(actions('Filter_not_yet_sent')?['status'], 'Succeeded'), join(coalesce(actions('Filter_not_yet_sent')?['outputs']?['body'], json('[]')), '<br>'), 'the Delivery Log could not be read, so completion is unknown')}</p><p>UrgentSent has been left at No.</p><p>A row logged as <b>Reconcile</b> may or may not have arrived: check with the recipient. If it didn't arrive, set the row's Delivery status to Failed and resubmit this run. Only Failed rows are ever retried. A row still <b>Reserved</b> was sent but not logged: set it to Sent.</p>",
-                "emailMessage/Importance": "Normal"
-              }
+      "runAfter": {
+        "Initialize_RowId": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Catch_run_failed": {
+      "type": "Scope",
+      "description": "Run-level failure alert: any error in Scope_Main that no step handled.",
+      "actions": {
+        "Select_failed_steps": {
+          "type": "Select",
+          "inputs": {
+            "from": "@result('Scope_Main')",
+            "select": "@concat('<li><b>', item()?['name'], '</b>: ', item()?['status'], ' ', coalesce(item()?['error']?['code'], item()?['outputs']?['statusCode'], ''), ' ', coalesce(item()?['error']?['message'], ''), '</li>')"
+          },
+          "runAfter": {}
+        },
+        "Alert_run_failed": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SharedMailboxSendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
             },
-            "runAfter": {}
+            "parameters": {
+              "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
+              "emailMessage/To": "@parameters('SupportOwnerEmail')",
+              "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
+              "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error it did not handle, so some of its work may not have been done. Nothing has been retried.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a> (started @{workflow()?['run']?['startTime']})</p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Open the run, find the failed step and its raw output, fix the cause, then resubmit the run or deal with the items by hand. Check for partial changes first (see Stopping and recovery in the deployment guide).</p>",
+              "emailMessage/Importance": "High"
+            }
+          },
+          "runAfter": {
+            "Select_failed_steps": [
+              "Succeeded"
+            ]
           }
         }
+      },
+      "runAfter": {
+        "Scope_Main": [
+          "Failed",
+          "TimedOut"
+        ]
       }
     }
   }

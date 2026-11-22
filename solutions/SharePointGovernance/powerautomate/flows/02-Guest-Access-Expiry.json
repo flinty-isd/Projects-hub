@@ -78,269 +78,205 @@
     }
   },
   "actions": {
-    "Get_active_guests": {
-      "type": "OpenApiConnection",
-      "inputs": {
-        "host": {
-          "connectionName": "shared_sharepointonline",
-          "operationId": "GetItems",
-          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-        },
-        "parameters": {
-          "dataset": "@parameters('GovernanceSiteUrl')",
-          "table": "Guest Access Register",
-          "$filter": "@{concat('(Status eq ''Active'' and AccessEndDate le ''', addDays(utcNow(), 14, 'yyyy-MM-dd'), ''') or Status eq ''Removal pending owner decision'' or (Status eq ''Kept - owner decision'' and (KeptUntil le ''', utcNow('yyyy-MM-dd'), ''' or KeptUntil eq null))')}",
-          "$top": 5000
-        }
-      },
-      "runAfter": {},
-      "runtimeConfiguration": {
-        "paginationPolicy": {
-          "minimumItemCount": 100000
-        }
-      }
-    },
-    "For_each_guest": {
-      "type": "Foreach",
-      "foreach": "@outputs('Get_active_guests')?['body/value']",
+    "Scope_Main": {
+      "type": "Scope",
       "actions": {
-        "Condition_Pending_decision": {
-          "type": "If",
-          "runAfter": {},
-          "expression": {
-            "equals": [
-              "@items('For_each_guest')?['Status']?['Value']",
-              "Removal pending owner decision"
-            ]
+        "Get_active_guests": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('GovernanceSiteUrl')",
+              "table": "Guest Access Register",
+              "$filter": "@{concat('(Status eq ''Active'' and AccessEndDate le ''', addDays(utcNow(), 14, 'yyyy-MM-dd'), ''') or Status eq ''Removal pending owner decision'' or (Status eq ''Kept - owner decision'' and (KeptUntil le ''', utcNow('yyyy-MM-dd'), ''' or KeptUntil eq null))')}",
+              "$top": 5000
+            }
           },
+          "runAfter": {},
+          "runtimeConfiguration": {
+            "paginationPolicy": {
+              "minimumItemCount": 100000
+            }
+          }
+        },
+        "For_each_guest": {
+          "type": "Foreach",
+          "foreach": "@outputs('Get_active_guests')?['body/value']",
           "actions": {
-            "Condition_Decision_overdue": {
+            "Condition_Pending_decision": {
               "type": "If",
               "runAfter": {},
               "expression": {
-                "or": [
-                  {
-                    "equals": [
-                      "@items('For_each_guest')?['DecisionDueBy']",
-                      null
-                    ]
-                  },
-                  {
-                    "less": [
-                      "@ticks(coalesce(items('For_each_guest')?['DecisionDueBy'], utcNow()))",
-                      "@ticks(utcNow())"
-                    ]
-                  }
+                "equals": [
+                  "@items('For_each_guest')?['Status']?['Value']",
+                  "Removal pending owner decision"
                 ]
               },
               "actions": {
-                "Escalate_pending": {
-                  "type": "OpenApiConnection",
+                "Condition_Decision_overdue": {
+                  "type": "If",
                   "runAfter": {},
-                  "inputs": {
-                    "host": {
-                      "connectionName": "shared_office365",
-                      "operationId": "SendEmailV2",
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
-                    },
-                    "parameters": {
-                      "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), ';', parameters('InfoSecApproverEmail'))}",
-                      "emailMessage/Subject": "@{concat('No decision on expired guest access: ', items('For_each_guest')?['Title'])}",
-                      "emailMessage/Body": "<p>Guest access for @{items('For_each_guest')?['Title']} ended on @{formatDateTime(items('For_each_guest')?['AccessEndDate'], 'dd MMM yyyy')} and the site owner or sponsor hasn't decided whether to remove it (the approval may have expired or failed). The guest still has access.</p><p>Decide now: answer the approval if it is still open, or record the decision in the Guest Access Register (Expired - access removed after removing the guest, or Kept - owner decision with a Kept until date). This reminder repeats every 7 days until it is resolved (G-11: the decision stays with people).</p>",
-                      "emailMessage/Importance": "High"
-                    }
-                  }
-                },
-                "Set_next_escalation": {
-                  "type": "OpenApiConnection",
-                  "runAfter": {
-                    "Escalate_pending": [
-                      "Succeeded"
+                  "expression": {
+                    "or": [
+                      {
+                        "equals": [
+                          "@items('For_each_guest')?['DecisionDueBy']",
+                          null
+                        ]
+                      },
+                      {
+                        "less": [
+                          "@ticks(coalesce(items('For_each_guest')?['DecisionDueBy'], utcNow()))",
+                          "@ticks(utcNow())"
+                        ]
+                      }
                     ]
                   },
-                  "inputs": {
-                    "host": {
-                      "connectionName": "shared_sharepointonline",
-                      "operationId": "PatchItem",
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                    },
-                    "parameters": {
-                      "dataset": "@parameters('GovernanceSiteUrl')",
-                      "table": "Guest Access Register",
-                      "id": "@items('For_each_guest')?['ID']",
-                      "item/DecisionDueBy": "@addDays(utcNow(), 7)"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "else": {
-            "actions": {
-              "Get_guest_site": {
-                "type": "OpenApiConnection",
-                "inputs": {
-                  "host": {
-                    "connectionName": "shared_sharepointonline",
-                    "operationId": "GetItem",
-                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                  },
-                  "parameters": {
-                    "dataset": "@parameters('GovernanceSiteUrl')",
-                    "table": "Site Register",
-                    "id": "@items('For_each_guest')?['SiteId']"
-                  }
-                },
-                "runAfter": {}
-              },
-              "Condition_Expired": {
-                "type": "If",
-                "expression": {
-                  "less": [
-                    "@ticks(items('For_each_guest')?['AccessEndDate'])",
-                    "@ticks(utcNow())"
-                  ]
-                },
-                "actions": {
-                  "Condition_AutoRemoval": {
-                    "type": "If",
-                    "expression": {
-                      "equals": [
-                        "@parameters('GuestAutoRemoval')",
-                        true
-                      ]
-                    },
-                    "actions": {
-                      "Auto_Remove_from_group": {
-                        "type": "OpenApiConnection",
-                        "inputs": {
-                          "host": {
-                            "connectionName": "shared_webcontents",
-                            "operationId": "InvokeHttp",
-                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
-                          },
-                          "parameters": {
-                            "request/method": "DELETE",
-                            "request/url": "https://graph.microsoft.com/v1.0/groups/@{items('For_each_guest')?['GroupId']}/members/@{items('For_each_guest')?['GuestUserId']}/$ref"
-                          }
+                  "actions": {
+                    "Escalate_pending": {
+                      "type": "OpenApiConnection",
+                      "runAfter": {},
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365",
+                          "operationId": "SendEmailV2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                         },
-                        "runAfter": {}
-                      },
-                      "Auto_Mark_expired": {
-                        "type": "OpenApiConnection",
-                        "inputs": {
-                          "host": {
-                            "connectionName": "shared_sharepointonline",
-                            "operationId": "PatchItem",
-                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                          },
-                          "parameters": {
-                            "dataset": "@parameters('GovernanceSiteUrl')",
-                            "table": "Guest Access Register",
-                            "id": "@items('For_each_guest')?['ID']",
-                            "item/Status/Value": "Expired - access removed",
-                            "item/RemovedOn": "@utcNow()"
-                          }
-                        },
-                        "runAfter": {
-                          "Auto_Remove_from_group": [
-                            "Succeeded"
-                          ]
-                        }
-                      },
-                      "Auto_Notify_expired": {
-                        "type": "OpenApiConnection",
-                        "inputs": {
-                          "host": {
-                            "connectionName": "shared_office365",
-                            "operationId": "SendEmailV2",
-                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
-                          },
-                          "parameters": {
-                            "emailMessage/To": "@{concat(items('For_each_guest')?['Sponsor']?['Email'], ';', body('Get_guest_site')?['PrimaryOwner']?['Email'])}",
-                            "emailMessage/Subject": "@{concat('Guest access removed: ', items('For_each_guest')?['Title'])}",
-                            "emailMessage/Body": "<p>Guest access for @{items('For_each_guest')?['Title']} reached its end date and has been removed. To continue, raise a new access request with a new end date (90 days or less).</p>",
-                            "emailMessage/Importance": "Normal",
-                            "emailMessage/Cc": "@parameters('InfoSecApproverEmail')"
-                          }
-                        },
-                        "runAfter": {
-                          "Auto_Mark_expired": [
-                            "Succeeded"
-                          ]
+                        "parameters": {
+                          "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), ';', parameters('InfoSecApproverEmail'))}",
+                          "emailMessage/Subject": "@{concat('No decision on expired guest access: ', items('For_each_guest')?['Title'])}",
+                          "emailMessage/Body": "<p>Guest access for @{items('For_each_guest')?['Title']} ended on @{formatDateTime(items('For_each_guest')?['AccessEndDate'], 'dd MMM yyyy')} and the site owner or sponsor hasn't decided whether to remove it (the approval may have expired or failed). The guest still has access.</p><p>Decide now: answer the approval if it is still open, or record the decision in the Guest Access Register (Expired - access removed after removing the guest, or Kept - owner decision with a Kept until date). This reminder repeats every 7 days until it is resolved (G-11: the decision stays with people).</p>",
+                          "emailMessage/Importance": "High"
                         }
                       }
                     },
-                    "else": {
-                      "actions": {
-                        "Mark_pending_owner": {
-                          "type": "OpenApiConnection",
-                          "inputs": {
-                            "host": {
-                              "connectionName": "shared_sharepointonline",
-                              "operationId": "PatchItem",
-                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                            },
-                            "parameters": {
-                              "dataset": "@parameters('GovernanceSiteUrl')",
-                              "table": "Guest Access Register",
-                              "id": "@items('For_each_guest')?['ID']",
-                              "item/Status/Value": "Removal pending owner decision",
-                              "item/DecisionDueBy": "@addDays(utcNow(), 14)"
-                            }
-                          },
-                          "runAfter": {}
+                    "Set_next_escalation": {
+                      "type": "OpenApiConnection",
+                      "runAfter": {
+                        "Escalate_pending": [
+                          "Succeeded"
+                        ]
+                      },
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PatchItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
                         },
-                        "Approval_remove_guest": {
-                          "type": "OpenApiConnection",
-                          "inputs": {
-                            "host": {
-                              "connectionName": "shared_approvals",
-                              "operationId": "StartAndWaitForAnApproval",
-                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                        "parameters": {
+                          "dataset": "@parameters('GovernanceSiteUrl')",
+                          "table": "Guest Access Register",
+                          "id": "@items('For_each_guest')?['ID']",
+                          "item/DecisionDueBy": "@addDays(utcNow(), 7)"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Get_guest_site": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_sharepointonline",
+                        "operationId": "GetItem",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                      },
+                      "parameters": {
+                        "dataset": "@parameters('GovernanceSiteUrl')",
+                        "table": "Site Register",
+                        "id": "@items('For_each_guest')?['SiteId']"
+                      }
+                    },
+                    "runAfter": {}
+                  },
+                  "Condition_Expired": {
+                    "type": "If",
+                    "expression": {
+                      "less": [
+                        "@ticks(items('For_each_guest')?['AccessEndDate'])",
+                        "@ticks(utcNow())"
+                      ]
+                    },
+                    "actions": {
+                      "Condition_AutoRemoval": {
+                        "type": "If",
+                        "expression": {
+                          "equals": [
+                            "@parameters('GuestAutoRemoval')",
+                            true
+                          ]
+                        },
+                        "actions": {
+                          "Auto_Remove_from_group": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_webcontents",
+                                "operationId": "InvokeHttp",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                              },
+                              "parameters": {
+                                "request/method": "DELETE",
+                                "request/url": "https://graph.microsoft.com/v1.0/groups/@{items('For_each_guest')?['GroupId']}/members/@{items('For_each_guest')?['GuestUserId']}/$ref"
+                              }
                             },
-                            "parameters": {
-                              "approvalType": "Basic",
-                              "WebhookApprovalCreationInput/title": "@{concat('Guest access has ended - remove? ', items('For_each_guest')?['Title'])}",
-                              "WebhookApprovalCreationInput/assignedTo": "@{concat(body('Get_guest_site')?['PrimaryOwner']?['Email'], ';', items('For_each_guest')?['Sponsor']?['Email'])}",
-                              "WebhookApprovalCreationInput/details": "@{concat('Guest access for ', items('For_each_guest')?['Title'], ' on ', body('Get_guest_site')?['SiteTitle'], ' ended on ', formatDateTime(items('For_each_guest')?['AccessEndDate'], 'dd MMM yyyy'), '.', decodeUriComponent('%0A%0A'), 'Approve to remove the guest now. Reject to keep access while a new request is raised: guest access must stay time-bound, so InfoSec is told.')}",
-                              "WebhookApprovalCreationInput/itemLink": "@{body('Get_guest_site')?['SiteUrl']}",
-                              "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
-                              "WebhookApprovalCreationInput/enableNotifications": true,
-                              "WebhookApprovalCreationInput/enableReassignment": true
+                            "runAfter": {}
+                          },
+                          "Auto_Mark_expired": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_sharepointonline",
+                                "operationId": "PatchItem",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                              },
+                              "parameters": {
+                                "dataset": "@parameters('GovernanceSiteUrl')",
+                                "table": "Guest Access Register",
+                                "id": "@items('For_each_guest')?['ID']",
+                                "item/Status/Value": "Expired - access removed",
+                                "item/RemovedOn": "@utcNow()"
+                              }
+                            },
+                            "runAfter": {
+                              "Auto_Remove_from_group": [
+                                "Succeeded"
+                              ]
                             }
                           },
-                          "runAfter": {
-                            "Mark_pending_owner": [
-                              "Succeeded"
-                            ]
+                          "Auto_Notify_expired": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_office365",
+                                "operationId": "SendEmailV2",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                              },
+                              "parameters": {
+                                "emailMessage/To": "@{concat(items('For_each_guest')?['Sponsor']?['Email'], ';', body('Get_guest_site')?['PrimaryOwner']?['Email'])}",
+                                "emailMessage/Subject": "@{concat('Guest access removed: ', items('For_each_guest')?['Title'])}",
+                                "emailMessage/Body": "<p>Guest access for @{items('For_each_guest')?['Title']} reached its end date and has been removed. To continue, raise a new access request with a new end date (90 days or less).</p>",
+                                "emailMessage/Importance": "Normal",
+                                "emailMessage/Cc": "@parameters('InfoSecApproverEmail')"
+                              }
+                            },
+                            "runAfter": {
+                              "Auto_Mark_expired": [
+                                "Succeeded"
+                              ]
+                            }
                           }
                         },
-                        "Condition_Remove_approved": {
-                          "type": "If",
-                          "expression": {
-                            "equals": [
-                              "@outputs('Approval_remove_guest')?['body/outcome']",
-                              "Approve"
-                            ]
-                          },
+                        "else": {
                           "actions": {
-                            "Owner_Remove_from_group": {
-                              "type": "OpenApiConnection",
-                              "inputs": {
-                                "host": {
-                                  "connectionName": "shared_webcontents",
-                                  "operationId": "InvokeHttp",
-                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
-                                },
-                                "parameters": {
-                                  "request/method": "DELETE",
-                                  "request/url": "https://graph.microsoft.com/v1.0/groups/@{items('For_each_guest')?['GroupId']}/members/@{items('For_each_guest')?['GuestUserId']}/$ref"
-                                }
-                              },
-                              "runAfter": {}
-                            },
-                            "Owner_Mark_expired": {
+                            "Mark_pending_owner": {
                               "type": "OpenApiConnection",
                               "inputs": {
                                 "host": {
@@ -352,17 +288,174 @@
                                   "dataset": "@parameters('GovernanceSiteUrl')",
                                   "table": "Guest Access Register",
                                   "id": "@items('For_each_guest')?['ID']",
-                                  "item/Status/Value": "Expired - access removed",
-                                  "item/RemovedOn": "@utcNow()"
+                                  "item/Status/Value": "Removal pending owner decision",
+                                  "item/DecisionDueBy": "@addDays(utcNow(), 14)"
+                                }
+                              },
+                              "runAfter": {}
+                            },
+                            "Approval_remove_guest": {
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "connectionName": "shared_approvals",
+                                  "operationId": "StartAndWaitForAnApproval",
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                                },
+                                "parameters": {
+                                  "approvalType": "Basic",
+                                  "WebhookApprovalCreationInput/title": "@{concat('Guest access has ended - remove? ', items('For_each_guest')?['Title'])}",
+                                  "WebhookApprovalCreationInput/assignedTo": "@{concat(body('Get_guest_site')?['PrimaryOwner']?['Email'], ';', items('For_each_guest')?['Sponsor']?['Email'])}",
+                                  "WebhookApprovalCreationInput/details": "@{concat('Guest access for ', items('For_each_guest')?['Title'], ' on ', body('Get_guest_site')?['SiteTitle'], ' ended on ', formatDateTime(items('For_each_guest')?['AccessEndDate'], 'dd MMM yyyy'), '.', decodeUriComponent('%0A%0A'), 'Approve to remove the guest now. Reject to keep access while a new request is raised: guest access must stay time-bound, so InfoSec is told.')}",
+                                  "WebhookApprovalCreationInput/itemLink": "@{body('Get_guest_site')?['SiteUrl']}",
+                                  "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+                                  "WebhookApprovalCreationInput/enableNotifications": true,
+                                  "WebhookApprovalCreationInput/enableReassignment": true
                                 }
                               },
                               "runAfter": {
-                                "Owner_Remove_from_group": [
+                                "Mark_pending_owner": [
                                   "Succeeded"
                                 ]
                               }
                             },
-                            "Owner_Notify_expired": {
+                            "Condition_Remove_approved": {
+                              "type": "If",
+                              "expression": {
+                                "equals": [
+                                  "@outputs('Approval_remove_guest')?['body/outcome']",
+                                  "Approve"
+                                ]
+                              },
+                              "actions": {
+                                "Owner_Remove_from_group": {
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "host": {
+                                      "connectionName": "shared_webcontents",
+                                      "operationId": "InvokeHttp",
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                                    },
+                                    "parameters": {
+                                      "request/method": "DELETE",
+                                      "request/url": "https://graph.microsoft.com/v1.0/groups/@{items('For_each_guest')?['GroupId']}/members/@{items('For_each_guest')?['GuestUserId']}/$ref"
+                                    }
+                                  },
+                                  "runAfter": {}
+                                },
+                                "Owner_Mark_expired": {
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "host": {
+                                      "connectionName": "shared_sharepointonline",
+                                      "operationId": "PatchItem",
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                    },
+                                    "parameters": {
+                                      "dataset": "@parameters('GovernanceSiteUrl')",
+                                      "table": "Guest Access Register",
+                                      "id": "@items('For_each_guest')?['ID']",
+                                      "item/Status/Value": "Expired - access removed",
+                                      "item/RemovedOn": "@utcNow()"
+                                    }
+                                  },
+                                  "runAfter": {
+                                    "Owner_Remove_from_group": [
+                                      "Succeeded"
+                                    ]
+                                  }
+                                },
+                                "Owner_Notify_expired": {
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "host": {
+                                      "connectionName": "shared_office365",
+                                      "operationId": "SendEmailV2",
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                                    },
+                                    "parameters": {
+                                      "emailMessage/To": "@{concat(items('For_each_guest')?['Sponsor']?['Email'], ';', body('Get_guest_site')?['PrimaryOwner']?['Email'])}",
+                                      "emailMessage/Subject": "@{concat('Guest access removed: ', items('For_each_guest')?['Title'])}",
+                                      "emailMessage/Body": "<p>Guest access for @{items('For_each_guest')?['Title']} reached its end date and has been removed. To continue, raise a new access request with a new end date (90 days or less).</p>",
+                                      "emailMessage/Importance": "Normal",
+                                      "emailMessage/Cc": "@parameters('InfoSecApproverEmail')"
+                                    }
+                                  },
+                                  "runAfter": {
+                                    "Owner_Mark_expired": [
+                                      "Succeeded"
+                                    ]
+                                  }
+                                }
+                              },
+                              "else": {
+                                "actions": {
+                                  "Mark_kept": {
+                                    "type": "OpenApiConnection",
+                                    "inputs": {
+                                      "host": {
+                                        "connectionName": "shared_sharepointonline",
+                                        "operationId": "PatchItem",
+                                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                      },
+                                      "parameters": {
+                                        "dataset": "@parameters('GovernanceSiteUrl')",
+                                        "table": "Guest Access Register",
+                                        "id": "@items('For_each_guest')?['ID']",
+                                        "item/Status/Value": "Kept - owner decision",
+                                        "item/KeptUntil": "@addDays(utcNow(), parameters('KeptExceptionDays'))"
+                                      }
+                                    },
+                                    "runAfter": {}
+                                  },
+                                  "Notify_kept": {
+                                    "type": "OpenApiConnection",
+                                    "inputs": {
+                                      "host": {
+                                        "connectionName": "shared_office365",
+                                        "operationId": "SendEmailV2",
+                                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                                      },
+                                      "parameters": {
+                                        "emailMessage/To": "@{concat(items('For_each_guest')?['Sponsor']?['Email'], ';', parameters('InfoSecApproverEmail'))}",
+                                        "emailMessage/Subject": "@{concat('Expired guest kept by owner decision: ', items('For_each_guest')?['Title'])}",
+                                        "emailMessage/Body": "<p>The site owner kept guest access for @{items('For_each_guest')?['Title']} on @{body('Get_guest_site')?['SiteTitle']} after its end date.</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_remove_guest')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p><p>Raise a new access request with an end date of 90 days or less, or remove the guest.</p>",
+                                        "emailMessage/Importance": "Normal"
+                                      }
+                                    },
+                                    "runAfter": {
+                                      "Mark_kept": [
+                                        "Succeeded"
+                                      ]
+                                    }
+                                  }
+                                }
+                              },
+                              "runAfter": {
+                                "Approval_remove_guest": [
+                                  "Succeeded"
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "runAfter": {}
+                      }
+                    },
+                    "else": {
+                      "actions": {
+                        "Condition_NotYetReminded": {
+                          "type": "If",
+                          "expression": {
+                            "not": {
+                              "equals": [
+                                "@items('For_each_guest')?['ReminderSent']",
+                                true
+                              ]
+                            }
+                          },
+                          "actions": {
+                            "Remind_sponsor": {
                               "type": "OpenApiConnection",
                               "inputs": {
                                 "host": {
@@ -372,147 +465,101 @@
                                 },
                                 "parameters": {
                                   "emailMessage/To": "@{concat(items('For_each_guest')?['Sponsor']?['Email'], ';', body('Get_guest_site')?['PrimaryOwner']?['Email'])}",
-                                  "emailMessage/Subject": "@{concat('Guest access removed: ', items('For_each_guest')?['Title'])}",
-                                  "emailMessage/Body": "<p>Guest access for @{items('For_each_guest')?['Title']} reached its end date and has been removed. To continue, raise a new access request with a new end date (90 days or less).</p>",
-                                  "emailMessage/Importance": "Normal",
-                                  "emailMessage/Cc": "@parameters('InfoSecApproverEmail')"
+                                  "emailMessage/Subject": "@{concat('Guest access expires soon: ', items('For_each_guest')?['Title'])}",
+                                  "emailMessage/Body": "<p>Guest access for @{items('For_each_guest')?['Title']} ends on @{formatDateTime(items('For_each_guest')?['AccessEndDate'], 'dd MMM yyyy')}.</p><p>If it is still needed, raise a new access request before then (90 days or less); it goes through owner and InfoSec approval again.</p>",
+                                  "emailMessage/Importance": "Normal"
+                                }
+                              },
+                              "runAfter": {}
+                            },
+                            "Mark_reminded": {
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "connectionName": "shared_sharepointonline",
+                                  "operationId": "PatchItem",
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                },
+                                "parameters": {
+                                  "dataset": "@parameters('GovernanceSiteUrl')",
+                                  "table": "Guest Access Register",
+                                  "id": "@items('For_each_guest')?['ID']",
+                                  "item/ReminderSent": true
                                 }
                               },
                               "runAfter": {
-                                "Owner_Mark_expired": [
+                                "Remind_sponsor": [
                                   "Succeeded"
                                 ]
                               }
                             }
                           },
-                          "else": {
-                            "actions": {
-                              "Mark_kept": {
-                                "type": "OpenApiConnection",
-                                "inputs": {
-                                  "host": {
-                                    "connectionName": "shared_sharepointonline",
-                                    "operationId": "PatchItem",
-                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                                  },
-                                  "parameters": {
-                                    "dataset": "@parameters('GovernanceSiteUrl')",
-                                    "table": "Guest Access Register",
-                                    "id": "@items('For_each_guest')?['ID']",
-                                    "item/Status/Value": "Kept - owner decision",
-                                    "item/KeptUntil": "@addDays(utcNow(), parameters('KeptExceptionDays'))"
-                                  }
-                                },
-                                "runAfter": {}
-                              },
-                              "Notify_kept": {
-                                "type": "OpenApiConnection",
-                                "inputs": {
-                                  "host": {
-                                    "connectionName": "shared_office365",
-                                    "operationId": "SendEmailV2",
-                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
-                                  },
-                                  "parameters": {
-                                    "emailMessage/To": "@{concat(items('For_each_guest')?['Sponsor']?['Email'], ';', parameters('InfoSecApproverEmail'))}",
-                                    "emailMessage/Subject": "@{concat('Expired guest kept by owner decision: ', items('For_each_guest')?['Title'])}",
-                                    "emailMessage/Body": "<p>The site owner kept guest access for @{items('For_each_guest')?['Title']} on @{body('Get_guest_site')?['SiteTitle']} after its end date.</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_remove_guest')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p><p>Raise a new access request with an end date of 90 days or less, or remove the guest.</p>",
-                                    "emailMessage/Importance": "Normal"
-                                  }
-                                },
-                                "runAfter": {
-                                  "Mark_kept": [
-                                    "Succeeded"
-                                  ]
-                                }
-                              }
-                            }
-                          },
-                          "runAfter": {
-                            "Approval_remove_guest": [
-                              "Succeeded"
-                            ]
-                          }
+                          "runAfter": {}
                         }
                       }
                     },
-                    "runAfter": {}
-                  }
-                },
-                "else": {
-                  "actions": {
-                    "Condition_NotYetReminded": {
-                      "type": "If",
-                      "expression": {
-                        "not": {
-                          "equals": [
-                            "@items('For_each_guest')?['ReminderSent']",
-                            true
-                          ]
-                        }
-                      },
-                      "actions": {
-                        "Remind_sponsor": {
-                          "type": "OpenApiConnection",
-                          "inputs": {
-                            "host": {
-                              "connectionName": "shared_office365",
-                              "operationId": "SendEmailV2",
-                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
-                            },
-                            "parameters": {
-                              "emailMessage/To": "@{concat(items('For_each_guest')?['Sponsor']?['Email'], ';', body('Get_guest_site')?['PrimaryOwner']?['Email'])}",
-                              "emailMessage/Subject": "@{concat('Guest access expires soon: ', items('For_each_guest')?['Title'])}",
-                              "emailMessage/Body": "<p>Guest access for @{items('For_each_guest')?['Title']} ends on @{formatDateTime(items('For_each_guest')?['AccessEndDate'], 'dd MMM yyyy')}.</p><p>If it is still needed, raise a new access request before then (90 days or less); it goes through owner and InfoSec approval again.</p>",
-                              "emailMessage/Importance": "Normal"
-                            }
-                          },
-                          "runAfter": {}
-                        },
-                        "Mark_reminded": {
-                          "type": "OpenApiConnection",
-                          "inputs": {
-                            "host": {
-                              "connectionName": "shared_sharepointonline",
-                              "operationId": "PatchItem",
-                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                            },
-                            "parameters": {
-                              "dataset": "@parameters('GovernanceSiteUrl')",
-                              "table": "Guest Access Register",
-                              "id": "@items('For_each_guest')?['ID']",
-                              "item/ReminderSent": true
-                            }
-                          },
-                          "runAfter": {
-                            "Remind_sponsor": [
-                              "Succeeded"
-                            ]
-                          }
-                        }
-                      },
-                      "runAfter": {}
+                    "runAfter": {
+                      "Get_guest_site": [
+                        "Succeeded"
+                      ]
                     }
                   }
-                },
-                "runAfter": {
-                  "Get_guest_site": [
-                    "Succeeded"
-                  ]
                 }
               }
             }
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 10
+            }
+          },
+          "runAfter": {
+            "Get_active_guests": [
+              "Succeeded"
+            ]
           }
         }
       },
-      "runtimeConfiguration": {
-        "concurrency": {
-          "repetitions": 10
+      "runAfter": {}
+    },
+    "Catch_run_failed": {
+      "type": "Scope",
+      "description": "Run-level failure alert: any error in Scope_Main that no step handled.",
+      "actions": {
+        "Select_failed_steps": {
+          "type": "Select",
+          "inputs": {
+            "from": "@result('Scope_Main')",
+            "select": "@concat('<li><b>', item()?['name'], '</b>: ', item()?['status'], ' ', coalesce(item()?['error']?['code'], item()?['outputs']?['statusCode'], ''), ' ', coalesce(item()?['error']?['message'], ''), '</li>')"
+          },
+          "runAfter": {}
+        },
+        "Alert_run_failed": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@{concat(parameters('ITOpsOwnerEmail'), ';', parameters('SharePointServiceOwnerEmail'))}",
+              "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
+              "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error it did not handle, so some of its work may not have been done. Nothing has been retried.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a> (started @{workflow()?['run']?['startTime']})</p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Open the run, find the failed step and its raw output, fix the cause, then resubmit the run or deal with the items by hand. Check for partial changes first (see Stopping and recovery in the deployment guide).</p>",
+              "emailMessage/Importance": "High"
+            }
+          },
+          "runAfter": {
+            "Select_failed_steps": [
+              "Succeeded"
+            ]
+          }
         }
       },
       "runAfter": {
-        "Get_active_guests": [
-          "Succeeded"
+        "Scope_Main": [
+          "Failed",
+          "TimedOut"
         ]
       }
     }

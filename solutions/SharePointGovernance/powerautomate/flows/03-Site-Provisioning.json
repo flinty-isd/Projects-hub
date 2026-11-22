@@ -109,279 +109,196 @@
       },
       "runAfter": {}
     },
-    "Condition_NameValid": {
-      "type": "If",
-      "expression": {
-        "and": [
-          {
-            "equals": [
-              "@toLower(coalesce(triggerBody()?['SiteAlias'], ''))",
-              "@coalesce(triggerBody()?['SiteAlias'], '')"
-            ]
-          },
-          {
-            "greaterOrEquals": [
-              "@length(split(coalesce(triggerBody()?['SiteAlias'], ''), '-'))",
-              4
-            ]
-          },
-          {
-            "equals": [
-              "@first(split(coalesce(triggerBody()?['SiteAlias'], ''), '-'))",
-              "@parameters('SiteOrgCode')"
-            ]
-          },
-          {
-            "contains": [
-              "@split(parameters('SiteLocationCodes'), ';')",
-              "@split(coalesce(triggerBody()?['SiteAlias'], ''), '-')[1]"
-            ]
-          }
-        ]
-      },
+    "Scope_Main": {
+      "type": "Scope",
       "actions": {
-        "Get_primary_owner": {
-          "type": "OpenApiConnection",
-          "inputs": {
-            "host": {
-              "connectionName": "shared_webcontents",
-              "operationId": "InvokeHttp",
-              "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
-            },
-            "parameters": {
-              "request/method": "GET",
-              "request/url": "https://graph.microsoft.com/v1.0/users/@{triggerBody()?['PrimaryOwner']?['Email']}?$select=accountEnabled,userType,assignedLicenses"
-            }
-          },
-          "runAfter": {}
-        },
-        "Get_secondary_owner": {
-          "type": "OpenApiConnection",
-          "inputs": {
-            "host": {
-              "connectionName": "shared_webcontents",
-              "operationId": "InvokeHttp",
-              "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
-            },
-            "parameters": {
-              "request/method": "GET",
-              "request/url": "https://graph.microsoft.com/v1.0/users/@{triggerBody()?['SecondaryOwner']?['Email']}?$select=accountEnabled,userType,assignedLicenses"
-            }
-          },
-          "runAfter": {
-            "Get_primary_owner": [
-              "Succeeded",
-              "Failed"
-            ]
-          }
-        },
-        "Condition_RequestValid": {
+        "Condition_NameValid": {
           "type": "If",
           "expression": {
             "and": [
               {
-                "not": {
-                  "equals": [
-                    "@triggerBody()?['PrimaryOwner']?['Email']",
-                    null
-                  ]
-                }
-              },
-              {
-                "not": {
-                  "equals": [
-                    "@triggerBody()?['SecondaryOwner']?['Email']",
-                    null
-                  ]
-                }
-              },
-              {
-                "not": {
-                  "equals": [
-                    "@toLower(triggerBody()?['PrimaryOwner']?['Email'])",
-                    "@toLower(triggerBody()?['SecondaryOwner']?['Email'])"
-                  ]
-                }
-              },
-              {
                 "equals": [
-                  "@body('Get_primary_owner')?['accountEnabled']",
-                  true
+                  "@toLower(coalesce(triggerBody()?['SiteAlias'], ''))",
+                  "@coalesce(triggerBody()?['SiteAlias'], '')"
+                ]
+              },
+              {
+                "greaterOrEquals": [
+                  "@length(split(coalesce(triggerBody()?['SiteAlias'], ''), '-'))",
+                  4
                 ]
               },
               {
                 "equals": [
-                  "@body('Get_secondary_owner')?['accountEnabled']",
-                  true
+                  "@first(split(coalesce(triggerBody()?['SiteAlias'], ''), '-'))",
+                  "@parameters('SiteOrgCode')"
                 ]
               },
               {
-                "equals": [
-                  "@body('Get_primary_owner')?['userType']",
-                  "Member"
+                "contains": [
+                  "@split(parameters('SiteLocationCodes'), ';')",
+                  "@split(coalesce(triggerBody()?['SiteAlias'], ''), '-')[1]"
                 ]
-              },
-              {
-                "equals": [
-                  "@body('Get_secondary_owner')?['userType']",
-                  "Member"
-                ]
-              },
-              {
-                "not": {
-                  "equals": [
-                    "@triggerBody()?['MembersGroupId']",
-                    null
-                  ]
-                }
-              },
-              {
-                "not": {
-                  "equals": [
-                    "@triggerBody()?['OwnersGroupId']",
-                    null
-                  ]
-                }
               }
             ]
           },
           "actions": {
-            "Approval_service_owner": {
+            "Get_primary_owner": {
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
-                  "connectionName": "shared_approvals",
-                  "operationId": "StartAndWaitForAnApproval",
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                  "connectionName": "shared_webcontents",
+                  "operationId": "InvokeHttp",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
                 },
                 "parameters": {
-                  "approvalType": "Basic",
-                  "WebhookApprovalCreationInput/title": "@{concat('New SharePoint site: ', triggerBody()?['Title'])}",
-                  "WebhookApprovalCreationInput/assignedTo": "@parameters('SharePointServiceOwnerEmail')",
-                  "WebhookApprovalCreationInput/details": "@{concat('Site: ', triggerBody()?['Title'], ' (', concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias']), ')', decodeUriComponent('%0A'), 'Department: ', triggerBody()?['Department'], decodeUriComponent('%0A'), 'Primary owner: ', triggerBody()?['PrimaryOwner']?['Email'], decodeUriComponent('%0A'), 'Secondary owner: ', triggerBody()?['SecondaryOwner']?['Email'], decodeUriComponent('%0A'), 'Sensitivity: ', triggerBody()?['Sensitivity']?['Value'], decodeUriComponent('%0A'), 'External sharing: ', if(equals(triggerBody()?['ExternalSharingRequired'], true), 'Requested', 'Off'))}",
-                  "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
-                  "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
-                  "WebhookApprovalCreationInput/enableNotifications": true,
-                  "WebhookApprovalCreationInput/enableReassignment": true
+                  "request/method": "GET",
+                  "request/url": "https://graph.microsoft.com/v1.0/users/@{triggerBody()?['PrimaryOwner']?['Email']}?$select=accountEnabled,userType,assignedLicenses"
                 }
               },
               "runAfter": {}
             },
-            "Condition_service_owner_approved": {
+            "Get_secondary_owner": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_webcontents",
+                  "operationId": "InvokeHttp",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                },
+                "parameters": {
+                  "request/method": "GET",
+                  "request/url": "https://graph.microsoft.com/v1.0/users/@{triggerBody()?['SecondaryOwner']?['Email']}?$select=accountEnabled,userType,assignedLicenses"
+                }
+              },
+              "runAfter": {
+                "Get_primary_owner": [
+                  "Succeeded",
+                  "Failed"
+                ]
+              }
+            },
+            "Condition_RequestValid": {
               "type": "If",
               "expression": {
-                "equals": [
-                  "@outputs('Approval_service_owner')?['body/outcome']",
-                  "Approve"
+                "and": [
+                  {
+                    "not": {
+                      "equals": [
+                        "@triggerBody()?['PrimaryOwner']?['Email']",
+                        null
+                      ]
+                    }
+                  },
+                  {
+                    "not": {
+                      "equals": [
+                        "@triggerBody()?['SecondaryOwner']?['Email']",
+                        null
+                      ]
+                    }
+                  },
+                  {
+                    "not": {
+                      "equals": [
+                        "@toLower(triggerBody()?['PrimaryOwner']?['Email'])",
+                        "@toLower(triggerBody()?['SecondaryOwner']?['Email'])"
+                      ]
+                    }
+                  },
+                  {
+                    "equals": [
+                      "@body('Get_primary_owner')?['accountEnabled']",
+                      true
+                    ]
+                  },
+                  {
+                    "equals": [
+                      "@body('Get_secondary_owner')?['accountEnabled']",
+                      true
+                    ]
+                  },
+                  {
+                    "equals": [
+                      "@body('Get_primary_owner')?['userType']",
+                      "Member"
+                    ]
+                  },
+                  {
+                    "equals": [
+                      "@body('Get_secondary_owner')?['userType']",
+                      "Member"
+                    ]
+                  },
+                  {
+                    "not": {
+                      "equals": [
+                        "@triggerBody()?['MembersGroupId']",
+                        null
+                      ]
+                    }
+                  },
+                  {
+                    "not": {
+                      "equals": [
+                        "@triggerBody()?['OwnersGroupId']",
+                        null
+                      ]
+                    }
+                  }
                 ]
               },
               "actions": {
-                "Condition_NeedsInfoSec": {
-                  "type": "If",
-                  "expression": {
-                    "or": [
-                      {
-                        "equals": [
-                          "@triggerBody()?['ExternalSharingRequired']",
-                          true
-                        ]
-                      },
-                      {
-                        "equals": [
-                          "@triggerBody()?['Sensitivity']?['Value']",
-                          "Highly Confidential"
-                        ]
-                      }
-                    ]
-                  },
-                  "actions": {
-                    "Approval_InfoSec": {
-                      "type": "OpenApiConnection",
-                      "inputs": {
-                        "host": {
-                          "connectionName": "shared_approvals",
-                          "operationId": "StartAndWaitForAnApproval",
-                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
-                        },
-                        "parameters": {
-                          "approvalType": "Basic",
-                          "WebhookApprovalCreationInput/title": "@{concat('Security review - new site: ', triggerBody()?['Title'])}",
-                          "WebhookApprovalCreationInput/assignedTo": "@parameters('InfoSecApproverEmail')",
-                          "WebhookApprovalCreationInput/details": "@{concat('Site: ', triggerBody()?['Title'], ' (', concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias']), ')', decodeUriComponent('%0A'), 'Department: ', triggerBody()?['Department'], decodeUriComponent('%0A'), 'Primary owner: ', triggerBody()?['PrimaryOwner']?['Email'], decodeUriComponent('%0A'), 'Secondary owner: ', triggerBody()?['SecondaryOwner']?['Email'], decodeUriComponent('%0A'), 'Sensitivity: ', triggerBody()?['Sensitivity']?['Value'], decodeUriComponent('%0A'), 'External sharing: ', if(equals(triggerBody()?['ExternalSharingRequired'], true), 'Requested', 'Off'))}",
-                          "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
-                          "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
-                          "WebhookApprovalCreationInput/enableNotifications": true,
-                          "WebhookApprovalCreationInput/enableReassignment": true
-                        }
-                      },
-                      "runAfter": {}
+                "Approval_service_owner": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_approvals",
+                      "operationId": "StartAndWaitForAnApproval",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
                     },
-                    "Set_SecurityOutcome": {
-                      "type": "SetVariable",
-                      "inputs": {
-                        "name": "SecurityOutcome",
-                        "value": "@outputs('Approval_InfoSec')?['body/outcome']"
-                      },
-                      "runAfter": {
-                        "Approval_InfoSec": [
-                          "Succeeded"
-                        ]
-                      }
+                    "parameters": {
+                      "approvalType": "Basic",
+                      "WebhookApprovalCreationInput/title": "@{concat('New SharePoint site: ', triggerBody()?['Title'])}",
+                      "WebhookApprovalCreationInput/assignedTo": "@parameters('SharePointServiceOwnerEmail')",
+                      "WebhookApprovalCreationInput/details": "@{concat('Site: ', triggerBody()?['Title'], ' (', concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias']), ')', decodeUriComponent('%0A'), 'Department: ', triggerBody()?['Department'], decodeUriComponent('%0A'), 'Primary owner: ', triggerBody()?['PrimaryOwner']?['Email'], decodeUriComponent('%0A'), 'Secondary owner: ', triggerBody()?['SecondaryOwner']?['Email'], decodeUriComponent('%0A'), 'Sensitivity: ', triggerBody()?['Sensitivity']?['Value'], decodeUriComponent('%0A'), 'External sharing: ', if(equals(triggerBody()?['ExternalSharingRequired'], true), 'Requested', 'Off'))}",
+                      "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
+                      "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+                      "WebhookApprovalCreationInput/enableNotifications": true,
+                      "WebhookApprovalCreationInput/enableReassignment": true
                     }
                   },
                   "runAfter": {}
                 },
-                "Condition_SecurityCleared": {
+                "Condition_service_owner_approved": {
                   "type": "If",
                   "expression": {
-                    "not": {
-                      "equals": [
-                        "@variables('SecurityOutcome')",
-                        "Reject"
-                      ]
-                    }
+                    "equals": [
+                      "@outputs('Approval_service_owner')?['body/outcome']",
+                      "Approve"
+                    ]
                   },
                   "actions": {
-                    "Create_site": {
-                      "type": "OpenApiConnection",
-                      "inputs": {
-                        "host": {
-                          "connectionName": "shared_sharepointonline",
-                          "operationId": "HttpRequest",
-                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-                        },
-                        "parameters": {
-                          "dataset": "@parameters('TenantRootUrl')",
-                          "parameters/method": "POST",
-                          "parameters/uri": "/_api/SPSiteManager/create",
-                          "parameters/headers": {
-                            "Accept": "application/json;odata=nometadata",
-                            "Content-Type": "application/json;odata=nometadata"
-                          },
-                          "parameters/body": {
-                            "request": {
-                              "Title": "@{triggerBody()?['Title']}",
-                              "Url": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}",
-                              "Lcid": 1033,
-                              "WebTemplate": "STS#3",
-                              "Owner": "@{triggerBody()?['PrimaryOwner']?['Email']}",
-                              "Description": "@{triggerBody()?['Purpose']}"
-                            }
-                          }
-                        }
-                      },
-                      "runAfter": {}
-                    },
-                    "Condition_SiteReady": {
+                    "Condition_NeedsInfoSec": {
                       "type": "If",
                       "expression": {
-                        "equals": [
-                          "@body('Create_site')?['SiteStatus']",
-                          2
+                        "or": [
+                          {
+                            "equals": [
+                              "@triggerBody()?['ExternalSharingRequired']",
+                              true
+                            ]
+                          },
+                          {
+                            "equals": [
+                              "@triggerBody()?['Sensitivity']?['Value']",
+                              "Highly Confidential"
+                            ]
+                          }
                         ]
                       },
                       "actions": {
-                        "Approval_grant_ITOps": {
+                        "Approval_InfoSec": {
                           "type": "OpenApiConnection",
                           "inputs": {
                             "host": {
@@ -391,10 +308,10 @@
                             },
                             "parameters": {
                               "approvalType": "Basic",
-                              "WebhookApprovalCreationInput/title": "@{concat('Apply Sites.Selected grant: ', concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias']))}",
-                              "WebhookApprovalCreationInput/assignedTo": "@parameters('ITOpsOwnerEmail')",
-                              "WebhookApprovalCreationInput/details": "@{concat('A new governed site has been created: ', concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias']), decodeUriComponent('%0A%0A'), 'Grant the Azure Automation managed identity Sites.Selected (FullControl) on this site URL and record it in the grant register (PID v4.2, G-04). Then approve, and the governance baseline runbook will run. Reject if the grant cannot be applied; the request is marked Provisioning failed.')}",
-                              "WebhookApprovalCreationInput/itemLink": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}",
+                              "WebhookApprovalCreationInput/title": "@{concat('Security review - new site: ', triggerBody()?['Title'])}",
+                              "WebhookApprovalCreationInput/assignedTo": "@parameters('InfoSecApproverEmail')",
+                              "WebhookApprovalCreationInput/details": "@{concat('Site: ', triggerBody()?['Title'], ' (', concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias']), ')', decodeUriComponent('%0A'), 'Department: ', triggerBody()?['Department'], decodeUriComponent('%0A'), 'Primary owner: ', triggerBody()?['PrimaryOwner']?['Email'], decodeUriComponent('%0A'), 'Secondary owner: ', triggerBody()?['SecondaryOwner']?['Email'], decodeUriComponent('%0A'), 'Sensitivity: ', triggerBody()?['Sensitivity']?['Value'], decodeUriComponent('%0A'), 'External sharing: ', if(equals(triggerBody()?['ExternalSharingRequired'], true), 'Requested', 'Off'))}",
+                              "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
                               "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
                               "WebhookApprovalCreationInput/enableNotifications": true,
                               "WebhookApprovalCreationInput/enableReassignment": true
@@ -402,161 +319,300 @@
                           },
                           "runAfter": {}
                         },
-                        "Condition_grant_applied": {
+                        "Set_SecurityOutcome": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "SecurityOutcome",
+                            "value": "@outputs('Approval_InfoSec')?['body/outcome']"
+                          },
+                          "runAfter": {
+                            "Approval_InfoSec": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      },
+                      "runAfter": {}
+                    },
+                    "Condition_SecurityCleared": {
+                      "type": "If",
+                      "expression": {
+                        "not": {
+                          "equals": [
+                            "@variables('SecurityOutcome')",
+                            "Reject"
+                          ]
+                        }
+                      },
+                      "actions": {
+                        "Create_site": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_sharepointonline",
+                              "operationId": "HttpRequest",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                            },
+                            "parameters": {
+                              "dataset": "@parameters('TenantRootUrl')",
+                              "parameters/method": "POST",
+                              "parameters/uri": "/_api/SPSiteManager/create",
+                              "parameters/headers": {
+                                "Accept": "application/json;odata=nometadata",
+                                "Content-Type": "application/json;odata=nometadata"
+                              },
+                              "parameters/body": {
+                                "request": {
+                                  "Title": "@{triggerBody()?['Title']}",
+                                  "Url": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}",
+                                  "Lcid": 1033,
+                                  "WebTemplate": "STS#3",
+                                  "Owner": "@{triggerBody()?['PrimaryOwner']?['Email']}",
+                                  "Description": "@{triggerBody()?['Purpose']}"
+                                }
+                              }
+                            }
+                          },
+                          "runAfter": {}
+                        },
+                        "Condition_SiteReady": {
                           "type": "If",
                           "expression": {
                             "equals": [
-                              "@outputs('Approval_grant_ITOps')?['body/outcome']",
-                              "Approve"
+                              "@body('Create_site')?['SiteStatus']",
+                              2
                             ]
                           },
                           "actions": {
-                            "Apply_governance_baseline": {
+                            "Approval_grant_ITOps": {
                               "type": "OpenApiConnection",
                               "inputs": {
                                 "host": {
-                                  "connectionName": "shared_azureautomation",
-                                  "operationId": "CreateJob",
-                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureautomation"
+                                  "connectionName": "shared_approvals",
+                                  "operationId": "StartAndWaitForAnApproval",
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
                                 },
                                 "parameters": {
-                                  "x-ms-api-version": "2015-10-31",
-                                  "subscription": "@parameters('AutomationSubscriptionId')",
-                                  "resourceGroup": "@parameters('AutomationResourceGroup')",
-                                  "automationAccount": "@parameters('AutomationAccountName')",
-                                  "body/properties/runbook/name": "Set-SiteGovernanceBaseline",
-                                  "wait": true,
-                                  "body/properties/parameters/SiteUrl": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}",
-                                  "body/properties/parameters/SecondaryOwner": "@{triggerBody()?['SecondaryOwner']?['Email']}",
-                                  "body/properties/parameters/OwnersGroupId": "@{triggerBody()?['OwnersGroupId']}",
-                                  "body/properties/parameters/MembersGroupId": "@{triggerBody()?['MembersGroupId']}",
-                                  "body/properties/parameters/VisitorsGroupId": "@{triggerBody()?['VisitorsGroupId']}",
-                                  "body/properties/parameters/ExternalSharing": "@{if(equals(triggerBody()?['ExternalSharingRequired'], true), 'ExistingExternalUserSharingOnly', 'Disabled')}",
-                                  "body/properties/parameters/SensitivityLabel": "@{triggerBody()?['Sensitivity']?['Value']}",
-                                  "body/properties/parameters/GuestsGroupId": "@{triggerBody()?['GuestsGroupId']}"
+                                  "approvalType": "Basic",
+                                  "WebhookApprovalCreationInput/title": "@{concat('Apply Sites.Selected grant: ', concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias']))}",
+                                  "WebhookApprovalCreationInput/assignedTo": "@parameters('ITOpsOwnerEmail')",
+                                  "WebhookApprovalCreationInput/details": "@{concat('A new governed site has been created: ', concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias']), decodeUriComponent('%0A%0A'), 'Grant the Azure Automation managed identity Sites.Selected (FullControl) on this site URL and record it in the grant register (PID v4.2, G-04). Then approve, and the governance baseline runbook will run. Reject if the grant cannot be applied; the request is marked Provisioning failed.')}",
+                                  "WebhookApprovalCreationInput/itemLink": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}",
+                                  "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
+                                  "WebhookApprovalCreationInput/enableNotifications": true,
+                                  "WebhookApprovalCreationInput/enableReassignment": true
                                 }
                               },
                               "runAfter": {}
                             },
-                            "Get_job_output": {
-                              "type": "OpenApiConnection",
-                              "inputs": {
-                                "host": {
-                                  "connectionName": "shared_azureautomation",
-                                  "operationId": "GetJobOutput",
-                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureautomation"
-                                },
-                                "parameters": {
-                                  "x-ms-api-version": "2015-10-31",
-                                  "subscription": "@parameters('AutomationSubscriptionId')",
-                                  "resourceGroup": "@parameters('AutomationResourceGroup')",
-                                  "automationAccount": "@parameters('AutomationAccountName')",
-                                  "jobId": "@body('Apply_governance_baseline')?['properties']?['jobId']"
-                                }
-                              },
-                              "runAfter": {
-                                "Apply_governance_baseline": [
-                                  "Succeeded",
-                                  "Failed",
-                                  "TimedOut"
-                                ]
-                              }
-                            },
-                            "Compose_runbook_result": {
-                              "type": "Compose",
-                              "inputs": "@json(trim(last(split(string(body('Get_job_output')), '###RESULT###'))))",
-                              "runAfter": {
-                                "Get_job_output": [
-                                  "Succeeded"
-                                ]
-                              }
-                            },
-                            "Condition_Baseline_verified": {
+                            "Condition_grant_applied": {
                               "type": "If",
                               "expression": {
                                 "equals": [
-                                  "@and(equals(actions('Compose_runbook_result')?['status'], 'Succeeded'), equals(body('Apply_governance_baseline')?['properties']?['status'], 'Completed'), equals(actions('Compose_runbook_result')?['outputs']?['Status'], 'Success'))",
-                                  true
+                                  "@outputs('Approval_grant_ITOps')?['body/outcome']",
+                                  "Approve"
                                 ]
                               },
                               "actions": {
-                                "Add_to_site_register": {
+                                "Apply_governance_baseline": {
                                   "type": "OpenApiConnection",
                                   "inputs": {
                                     "host": {
-                                      "connectionName": "shared_sharepointonline",
-                                      "operationId": "PostItem",
-                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                      "connectionName": "shared_azureautomation",
+                                      "operationId": "CreateJob",
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureautomation"
                                     },
                                     "parameters": {
-                                      "dataset": "@parameters('GovernanceSiteUrl')",
-                                      "table": "Site Register",
-                                      "item/Title": "@triggerBody()?['Title']",
-                                      "item/SiteTitle": "@triggerBody()?['Title']",
-                                      "item/SiteUrl": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}",
-                                      "item/Department": "@triggerBody()?['Department']",
-                                      "item/PrimaryOwner/Claims": "@triggerBody()?['PrimaryOwner']?['Claims']",
-                                      "item/SecondaryOwner/Claims": "@triggerBody()?['SecondaryOwner']?['Claims']",
-                                      "item/OwnersGroupId": "@triggerBody()?['OwnersGroupId']",
-                                      "item/MembersGroupId": "@triggerBody()?['MembersGroupId']",
-                                      "item/VisitorsGroupId": "@triggerBody()?['VisitorsGroupId']",
-                                      "item/GuestsGroupId": "@triggerBody()?['GuestsGroupId']",
-                                      "item/SharingCapability": "@if(equals(triggerBody()?['ExternalSharingRequired'], true), 'ExistingExternalUserSharingOnly', 'Disabled')",
-                                      "item/Sensitivity/Value": "@triggerBody()?['Sensitivity']?['Value']",
-                                      "item/Status/Value": "Active",
-                                      "item/NextAccessReview": "@addDays(utcNow(), 90)"
+                                      "x-ms-api-version": "2015-10-31",
+                                      "subscription": "@parameters('AutomationSubscriptionId')",
+                                      "resourceGroup": "@parameters('AutomationResourceGroup')",
+                                      "automationAccount": "@parameters('AutomationAccountName')",
+                                      "body/properties/runbook/name": "Set-SiteGovernanceBaseline",
+                                      "wait": true,
+                                      "body/properties/parameters/SiteUrl": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}",
+                                      "body/properties/parameters/SecondaryOwner": "@{triggerBody()?['SecondaryOwner']?['Email']}",
+                                      "body/properties/parameters/OwnersGroupId": "@{triggerBody()?['OwnersGroupId']}",
+                                      "body/properties/parameters/MembersGroupId": "@{triggerBody()?['MembersGroupId']}",
+                                      "body/properties/parameters/VisitorsGroupId": "@{triggerBody()?['VisitorsGroupId']}",
+                                      "body/properties/parameters/ExternalSharing": "@{if(equals(triggerBody()?['ExternalSharingRequired'], true), 'ExistingExternalUserSharingOnly', 'Disabled')}",
+                                      "body/properties/parameters/SensitivityLabel": "@{triggerBody()?['Sensitivity']?['Value']}",
+                                      "body/properties/parameters/GuestsGroupId": "@{triggerBody()?['GuestsGroupId']}"
                                     }
                                   },
                                   "runAfter": {}
                                 },
-                                "Mark_provisioned": {
+                                "Get_job_output": {
                                   "type": "OpenApiConnection",
                                   "inputs": {
                                     "host": {
-                                      "connectionName": "shared_sharepointonline",
-                                      "operationId": "PatchItem",
-                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                      "connectionName": "shared_azureautomation",
+                                      "operationId": "GetJobOutput",
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_azureautomation"
                                     },
                                     "parameters": {
-                                      "dataset": "@parameters('GovernanceSiteUrl')",
-                                      "table": "Site Requests",
-                                      "id": "@triggerBody()?['ID']",
-                                      "item/Status/Value": "Provisioned",
-                                      "item/SiteUrl": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}"
+                                      "x-ms-api-version": "2015-10-31",
+                                      "subscription": "@parameters('AutomationSubscriptionId')",
+                                      "resourceGroup": "@parameters('AutomationResourceGroup')",
+                                      "automationAccount": "@parameters('AutomationAccountName')",
+                                      "jobId": "@body('Apply_governance_baseline')?['properties']?['jobId']"
                                     }
                                   },
                                   "runAfter": {
-                                    "Add_to_site_register": [
+                                    "Apply_governance_baseline": [
+                                      "Succeeded",
+                                      "Failed",
+                                      "TimedOut"
+                                    ]
+                                  }
+                                },
+                                "Compose_runbook_result": {
+                                  "type": "Compose",
+                                  "inputs": "@json(trim(last(split(string(body('Get_job_output')), '###RESULT###'))))",
+                                  "runAfter": {
+                                    "Get_job_output": [
                                       "Succeeded"
                                     ]
                                   }
                                 },
-                                "Notify_owners": {
-                                  "type": "OpenApiConnection",
-                                  "inputs": {
-                                    "host": {
-                                      "connectionName": "shared_office365",
-                                      "operationId": "SendEmailV2",
-                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                                "Condition_Baseline_verified": {
+                                  "type": "If",
+                                  "expression": {
+                                    "equals": [
+                                      "@and(equals(actions('Compose_runbook_result')?['status'], 'Succeeded'), equals(body('Apply_governance_baseline')?['properties']?['status'], 'Completed'), equals(actions('Compose_runbook_result')?['outputs']?['Status'], 'Success'))",
+                                      true
+                                    ]
+                                  },
+                                  "actions": {
+                                    "Add_to_site_register": {
+                                      "type": "OpenApiConnection",
+                                      "inputs": {
+                                        "host": {
+                                          "connectionName": "shared_sharepointonline",
+                                          "operationId": "PostItem",
+                                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                        },
+                                        "parameters": {
+                                          "dataset": "@parameters('GovernanceSiteUrl')",
+                                          "table": "Site Register",
+                                          "item/Title": "@triggerBody()?['Title']",
+                                          "item/SiteTitle": "@triggerBody()?['Title']",
+                                          "item/SiteUrl": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}",
+                                          "item/Department": "@triggerBody()?['Department']",
+                                          "item/PrimaryOwner/Claims": "@triggerBody()?['PrimaryOwner']?['Claims']",
+                                          "item/SecondaryOwner/Claims": "@triggerBody()?['SecondaryOwner']?['Claims']",
+                                          "item/OwnersGroupId": "@triggerBody()?['OwnersGroupId']",
+                                          "item/MembersGroupId": "@triggerBody()?['MembersGroupId']",
+                                          "item/VisitorsGroupId": "@triggerBody()?['VisitorsGroupId']",
+                                          "item/GuestsGroupId": "@triggerBody()?['GuestsGroupId']",
+                                          "item/SharingCapability": "@if(equals(triggerBody()?['ExternalSharingRequired'], true), 'ExistingExternalUserSharingOnly', 'Disabled')",
+                                          "item/Sensitivity/Value": "@triggerBody()?['Sensitivity']?['Value']",
+                                          "item/Status/Value": "Active",
+                                          "item/NextAccessReview": "@addDays(utcNow(), 90)"
+                                        }
+                                      },
+                                      "runAfter": {}
                                     },
-                                    "parameters": {
-                                      "emailMessage/To": "@{concat(triggerBody()?['PrimaryOwner']?['Email'], ';', triggerBody()?['SecondaryOwner']?['Email'])}",
-                                      "emailMessage/Subject": "@{concat('Your SharePoint site is ready: ', triggerBody()?['Title'])}",
-                                      "emailMessage/Body": "<p>@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])} has been created with the agreed governance baseline: permissions through security groups, external sharing @{if(equals(triggerBody()?['ExternalSharingRequired'], true), 'limited to existing guests', 'off')}, and sensitivity <b>@{triggerBody()?['Sensitivity']?['Value']}</b>.</p><p>As site owners you are accountable for its content and access, and will be asked to recertify access every 90 days.</p>",
-                                      "emailMessage/Importance": "Normal",
-                                      "emailMessage/Cc": "@parameters('SharePointServiceOwnerEmail')"
+                                    "Mark_provisioned": {
+                                      "type": "OpenApiConnection",
+                                      "inputs": {
+                                        "host": {
+                                          "connectionName": "shared_sharepointonline",
+                                          "operationId": "PatchItem",
+                                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                        },
+                                        "parameters": {
+                                          "dataset": "@parameters('GovernanceSiteUrl')",
+                                          "table": "Site Requests",
+                                          "id": "@triggerBody()?['ID']",
+                                          "item/Status/Value": "Provisioned",
+                                          "item/SiteUrl": "@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])}"
+                                        }
+                                      },
+                                      "runAfter": {
+                                        "Add_to_site_register": [
+                                          "Succeeded"
+                                        ]
+                                      }
+                                    },
+                                    "Notify_owners": {
+                                      "type": "OpenApiConnection",
+                                      "inputs": {
+                                        "host": {
+                                          "connectionName": "shared_office365",
+                                          "operationId": "SendEmailV2",
+                                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                                        },
+                                        "parameters": {
+                                          "emailMessage/To": "@{concat(triggerBody()?['PrimaryOwner']?['Email'], ';', triggerBody()?['SecondaryOwner']?['Email'])}",
+                                          "emailMessage/Subject": "@{concat('Your SharePoint site is ready: ', triggerBody()?['Title'])}",
+                                          "emailMessage/Body": "<p>@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])} has been created with the agreed governance baseline: permissions through security groups, external sharing @{if(equals(triggerBody()?['ExternalSharingRequired'], true), 'limited to existing guests', 'off')}, and sensitivity <b>@{triggerBody()?['Sensitivity']?['Value']}</b>.</p><p>As site owners you are accountable for its content and access, and will be asked to recertify access every 90 days.</p>",
+                                          "emailMessage/Importance": "Normal",
+                                          "emailMessage/Cc": "@parameters('SharePointServiceOwnerEmail')"
+                                        }
+                                      },
+                                      "runAfter": {
+                                        "Mark_provisioned": [
+                                          "Succeeded"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "else": {
+                                    "actions": {
+                                      "Mark_failed_baseline": {
+                                        "type": "OpenApiConnection",
+                                        "inputs": {
+                                          "host": {
+                                            "connectionName": "shared_sharepointonline",
+                                            "operationId": "PatchItem",
+                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                          },
+                                          "parameters": {
+                                            "dataset": "@parameters('GovernanceSiteUrl')",
+                                            "table": "Site Requests",
+                                            "id": "@triggerBody()?['ID']",
+                                            "item/Status/Value": "Provisioning failed",
+                                            "item/DecisionLog": "@{concat('Site created but the governance baseline was not confirmed (G-10: only a completed job with a ###RESULT### of Success counts). ', concat('Job ', coalesce(body('Apply_governance_baseline')?['properties']?['jobId'], 'not created'), ', job status ', coalesce(body('Apply_governance_baseline')?['properties']?['status'], 'unknown'), ', runbook result ', coalesce(actions('Compose_runbook_result')?['outputs']?['Status'], 'missing or unreadable'), '. Errors: ', coalesce(join(coalesce(actions('Compose_runbook_result')?['outputs']?['Errors'], json('[]')), ' | '), 'none reported'), '. Steps done: ', coalesce(join(coalesce(actions('Compose_runbook_result')?['outputs']?['Steps'], json('[]')), ' | '), 'none')))}"
+                                          }
+                                        },
+                                        "runAfter": {}
+                                      },
+                                      "Notify_baseline_failed": {
+                                        "type": "OpenApiConnection",
+                                        "inputs": {
+                                          "host": {
+                                            "connectionName": "shared_office365",
+                                            "operationId": "SendEmailV2",
+                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                                          },
+                                          "parameters": {
+                                            "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), ';', parameters('ITOpsOwnerEmail'))}",
+                                            "emailMessage/Subject": "@{concat('Site created without a confirmed baseline: ', triggerBody()?['Title'])}",
+                                            "emailMessage/Body": "<p>@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])} was created, but the governance baseline wasn't confirmed, so the site isn't in the Site Register and the request is Provisioning failed. The site may be partly configured: check what the runbook did before giving anyone access, fix the cause (often a missing Sites.Selected grant), and re-run the runbook for this URL.</p><p>@{concat('Job ', coalesce(body('Apply_governance_baseline')?['properties']?['jobId'], 'not created'), ', job status ', coalesce(body('Apply_governance_baseline')?['properties']?['status'], 'unknown'), ', runbook result ', coalesce(actions('Compose_runbook_result')?['outputs']?['Status'], 'missing or unreadable'), '. Errors: ', coalesce(join(coalesce(actions('Compose_runbook_result')?['outputs']?['Errors'], json('[]')), ' | '), 'none reported'), '. Steps done: ', coalesce(join(coalesce(actions('Compose_runbook_result')?['outputs']?['Steps'], json('[]')), ' | '), 'none'))}</p>",
+                                            "emailMessage/Importance": "High"
+                                          }
+                                        },
+                                        "runAfter": {
+                                          "Mark_failed_baseline": [
+                                            "Succeeded"
+                                          ]
+                                        }
+                                      }
                                     }
                                   },
                                   "runAfter": {
-                                    "Mark_provisioned": [
-                                      "Succeeded"
+                                    "Compose_runbook_result": [
+                                      "Succeeded",
+                                      "Failed",
+                                      "Skipped",
+                                      "TimedOut"
                                     ]
                                   }
                                 }
                               },
                               "else": {
                                 "actions": {
-                                  "Mark_failed_baseline": {
+                                  "Mark_failed_no_grant": {
                                     "type": "OpenApiConnection",
                                     "inputs": {
                                       "host": {
@@ -569,12 +625,12 @@
                                         "table": "Site Requests",
                                         "id": "@triggerBody()?['ID']",
                                         "item/Status/Value": "Provisioning failed",
-                                        "item/DecisionLog": "@{concat('Site created but the governance baseline was not confirmed (G-10: only a completed job with a ###RESULT### of Success counts). ', concat('Job ', coalesce(body('Apply_governance_baseline')?['properties']?['jobId'], 'not created'), ', job status ', coalesce(body('Apply_governance_baseline')?['properties']?['status'], 'unknown'), ', runbook result ', coalesce(actions('Compose_runbook_result')?['outputs']?['Status'], 'missing or unreadable'), '. Errors: ', coalesce(join(coalesce(actions('Compose_runbook_result')?['outputs']?['Errors'], json('[]')), ' | '), 'none reported'), '. Steps done: ', coalesce(join(coalesce(actions('Compose_runbook_result')?['outputs']?['Steps'], json('[]')), ' | '), 'none')))}"
+                                        "item/DecisionLog": "@{concat('Site created but the Sites.Selected grant was not applied, so the governance baseline has not run. ', join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_grant_ITOps')?['body/responses']), '}}'))), '//comments/text()'), ' | '))}"
                                       }
                                     },
                                     "runAfter": {}
                                   },
-                                  "Notify_baseline_failed": {
+                                  "Notify_service_owner_no_grant": {
                                     "type": "OpenApiConnection",
                                     "inputs": {
                                       "host": {
@@ -583,14 +639,14 @@
                                         "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                                       },
                                       "parameters": {
-                                        "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), ';', parameters('ITOpsOwnerEmail'))}",
-                                        "emailMessage/Subject": "@{concat('Site created without a confirmed baseline: ', triggerBody()?['Title'])}",
-                                        "emailMessage/Body": "<p>@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])} was created, but the governance baseline wasn't confirmed, so the site isn't in the Site Register and the request is Provisioning failed. The site may be partly configured: check what the runbook did before giving anyone access, fix the cause (often a missing Sites.Selected grant), and re-run the runbook for this URL.</p><p>@{concat('Job ', coalesce(body('Apply_governance_baseline')?['properties']?['jobId'], 'not created'), ', job status ', coalesce(body('Apply_governance_baseline')?['properties']?['status'], 'unknown'), ', runbook result ', coalesce(actions('Compose_runbook_result')?['outputs']?['Status'], 'missing or unreadable'), '. Errors: ', coalesce(join(coalesce(actions('Compose_runbook_result')?['outputs']?['Errors'], json('[]')), ' | '), 'none reported'), '. Steps done: ', coalesce(join(coalesce(actions('Compose_runbook_result')?['outputs']?['Steps'], json('[]')), ' | '), 'none'))}</p>",
-                                        "emailMessage/Importance": "High"
+                                        "emailMessage/To": "@parameters('SharePointServiceOwnerEmail')",
+                                        "emailMessage/Subject": "@{concat('Site created without its baseline: ', triggerBody()?['Title'])}",
+                                        "emailMessage/Body": "<p>@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])} was created, but IT Operations did not apply the Sites.Selected grant, so the governance baseline (groups, sharing, label) has not been applied. Restrict the site until the grant is applied and the runbook is re-run.</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_grant_ITOps')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
+                                        "emailMessage/Importance": "Normal"
                                       }
                                     },
                                     "runAfter": {
-                                      "Mark_failed_baseline": [
+                                      "Mark_failed_no_grant": [
                                         "Succeeded"
                                       ]
                                     }
@@ -598,18 +654,15 @@
                                 }
                               },
                               "runAfter": {
-                                "Compose_runbook_result": [
-                                  "Succeeded",
-                                  "Failed",
-                                  "Skipped",
-                                  "TimedOut"
+                                "Approval_grant_ITOps": [
+                                  "Succeeded"
                                 ]
                               }
                             }
                           },
                           "else": {
                             "actions": {
-                              "Mark_failed_no_grant": {
+                              "Mark_failed": {
                                 "type": "OpenApiConnection",
                                 "inputs": {
                                   "host": {
@@ -622,12 +675,12 @@
                                     "table": "Site Requests",
                                     "id": "@triggerBody()?['ID']",
                                     "item/Status/Value": "Provisioning failed",
-                                    "item/DecisionLog": "@{concat('Site created but the Sites.Selected grant was not applied, so the governance baseline has not run. ', join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_grant_ITOps')?['body/responses']), '}}'))), '//comments/text()'), ' | '))}"
+                                    "item/DecisionLog": "@{concat('SPSiteManager returned SiteStatus ', string(body('Create_site')?['SiteStatus']), '. 3 = error, 0 = alias already in use.')}"
                                   }
                                 },
                                 "runAfter": {}
                               },
-                              "Notify_service_owner_no_grant": {
+                              "Notify_service_owner_failed": {
                                 "type": "OpenApiConnection",
                                 "inputs": {
                                   "host": {
@@ -637,13 +690,13 @@
                                   },
                                   "parameters": {
                                     "emailMessage/To": "@parameters('SharePointServiceOwnerEmail')",
-                                    "emailMessage/Subject": "@{concat('Site created without its baseline: ', triggerBody()?['Title'])}",
-                                    "emailMessage/Body": "<p>@{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])} was created, but IT Operations did not apply the Sites.Selected grant, so the governance baseline (groups, sharing, label) has not been applied. Restrict the site until the grant is applied and the runbook is re-run.</p><p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_grant_ITOps')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
+                                    "emailMessage/Subject": "@{concat('Site provisioning failed: ', triggerBody()?['Title'])}",
+                                    "emailMessage/Body": "<p>Site creation for @{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])} did not complete (SiteStatus @{body('Create_site')?['SiteStatus']}). Check that the alias is free and retry.</p>",
                                     "emailMessage/Importance": "Normal"
                                   }
                                 },
                                 "runAfter": {
-                                  "Mark_failed_no_grant": [
+                                  "Mark_failed": [
                                     "Succeeded"
                                   ]
                                 }
@@ -651,7 +704,7 @@
                             }
                           },
                           "runAfter": {
-                            "Approval_grant_ITOps": [
+                            "Create_site": [
                               "Succeeded"
                             ]
                           }
@@ -659,7 +712,7 @@
                       },
                       "else": {
                         "actions": {
-                          "Mark_failed": {
+                          "Mark_rejected_InfoSec": {
                             "type": "OpenApiConnection",
                             "inputs": {
                               "host": {
@@ -671,13 +724,13 @@
                                 "dataset": "@parameters('GovernanceSiteUrl')",
                                 "table": "Site Requests",
                                 "id": "@triggerBody()?['ID']",
-                                "item/Status/Value": "Provisioning failed",
-                                "item/DecisionLog": "@{concat('SPSiteManager returned SiteStatus ', string(body('Create_site')?['SiteStatus']), '. 3 = error, 0 = alias already in use.')}"
+                                "item/Status/Value": "Rejected",
+                                "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_InfoSec')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
                               }
                             },
                             "runAfter": {}
                           },
-                          "Notify_service_owner_failed": {
+                          "Notify_rejected_InfoSec": {
                             "type": "OpenApiConnection",
                             "inputs": {
                               "host": {
@@ -686,14 +739,14 @@
                                 "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                               },
                               "parameters": {
-                                "emailMessage/To": "@parameters('SharePointServiceOwnerEmail')",
-                                "emailMessage/Subject": "@{concat('Site provisioning failed: ', triggerBody()?['Title'])}",
-                                "emailMessage/Body": "<p>Site creation for @{concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias'])} did not complete (SiteStatus @{body('Create_site')?['SiteStatus']}). Check that the alias is free and retry.</p>",
+                                "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
+                                "emailMessage/Subject": "Site request rejected by Information Security",
+                                "emailMessage/Body": "<p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_InfoSec')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
                                 "emailMessage/Importance": "Normal"
                               }
                             },
                             "runAfter": {
-                              "Mark_failed": [
+                              "Mark_rejected_InfoSec": [
                                 "Succeeded"
                               ]
                             }
@@ -701,7 +754,7 @@
                         }
                       },
                       "runAfter": {
-                        "Create_site": [
+                        "Condition_NeedsInfoSec": [
                           "Succeeded"
                         ]
                       }
@@ -709,7 +762,7 @@
                   },
                   "else": {
                     "actions": {
-                      "Mark_rejected_InfoSec": {
+                      "Mark_rejected_ServiceOwner": {
                         "type": "OpenApiConnection",
                         "inputs": {
                           "host": {
@@ -722,12 +775,12 @@
                             "table": "Site Requests",
                             "id": "@triggerBody()?['ID']",
                             "item/Status/Value": "Rejected",
-                            "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_InfoSec')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+                            "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_service_owner')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
                           }
                         },
                         "runAfter": {}
                       },
-                      "Notify_rejected_InfoSec": {
+                      "Notify_rejected_ServiceOwner": {
                         "type": "OpenApiConnection",
                         "inputs": {
                           "host": {
@@ -737,13 +790,13 @@
                           },
                           "parameters": {
                             "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
-                            "emailMessage/Subject": "Site request rejected by Information Security",
-                            "emailMessage/Body": "<p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_InfoSec')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
+                            "emailMessage/Subject": "Site request rejected",
+                            "emailMessage/Body": "<p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_service_owner')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
                             "emailMessage/Importance": "Normal"
                           }
                         },
                         "runAfter": {
-                          "Mark_rejected_InfoSec": [
+                          "Mark_rejected_ServiceOwner": [
                             "Succeeded"
                           ]
                         }
@@ -751,7 +804,7 @@
                     }
                   },
                   "runAfter": {
-                    "Condition_NeedsInfoSec": [
+                    "Approval_service_owner": [
                       "Succeeded"
                     ]
                   }
@@ -759,7 +812,7 @@
               },
               "else": {
                 "actions": {
-                  "Mark_rejected_ServiceOwner": {
+                  "Mark_invalid": {
                     "type": "OpenApiConnection",
                     "inputs": {
                       "host": {
@@ -771,13 +824,13 @@
                         "dataset": "@parameters('GovernanceSiteUrl')",
                         "table": "Site Requests",
                         "id": "@triggerBody()?['ID']",
-                        "item/Status/Value": "Rejected",
-                        "item/DecisionLog": "@{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_service_owner')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}"
+                        "item/Status/Value": "Returned - Ownership invalid",
+                        "item/DecisionLog": "Every site needs two different named, enabled, internal owners (no service/shared accounts) and Owners/Members security groups."
                       }
                     },
                     "runAfter": {}
                   },
-                  "Notify_rejected_ServiceOwner": {
+                  "Notify_invalid": {
                     "type": "OpenApiConnection",
                     "inputs": {
                       "host": {
@@ -787,13 +840,13 @@
                       },
                       "parameters": {
                         "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
-                        "emailMessage/Subject": "Site request rejected",
-                        "emailMessage/Body": "<p>Comments: @{join(xpath(xml(json(concat('{\"root\":{\"r\":', string(outputs('Approval_service_owner')?['body/responses']), '}}'))), '//comments/text()'), ' | ')}</p>",
+                        "emailMessage/Subject": "Site request returned: ownership details invalid",
+                        "emailMessage/Body": "<p>Every SharePoint site needs a primary and a secondary owner who are two different, enabled, internal named users (service and shared accounts are not allowed), and Owners and Members security groups. Correct the request and resubmit.</p>",
                         "emailMessage/Importance": "Normal"
                       }
                     },
                     "runAfter": {
-                      "Mark_rejected_ServiceOwner": [
+                      "Mark_invalid": [
                         "Succeeded"
                       ]
                     }
@@ -801,15 +854,16 @@
                 }
               },
               "runAfter": {
-                "Approval_service_owner": [
-                  "Succeeded"
+                "Get_secondary_owner": [
+                  "Succeeded",
+                  "Failed"
                 ]
               }
             }
           },
           "else": {
             "actions": {
-              "Mark_invalid": {
+              "Mark_name_invalid": {
                 "type": "OpenApiConnection",
                 "inputs": {
                   "host": {
@@ -821,13 +875,13 @@
                     "dataset": "@parameters('GovernanceSiteUrl')",
                     "table": "Site Requests",
                     "id": "@triggerBody()?['ID']",
-                    "item/Status/Value": "Returned - Ownership invalid",
-                    "item/DecisionLog": "Every site needs two different named, enabled, internal owners (no service/shared accounts) and Owners/Members security groups."
+                    "item/Status/Value": "Returned - Naming standard",
+                    "item/DecisionLog": "@{concat('Site URLs must follow sites/[org]-[location]-[department]-[site] in lower case (PID v4.2, G-08): org ', parameters('SiteOrgCode'), ', location one of ', parameters('SiteLocationCodes'), '.')}"
                   }
                 },
                 "runAfter": {}
               },
-              "Notify_invalid": {
+              "Notify_name_invalid": {
                 "type": "OpenApiConnection",
                 "inputs": {
                   "host": {
@@ -837,73 +891,66 @@
                   },
                   "parameters": {
                     "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
-                    "emailMessage/Subject": "Site request returned: ownership details invalid",
-                    "emailMessage/Body": "<p>Every SharePoint site needs a primary and a secondary owner who are two different, enabled, internal named users (service and shared accounts are not allowed), and Owners and Members security groups. Correct the request and resubmit.</p>",
+                    "emailMessage/Subject": "Site request returned: URL doesn't follow the naming standard",
+                    "emailMessage/Body": "<p>The site alias <b>@{triggerBody()?['SiteAlias']}</b> doesn't follow the naming standard. Use lower case <i>[org]-[location]-[department]-[site]</i>, for example <i>@{parameters('SiteOrgCode')}-pof-finance-payroll</i>, with location one of @{parameters('SiteLocationCodes')}. Correct the request and resubmit.</p>",
                     "emailMessage/Importance": "Normal"
                   }
                 },
                 "runAfter": {
-                  "Mark_invalid": [
+                  "Mark_name_invalid": [
                     "Succeeded"
                   ]
                 }
               }
             }
           },
-          "runAfter": {
-            "Get_secondary_owner": [
-              "Succeeded",
-              "Failed"
-            ]
-          }
-        }
-      },
-      "else": {
-        "actions": {
-          "Mark_name_invalid": {
-            "type": "OpenApiConnection",
-            "inputs": {
-              "host": {
-                "connectionName": "shared_sharepointonline",
-                "operationId": "PatchItem",
-                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
-              },
-              "parameters": {
-                "dataset": "@parameters('GovernanceSiteUrl')",
-                "table": "Site Requests",
-                "id": "@triggerBody()?['ID']",
-                "item/Status/Value": "Returned - Naming standard",
-                "item/DecisionLog": "@{concat('Site URLs must follow sites/[org]-[location]-[department]-[site] in lower case (PID v4.2, G-08): org ', parameters('SiteOrgCode'), ', location one of ', parameters('SiteLocationCodes'), '.')}"
-              }
-            },
-            "runAfter": {}
-          },
-          "Notify_name_invalid": {
-            "type": "OpenApiConnection",
-            "inputs": {
-              "host": {
-                "connectionName": "shared_office365",
-                "operationId": "SendEmailV2",
-                "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
-              },
-              "parameters": {
-                "emailMessage/To": "@{triggerBody()?['Requester']?['Email']}",
-                "emailMessage/Subject": "Site request returned: URL doesn't follow the naming standard",
-                "emailMessage/Body": "<p>The site alias <b>@{triggerBody()?['SiteAlias']}</b> doesn't follow the naming standard. Use lower case <i>[org]-[location]-[department]-[site]</i>, for example <i>@{parameters('SiteOrgCode')}-pof-finance-payroll</i>, with location one of @{parameters('SiteLocationCodes')}. Correct the request and resubmit.</p>",
-                "emailMessage/Importance": "Normal"
-              }
-            },
-            "runAfter": {
-              "Mark_name_invalid": [
-                "Succeeded"
-              ]
-            }
-          }
+          "runAfter": {}
         }
       },
       "runAfter": {
         "Initialize_SecurityOutcome": [
           "Succeeded"
+        ]
+      }
+    },
+    "Catch_run_failed": {
+      "type": "Scope",
+      "description": "Run-level failure alert: any error in Scope_Main that no step handled.",
+      "actions": {
+        "Select_failed_steps": {
+          "type": "Select",
+          "inputs": {
+            "from": "@result('Scope_Main')",
+            "select": "@concat('<li><b>', item()?['name'], '</b>: ', item()?['status'], ' ', coalesce(item()?['error']?['code'], item()?['outputs']?['statusCode'], ''), ' ', coalesce(item()?['error']?['message'], ''), '</li>')"
+          },
+          "runAfter": {}
+        },
+        "Alert_run_failed": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@{concat(parameters('ITOpsOwnerEmail'), ';', parameters('SharePointServiceOwnerEmail'))}",
+              "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
+              "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error it did not handle, so some of its work may not have been done. Nothing has been retried.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a> (started @{workflow()?['run']?['startTime']})</p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Open the run, find the failed step and its raw output, fix the cause, then resubmit the run or deal with the items by hand. Check for partial changes first (see Stopping and recovery in the deployment guide).</p>",
+              "emailMessage/Importance": "High"
+            }
+          },
+          "runAfter": {
+            "Select_failed_steps": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Scope_Main": [
+          "Failed",
+          "TimedOut"
         ]
       }
     }

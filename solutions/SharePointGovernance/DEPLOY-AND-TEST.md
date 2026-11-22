@@ -1,10 +1,10 @@
-# Governance deployment and test guide (solution 1.6.0.0)
+# Governance deployment and test guide (solution 1.7.0.0)
 
 How to deploy the SharePoint governance flows, runbook, dashboard and SAM
 policies to a test environment, test them, and then go live. Work through it
 in order; each section says who does it.
 
-Deploy from the **deployment kit** (`SharePointGovernance-DeploymentKit_1_6_0_0.zip`,
+Deploy from the **deployment kit** (`SharePointGovernance-DeploymentKit_1_7_0_0.zip`,
 CI artifact *SharePointGovernance-DeploymentKit*, or `python tools/build_kit.py`).
 It holds everything this guide refers to and a `MANIFEST.json` of SHA-256
 checksums: check them before you start and keep the manifest with the test
@@ -25,7 +25,7 @@ evidence.
 - [ ] **Test site**: a copy of the IT Enterprise Governance site (or a test site collection), plus two or three throwaway test sites to provision and break.
 - [ ] **Test people**: two internal test users who can act as site owners, one unlicensed or F3 user, one external test mailbox for a guest.
 - [ ] **Licences**: the flow owner has Power Automate premium (HTTP with Entra ID and Azure Automation are premium). Confirm SAM covers each policy (restricted site creation needs SAM Plan 1).
-- [ ] **Kit**: `SharePointGovernance-DeploymentKit_1_6_0_0.zip`; checksums match `MANIFEST.json`.
+- [ ] **Kit**: `SharePointGovernance-DeploymentKit_1_7_0_0.zip`; checksums match `MANIFEST.json`.
 
 ## 2. Deploy to test
 
@@ -143,21 +143,26 @@ Record each result (pass, fail, notes) in the UAT log. For any fail, keep the fl
 | T21 | 08 Cleared and HC | Set the site back to Active (column clears); then set Sensitivity Highly Confidential with sharing ExistingExternalUserSharingOnly | Second step: one email with InfoSec copied |
 | T22 | Dashboard | Open Governance-Dashboard.aspx | Each panel shows its view and the items created in T01–T21; Status badges coloured with words |
 | T23 | SAM | Attestation (notify only) on one test site | Owner receives the attestation email; nothing goes read-only |
+| T24 | Failure alert | In a test copy of flow 02, point *Get active guests* at a list name that doesn't exist and run it; repeat on flow 01 with the Graph connection's permission removed | Each run fails and IT Ops and the service owner get one *Flow failed* email with the run link and the failed step |
+| T25 | Paging | Load 150 test rows into Guest Access Register (and Site Register for flow 07) and run flows 02 and 07 | Every row is processed: flow 02's run shows 150 iterations; flow 07's digest counts match a filtered view of the list |
+| T26 | Recovery: group change, register write fails | In test, make Guest Access Register read-only for the flow owner and run T08 | The guest is in the Guests group but no register row exists; *Flow failed* email; following section 5, the verifier finds the membership, adds the register row by hand (or removes the guest with InfoSec's agreement) and records it |
+| T27 | Recovery: stop with an approval open | Start T01, and before the service owner answers, turn flow 03 off and cancel the run | The approval can no longer change anything; the requester and approver are told; the Site Requests item is set back to Submitted or Rejected by hand, with the reason in DecisionLog |
+| T28 | Recovery: partial site | Use T04c's partial site | The service owner corrects or deletes the partial site with IT Ops, using the steps listed in the failure email; the result is recorded |
 
 **Exit criteria:**
 
-- These tests can't be waived: T01, T04a–d, T06–T06c, T07–T10, T12–T12c, T19–T20. A failure blocks go-live until fixed and retested.
+- These tests can't be waived: T01, T04a–d, T06–T06c, T07–T10, T12–T12c, T19–T20, T24, T25. A failure blocks go-live until fixed and retested.
 - Any other failure can be accepted only by the owner of that control (InfoSec/IAM for access and guests, records owner for retention, IT Operations for automation), recorded with an expiry date and a compensating control. The IT PM and service owner can't waive it alone.
 - The verifier signs off each test against its evidence (run history, `###RESULT###` lines, list items, emails), with the kit's `MANIFEST.json`, the environment variable values and the test identities.
 
-Review findings still open (R16 for the news roundup C2, R10 paging and failure alerts elsewhere, R12–R15) are tracked in the review action register and must be closed or formally accepted before production.
+Review findings R10 to R17 have build changes in solution 1.7.0.0 (governance) and 1.5.0.0 (news), but each closes only when its closure test has passed here and the accountable owner accepts it. R07, R08, R12 and R13 also need owner or Control Board decisions (see `PERMISSIONS.md` for the R12 draft).
 
 ## 4. Go live (production)
 
 1. Agree the date with the Control Board (plan: w/c 4 January 2027).
 2. Repeat 2.1 to 2.7 in production with **real** values: the real governance site, role mailboxes and Automation account. Load the full Site Register (225 sites) after the owner emails have been checked.
 3. Turn the flows on in the same order, with both switches still **No**.
-4. Run the production smoke tests: T01 with a real request, T05 and T10 with real accounts, T22, and confirm a failure alert reaches the support mailbox.
+4. Run the production smoke tests: T01 with a real request, T05 and T10 with real accounts, T22, and T24 (a *Flow failed* email reaches IT Ops) using a test copy of a flow.
 5. Brief site owners (comms lead), then set **Send urgent site alerts** = Yes and, from the 1st of the next month, **Send the monthly owner digest** = Yes.
 6. Configure the SAM policies in the order in `SAM-POLICIES.md`, notify-only until the Board approves enforcement.
 7. Hand over to the SharePoint service owner's team: flows, connections (backup owner signed in), runbook, dashboard and this guide.
@@ -166,10 +171,16 @@ Review findings still open (R16 for the news roundup C2, R10 paging and failure 
 
 Turning a flow off stops new runs. It doesn't undo what runs already did: sites created, group members added or removed, emails sent, list items written.
 
-1. **Stop**: turn the affected flow off (or set its switch to No). Check its run history for runs still in progress, including ones waiting on an approval, and cancel them if they must not finish.
-2. **Find side effects**: for each run since the problem started, list what it changed (site created, group change, register write, email). Flow 03's failure emails and the runbook's `###RESULT###` lines list the steps done.
+1. **Stop**: turn the affected flow off (or set its switch to No). Turning a flow off doesn't stop runs already going: open its run history, find runs still in progress, including ones waiting on an approval, and cancel them if they must not finish. A cancelled run's approval stays in the approver's inbox but answering it does nothing: tell the approver and the requester, and set the request's Status by hand with the reason in DecisionLog.
+2. **Find side effects**: for each run since the problem started, list what it changed (site created, group change, register write, email). Flow 03's failure emails and the runbook's `###RESULT###` lines list the steps done; the *Flow failed* email names the step that failed, and everything before it in that run may have happened. Before changing anything back, record the current state (group members, sharing setting, register row) so the correction can itself be undone.
 3. **Reconcile**: correct each change deliberately, with the owner of that control agreeing (IAM/InfoSec for access, service owner for sites). Don't blindly re-grant access or delete sites; record what was changed back and why.
 4. **Keep evidence**: run history, job output and the list item versions.
 5. **Fix forward**: a lower solution version can't be imported over a higher one, so correct the flow, bump the version, rebuild the kit, retest the affected tests and import.
+
+Recovery is tested by T26 to T28.
+
+### Daily run check (IT Operations)
+
+The *Flow failed* email covers errors inside a run, not a run that never started (flow turned off, connection broken before the trigger, environment paused). Each working day, IT Operations opens each flow's run history (or the Power Platform admin centre's flow analytics) and checks that the scheduled flows ran: 02 daily at 06:00, 06 on the 1st, 07 on the 1st, and that 01, 03, 05 and 08 show runs when items were added. A missed run is handled like a failure: find why, fix it, run the flow by hand.
 
 Note: with **Remove expired guests automatically** = Yes (only if the Board rules it, D-GSA-03), flow 02 removes guests without asking. With the default No, removals need an owner's decision.

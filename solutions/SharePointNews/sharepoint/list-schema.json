@@ -41,8 +41,12 @@
           "required": false,
           "multi": true,
           "termSet": "Communications|Strategy theme",
-          "notes": "Which part of the strategy the story supports: Our People, Our Business, Our Environment, One TEAM (taxonomy/TermSet-StrategyTheme.csv). Optional; more than one allowed. Theme sections on the intranet home filter on it, and C2 can group the roundup by it (RoundupGroupByTheme). On Other News this column's internal name is StrategyTheme; the flows use each site's own name.",
-          "otherNewsInternalName": "StrategyTheme"
+          "notes": "Which part of the strategy the story supports: Our People, Our Business, Our Environment, One TEAM (taxonomy/TermSet-StrategyTheme.csv). Optional; more than one allowed. Theme sections on the intranet home filter on it, and C2 can group the roundup by it (RoundupGroupByTheme). On Other News this column's internal name is StrategyTheme; the flows use each site's own name. The column made by hand on the sites is a Choice column; the provisioning script accepts that (alsoAccept).",
+          "otherNewsInternalName": "StrategyTheme",
+          "alsoAccept": [
+            "MultiChoice",
+            "Choice"
+          ]
         },
         {
           "internalName": "Port",

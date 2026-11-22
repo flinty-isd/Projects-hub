@@ -52,6 +52,7 @@ SharePointGovernance/
 ├── provisioning/          Provision-GovernanceDashboard.ps1: dashboard page, views and status badges
 ├── skills/                sharepoint-governance: Claude skill that applies these rules and the SAM policies
 ├── SAM-POLICIES.md        SharePoint Advanced Management policies, settings and the D-GSA-08 decision
+├── PERMISSIONS.md         draft permission and action matrix (review R12), governance and news
 ├── diagrams/              Mermaid process diagrams
 ├── solution-config.json   solution name, version, publisher, environment variables
 └── tools/                 validate_flows.py (static checks) and build_solution.py (packager)
@@ -192,6 +193,13 @@ every future build includes it.
 
 ## Behaviour worth knowing
 
+- **Failure alerts and paging** (1.7.0.0): each flow's steps sit in a main
+  scope. An error no step handles sends one high-importance *Flow failed*
+  email to `ITOpsOwnerEmail` and `SharePointServiceOwnerEmail`, with the run
+  link and the failed steps. A run that never starts sends nothing, so IT
+  Operations also does the daily run check (DEPLOY-AND-TEST.md §5). List
+  reads (flows 02 and 07) page up to 100,000 rows; that needs the flow owner's
+  Power Automate Premium licence (without it Power Automate stops at 5,000).
 - **Guest expiry and G-11**: PID v4.2 allows no silent revocation outside
   four critical classes. With `GuestAutoRemoval` = No (the default), flow 02
   asks the site owner or sponsor on the end date: Approve removes the guest,
