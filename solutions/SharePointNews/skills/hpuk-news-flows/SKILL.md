@@ -84,7 +84,8 @@ A **Current value** always overrides the default.
 - **Dispatch enabled**: No = C2 and C3 send nothing.
 - **Expiry report email**: an address that gets a report after every C1 run.
   Empty = no report.
-- **News support owner email**: gets failure and dry-run emails.
+- **News support mailbox email**: gets failure and dry-run emails. Set it to the
+  Communications shared mailbox, never a person's own address.
 - **Communications sender mailbox**: the shared mailbox every email comes from.
   The flow owner needs **Send As** on it.
 - **Communications team email**, **Urgent publisher emails** (separated by `;`),

@@ -36,6 +36,10 @@
       "type": "Bool",
       "defaultValue": false
     },
+    "SupportMailboxEmail": {
+      "type": "String",
+      "defaultValue": ""
+    },
     "ITOpsOwnerEmail": {
       "type": "String",
       "defaultValue": "{it-operations-owner}@{domain}"
@@ -201,7 +205,7 @@
                           "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                         },
                         "parameters": {
-                          "emailMessage/To": "@parameters('SharePointServiceOwnerEmail')",
+                          "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
                           "emailMessage/Subject": "@{concat('Urgent site alert NOT sent: ', items('For_each_changed_site')?['Title'])}",
                           "emailMessage/Body": "<p>The urgent alert for @{items('For_each_changed_site')?['Title']} (@{items('For_each_changed_site')?['SiteUrl']}) could not be sent: @{outputs('Compose_alert_key')}. Its Urgent alert sent for column now starts SEND FAILED, so it won't retry by itself. Tell the owners directly, then clear that column to let flow 08 send it again.</p>",
                           "emailMessage/Importance": "High"
@@ -288,7 +292,7 @@
               "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
             },
             "parameters": {
-              "emailMessage/To": "@{concat(parameters('ITOpsOwnerEmail'), ';', parameters('SharePointServiceOwnerEmail'))}",
+              "emailMessage/To": "@{concat(parameters('ITOpsOwnerEmail'), ';', parameters('SharePointServiceOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
               "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
               "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error it did not handle, so some of its work may not have been done. Nothing has been retried.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a> (started @{workflow()?['run']?['startTime']})</p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Open the run, find the failed step and its raw output, fix the cause, then resubmit the run or deal with the items by hand. Check for partial changes first (see Stopping and recovery in the deployment guide).</p>",
               "emailMessage/Importance": "High"

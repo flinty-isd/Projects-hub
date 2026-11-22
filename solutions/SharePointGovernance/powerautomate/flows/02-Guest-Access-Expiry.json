@@ -50,6 +50,10 @@
       "type": "String",
       "defaultValue": "{service-desk}@{domain}"
     },
+    "SupportMailboxEmail": {
+      "type": "String",
+      "defaultValue": ""
+    },
     "GuestAutoRemoval": {
       "type": "Bool",
       "defaultValue": false
@@ -147,7 +151,7 @@
                           "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                         },
                         "parameters": {
-                          "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), ';', parameters('InfoSecApproverEmail'))}",
+                          "emailMessage/To": "@{concat(concat(parameters('SharePointServiceOwnerEmail'), ';', parameters('InfoSecApproverEmail')), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
                           "emailMessage/Subject": "@{concat('No decision on expired guest access: ', items('For_each_guest')?['Title'])}",
                           "emailMessage/Body": "<p>Guest access for @{items('For_each_guest')?['Title']} ended on @{formatDateTime(items('For_each_guest')?['AccessEndDate'], 'dd MMM yyyy')} and the site owner or sponsor hasn't decided whether to remove it (the approval may have expired or failed). The guest still has access.</p><p>Decide now: answer the approval if it is still open, or record the decision in the Guest Access Register (Expired - access removed after removing the guest, or Kept - owner decision with a Kept until date). This reminder repeats every 7 days until it is resolved (G-11: the decision stays with people).</p>",
                           "emailMessage/Importance": "High"
@@ -543,7 +547,7 @@
               "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
             },
             "parameters": {
-              "emailMessage/To": "@{concat(parameters('ITOpsOwnerEmail'), ';', parameters('SharePointServiceOwnerEmail'))}",
+              "emailMessage/To": "@{concat(parameters('ITOpsOwnerEmail'), ';', parameters('SharePointServiceOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
               "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
               "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error it did not handle, so some of its work may not have been done. Nothing has been retried.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a> (started @{workflow()?['run']?['startTime']})</p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Open the run, find the failed step and its raw output, fix the cause, then resubmit the run or deal with the items by hand. Check for partial changes first (see Stopping and recovery in the deployment guide).</p>",
               "emailMessage/Importance": "High"

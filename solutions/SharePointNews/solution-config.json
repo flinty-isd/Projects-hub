@@ -30,8 +30,8 @@
       "description": "Where notices about skipped urgent alerts (audience-targeted, no destination) and delivery failures go."
     },
     "SupportOwnerEmail": {
-      "displayName": "News support owner email",
-      "description": "Operational support owner for the news flows (Nigel Bell): receives failure alerts."
+      "displayName": "News support mailbox email",
+      "description": "Shared mailbox that receives the news flows' failure alerts and C1 dry-run lists: the Communications shared mailbox (Intercommunications@fdrc.co.uk). Never a person's own address."
     },
     "ExpiryReportEmail": {
       "displayName": "Expiry report email",
@@ -49,7 +49,7 @@
     },
     "ExpiryWritesEnabled": {
       "displayName": "Expiry writes enabled",
-      "description": "Lets C1 set Status to Expired. No (the default) runs C1 as a dry run that emails the support owner the pages it would have expired. Set to Yes once expiry has been proven on a test page.",
+      "description": "Lets C1 set Status to Expired. No (the default) runs C1 as a dry run that emails the support mailbox the pages it would have expired. Set to Yes once expiry has been proven on a test page.",
       "default": false
     },
     "UrgentGoLiveDate": {

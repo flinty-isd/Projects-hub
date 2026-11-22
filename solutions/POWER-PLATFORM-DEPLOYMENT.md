@@ -5,7 +5,7 @@ stay supported in BAU:
 
 | Solution | Flows | Connectors |
 |----------|-------|------------|
-| **SharePoint Governance (BAU)**, `solutions/SharePointGovernance` (1.7.0.0) | 7: 01, 02, 03, 05, 06, 07, 08 | SharePoint, Office 365 Outlook, Approvals, HTTP with Microsoft Entra ID, Azure Automation |
+| **SharePoint Governance (BAU)**, `solutions/SharePointGovernance` (1.8.0.0) | 7: 01, 02, 03, 05, 06, 07, 08 | SharePoint, Office 365 Outlook, Approvals, HTTP with Microsoft Entra ID, Azure Automation |
 | **SharePoint News and Notices**, `solutions/SharePointNews` (1.5.0.0) | 4: C1, C2, C3a, C3b | SharePoint, Office 365 Outlook, Microsoft Teams |
 
 **Status today: unmanaged only.** Each solution is built as an **unmanaged**
@@ -71,7 +71,7 @@ replaces the two service accounts decided on 23 October 2026.
 | Identity | Used for | Notes |
 |----------|----------|-------|
 | **Governance flow owner** (a named IT Operations administrator in Carl Sharman's team, to name) | Owns the governance connections: SharePoint, Office 365 Outlook, Approvals, HTTP with Microsoft Entra ID, Azure Automation | Their own licensed account (E5, plus the Power Automate Premium or Process route below). Approval and notice emails come from their mailbox |
-| **News flow owner** (Nigel Bell as news support owner, or a named IT Operations administrator) | Owns the news connections: SharePoint, Office 365 Outlook, Microsoft Teams | Their own licensed account, with Send As on the Communications mailbox. Readers see the Communications mailbox and Flow bot, not the owner |
+| **News flow owner** (Nigel Bell, or a named IT Operations administrator) | Owns the news connections: SharePoint, Office 365 Outlook, Microsoft Teams | Their own licensed account, with Send As on the Communications mailbox. Readers see the Communications mailbox and Flow bot, not the owner |
 | **Backup owner** (one named person per solution) | Co-owner of every flow and connection reference | Takes over the connections if the owner leaves or is absent |
 | **Azure Automation managed identity** | The governance baseline runbook | Sites.Selected grant per site URL (G-04), recorded in the grant register; SharePoint Administrator role for the tenant-level step, as for the RCD runbook (G-03, DEP007) |
 | **Deployment app registration** (service principal) | GitHub Actions: import, export and settings | Application user with *System Customizer* in each environment. It never accesses SharePoint content; confirm with InfoSec that it falls outside D-03 |
@@ -159,11 +159,13 @@ deploys to Test automatically, then waits for an approved Production run.
 
 - **Monitoring.** Every flow runs its steps in a main scope and emails a
   *Flow failed* alert (run link, failed steps) when an error isn't handled:
-  governance to IT Operations and the service owner, news to the support
-  owner. That doesn't catch a run that never starts, so IT Operations does
-  the daily run check in the governance DEPLOY-AND-TEST.md §5, and the news
-  support owner checks C1 and C2 ran each Monday. Also turn on Power
-  Automate's *flow failure* email for both named flow owners.
+  governance to IT Operations, the service owner and the support mailbox;
+  news to the support mailbox. The support mailbox is the Communications
+  shared mailbox (Intercommunications@fdrc.co.uk). That doesn't catch a run
+  that never starts, so IT Operations does the daily run check in the
+  governance DEPLOY-AND-TEST.md §5, and the support mailbox's owners check
+  C1 and C2 ran each Monday. Also turn on Power Automate's *flow failure*
+  email for both named flow owners.
   For the runbook, check the Automation jobs log daily: success is the
   `###RESULT###` object saying Success, not the flow run (G-10).
 - **News deliveries needing a person.** Check the Delivery Log *Needs

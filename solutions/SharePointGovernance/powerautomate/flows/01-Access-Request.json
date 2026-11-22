@@ -50,6 +50,10 @@
       "type": "String",
       "defaultValue": "{service-desk}@{domain}"
     },
+    "SupportMailboxEmail": {
+      "type": "String",
+      "defaultValue": ""
+    },
     "SharePointServicePlans": {
       "type": "String",
       "defaultValue": "SHAREPOINTDESKLESS;SHAREPOINTSTANDARD;SHAREPOINTENTERPRISE"
@@ -678,7 +682,7 @@
                             "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                           },
                           "parameters": {
-                            "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), ';', parameters('ITOpsOwnerEmail'))}",
+                            "emailMessage/To": "@{concat(concat(parameters('SharePointServiceOwnerEmail'), ';', parameters('ITOpsOwnerEmail')), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
                             "emailMessage/Subject": "@{concat('Access request needs re-running: licence check failed for ', triggerBody()?['Requester']?['Email'])}",
                             "emailMessage/Body": "<p>Flow 01 couldn't read the requester's account or licences from Microsoft Graph (permission, throttling or outage), so it made no licensing decision. The request is still Submitted. Check the HTTP with Microsoft Entra ID connection, then resubmit the run for this item.</p><p>Request: @{triggerBody()?['{Link}']}</p>",
                             "emailMessage/Importance": "Normal"
@@ -1142,7 +1146,7 @@
                             "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                           },
                           "parameters": {
-                            "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), ';', parameters('ITOpsOwnerEmail'))}",
+                            "emailMessage/To": "@{concat(concat(parameters('SharePointServiceOwnerEmail'), ';', parameters('ITOpsOwnerEmail')), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
                             "emailMessage/Subject": "@{concat('Access request needs re-running: licence check failed for ', triggerBody()?['Requester']?['Email'])}",
                             "emailMessage/Body": "<p>Flow 01 couldn't read the requester's account or licences from Microsoft Graph (permission, throttling or outage), so it made no licensing decision. The request is still Submitted. Check the HTTP with Microsoft Entra ID connection, then resubmit the run for this item.</p><p>Request: @{triggerBody()?['{Link}']}</p>",
                             "emailMessage/Importance": "Normal"
@@ -1701,7 +1705,7 @@
                             "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                           },
                           "parameters": {
-                            "emailMessage/To": "@{concat(parameters('SharePointServiceOwnerEmail'), ';', parameters('ITOpsOwnerEmail'))}",
+                            "emailMessage/To": "@{concat(concat(parameters('SharePointServiceOwnerEmail'), ';', parameters('ITOpsOwnerEmail')), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
                             "emailMessage/Subject": "@{concat('Access request needs re-running: licence check failed for ', triggerBody()?['Requester']?['Email'])}",
                             "emailMessage/Body": "<p>Flow 01 couldn't read the requester's account or licences from Microsoft Graph (permission, throttling or outage), so it made no licensing decision. The request is still Submitted. Check the HTTP with Microsoft Entra ID connection, then resubmit the run for this item.</p><p>Request: @{triggerBody()?['{Link}']}</p>",
                             "emailMessage/Importance": "Normal"
@@ -1772,7 +1776,7 @@
               "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
             },
             "parameters": {
-              "emailMessage/To": "@{concat(parameters('ITOpsOwnerEmail'), ';', parameters('SharePointServiceOwnerEmail'))}",
+              "emailMessage/To": "@{concat(parameters('ITOpsOwnerEmail'), ';', parameters('SharePointServiceOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
               "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
               "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error it did not handle, so some of its work may not have been done. Nothing has been retried.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a> (started @{workflow()?['run']?['startTime']})</p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Open the run, find the failed step and its raw output, fix the cause, then resubmit the run or deal with the items by hand. Check for partial changes first (see Stopping and recovery in the deployment guide).</p>",
               "emailMessage/Importance": "High"

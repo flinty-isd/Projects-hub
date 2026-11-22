@@ -1,6 +1,6 @@
 # Permission and action matrix (draft for review R12)
 
-**Status: draft.** This is what the governance (1.7.0.0) and news (1.5.0.0)
+**Status: draft.** This is what the governance (1.8.0.0) and news (1.5.0.0)
 solutions need, taken from the flows and scripts in this repository. InfoSec,
 IAM and the SharePoint tenant owner must review it, approve or replace the
 tenant-level rights marked **Exception**, and keep the evidence listed under

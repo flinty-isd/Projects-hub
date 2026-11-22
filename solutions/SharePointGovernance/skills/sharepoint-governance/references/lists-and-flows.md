@@ -44,7 +44,7 @@ Ready for migration | Migrated), DecisionLog.
 **Decision Log:** Title (DL001…), Category (InfoPath | File share | Access),
 Decision, DecidedBy, DecisionDate, Rationale.
 
-## Flows (solution 1.7.0.0)
+## Flows (solution 1.8.0.0)
 
 | Flow | Trigger | Does |
 |---|---|---|
@@ -57,8 +57,8 @@ Decision, DecidedBy, DecisionDate, Rationale.
 | 08 Urgent site alerts | Site Register item created or changed | immediate email to owners and service owner when a site becomes Orphaned - owner inactive, or is Highly Confidential with sharing not Disabled (InfoSec copied); once per issue via UrgentAlertKey; off until UrgentAlertsEnabled = Yes |
 
 Every flow runs inside a main scope: an error no step handles sends a high-importance
-*Flow failed* email (run link and failed steps) to IT Operations and the service
-owner. List reads page up to 100,000 rows.
+*Flow failed* email (run link and failed steps) to IT Operations, the service owner and the support
+mailbox. List reads page up to 100,000 rows.
 
 Site access reviews, ownerless and inactive sites, and oversharing are SAM
 policies, not flows (see pid-rules.md §7). Flow 04 was retired 25/10/2026.
