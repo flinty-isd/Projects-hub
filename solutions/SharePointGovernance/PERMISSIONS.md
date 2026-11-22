@@ -1,6 +1,6 @@
 # Permission and action matrix (draft for review R12)
 
-**Status: draft.** This is what the governance (1.8.0.0) and news (1.5.0.0)
+**Status: draft.** This is what the governance (1.9.0.0) and news (1.6.0.0)
 solutions need, taken from the flows and scripts in this repository. InfoSec,
 IAM and the SharePoint tenant owner must review it, approve or replace the
 tenant-level rights marked **Exception**, and keep the evidence listed under
@@ -39,7 +39,7 @@ permissions: a call succeeds only if the flow owner could do it themselves.
 | Input | Who sets it | Used for | Control |
 |---|---|---|---|
 | Target site (Access Requests) | Requester picks a Site Register row | Group IDs come from the **Site Register**, not the request | Site Register edit rights: service owner team only (check it is not editable by requesters) |
-| OwnersGroupId, MembersGroupId, VisitorsGroupId, GuestsGroupId (Site Requests) | **Requester** | The runbook binds these groups to the new site | **Gap:** a requester could enter an unrelated group's ID. Proposed: flow 03 reads each group's name and type from Graph and shows them in the service owner's approval; the runbook refuses groups that aren't security groups or are on-premises synced where not expected |
+| OwnersGroupId, MembersGroupId, VisitorsGroupId, GuestsGroupId (Site Requests) | **Requester** | The runbook binds these groups to the new site From 1.9.0.0 flow 03 looks each group up in Graph before any approval: a group that doesn't exist, isn't a security group, is a Microsoft 365 group, or (for Guests) is synced from AD returns the request. The approval shows each group's name and type, so the service owner can see an unrelated group. A real but unrelated security group still depends on the service owner noticing it (T03b) |
 | GuestEmail, AccessEndDate (Access Requests) | Requester | Guest invitation, 90-day limit | InfoSec approval; end date ≤ 90 days enforced by flow 01 |
 | Comms Distribution rows (news) | Configuration maintainers only | Where news is sent | List restricted by Provision-NewsSites.ps1; the flow identity can only read it |
 
@@ -47,7 +47,7 @@ permissions: a call succeeds only if the flow owner could do it themselves.
 
 | Boundary | Intended | How it's set | Checked by |
 |---|---|---|---|
-| New governed sites | Owners/Members/Visitors are the requested security groups; guests read-only via the Guests group in Visitors; sharing as approved; custom script off; label applied | Baseline runbook with read-back (Partial = failure) | T01, T04b–d |
+| New governed sites | Owners/Members/Visitors are the requested security groups; guests read-only via the Guests group in Visitors; sharing as approved; custom script off; label applied | Baseline runbook with read-back (Partial = failure): label present and correct, secondary admin, groups, no individual users | T01, T03b, T04b–d |
 | News sites | Readers: scoped HPUK reader group in Visitors (never Everyone except external users); publishers in Members | Provision-NewsSites.ps1 | The script now reports broad claims and individual grants as drift (it does not remove them) |
 | Restricted news lists | Notices Archive: maintainers edit, readers read. Comms Distribution: maintainers edit, flow owner reads. Delivery Log: maintainers and flow owner edit | Provision-NewsSites.ps1 (`-RepairPermissions` to re-apply) | Script check on every run |
 | Expired news posts | Drafts visible only to editors | Site Pages versioning (major and minor, draft security) | News README Testing: Expiry |

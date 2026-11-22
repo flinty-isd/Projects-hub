@@ -44,7 +44,7 @@ Ready for migration | Migrated), DecisionLog.
 **Decision Log:** Title (DL001…), Category (InfoPath | File share | Access),
 Decision, DecidedBy, DecisionDate, Rationale.
 
-## Flows (solution 1.8.0.0)
+## Flows (solution 1.9.0.0)
 
 | Flow | Trigger | Does |
 |---|---|---|

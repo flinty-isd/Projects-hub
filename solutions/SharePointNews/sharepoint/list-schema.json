@@ -331,7 +331,7 @@
     },
     {
       "listTitle": "Delivery Log",
-      "listDescription": "One row per dispatch key from C2 and C3. Title is the dispatch key, unique and indexed: the flows reserve it (Reserved) before sending, then set Sent, Failed (definitely not delivered; the only status that is ever retried) or Reconcile (outcome unknown; a person checks with the recipient and sets Failed to allow a resend). Edit rights: flow identity and configuration maintainers only; readers: support owner.",
+      "listDescription": "One row per dispatch key from C2 and C3. Title is the dispatch key, unique and indexed: the flows reserve it (Reserved) before sending, then set Sent, Failed (definitely not delivered; the only status that is ever retried) or Reconcile (outcome unknown; a person checks with the recipient and sets Failed to allow a resend). A row left Reserved is not proof of delivery (the run may have stopped before sending): set it to Sent only when the recipient confirms, otherwise Failed. Edit rights: flow identity and configuration maintainers only; readers: support owner.",
       "sites": [
         "HPUK News"
       ],

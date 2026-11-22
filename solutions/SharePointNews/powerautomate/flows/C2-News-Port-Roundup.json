@@ -1163,7 +1163,7 @@
                   "emailMessage/MailboxAddress": "@parameters('CommsSenderMailbox')",
                   "emailMessage/To": "@parameters('SupportOwnerEmail')",
                   "emailMessage/Subject": "News roundup: some deliveries failed",
-                  "emailMessage/Body": "<p>These roundup deliveries did not complete:</p><p>@{join(variables('Failures'), '<br>')}</p><p>A row logged as <b>Reconcile</b> may or may not have arrived: check with the recipient. If it didn't arrive, set the row's Delivery status to Failed and resubmit this run. Only Failed rows are ever retried. A row still <b>Reserved</b> was sent but not logged: set it to Sent.</p><p>Destinations already sent for this week are always skipped.</p>",
+                  "emailMessage/Body": "<p>These roundup deliveries did not complete:</p><p>@{join(variables('Failures'), '<br>')}</p><p>A row logged as <b>Reconcile</b> may or may not have arrived: check with the recipient. If it didn't arrive, set the row's Delivery status to Failed and resubmit this run. Only Failed rows are ever retried. A row still <b>Reserved</b> is <b>not</b> proof of delivery: the run may have stopped before sending. Only a line above saying <i>sent, but its Delivery Log row is still Reserved</i> means the send itself succeeded. In every case confirm with the recipient first: set the row to Sent only if the message arrived; otherwise set it to Failed so the next run resends it.</p><p>Destinations already sent for this week are always skipped.</p>",
                   "emailMessage/Importance": "Normal"
                 }
               },

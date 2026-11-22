@@ -37,7 +37,10 @@
    shared, generic or guest accounts (D-03). Fail → *Returned - Ownership
    invalid*. The SAM ownership policy also expects two owners.
 3. **Groups:** OwnersGroupId and MembersGroupId are security groups, never
-   individuals.
+   individuals. Flow 03 looks each requested group up in Entra: one that
+   doesn't exist, isn't a security group or is a Microsoft 365 group (or an
+   AD-synced Guests group) returns the request; the approval shows each
+   group's name, so check they belong to this site.
 4. **Purpose:** clear, and no existing site for it in the Site Register.
 5. **Sensitivity label:** General, Confidential or Highly Confidential,
    published in Purview (else the runbook fails). Highly Confidential needs

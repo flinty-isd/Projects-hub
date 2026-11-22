@@ -5,6 +5,19 @@ sites (HPUK News and Other News) aggregated on the intranet home, with
 expiry, a weekly port roundup and urgent notices automated in Power Automate.
 It uses standard modern pages only, with no SPFx.
 
+> **Release status, 22 November 2026: production activation is ON HOLD.**
+> An independent release-readiness review of 1.5.0.0 found a recovery
+> instruction that could mark an unsent notice as sent (the failure email
+> said a *Reserved* row had been sent), and that the news deployment and
+> test materials weren't supplied with the solution. 1.6.0.0 corrects the
+> instruction (a Reserved row is never proof of delivery) and ships as a
+> deployment kit (`SharePointNews-DeploymentKit_1_6_0_0.zip`, with this
+> README, the scripts, schema, pages, taxonomy and a `MANIFEST.json`). The
+> hold lifts only when the Testing table passes in test on 1.6.0.0
+> (including *Reserved, never sent*), the reviewer has re-reviewed the kit,
+> and the release decision is recorded. Don't import into production before
+> then.
+
 | Part | What it is |
 |------|-----------|
 | [`sharepoint/list-schema.json`](sharepoint/list-schema.json) | Every list and column on both sites. The single source for provisioning and flow validation |
@@ -63,13 +76,13 @@ all ports (decision 1).
 
 | Safeguard | How it works |
 |-----------|--------------|
-| **Reserve before sending** | The Delivery Log Title (the dispatch key) is unique and indexed. Before each email or Teams post the flow writes a *Reserved* row, and sends only if that succeeds. The send has no automatic retry. The row then becomes *Sent*; *Failed* if the provider definitely rejected it (a 4xx other than 408/429); or *Reconcile* if the outcome is unknown (a timeout, 5xx or throttling). Only *Failed* rows are ever retried. A person checks *Reconcile* rows (the **Needs checking** view) with the recipient and sets *Failed* to allow a resend |
+| **Reserve before sending** | The Delivery Log Title (the dispatch key) is unique and indexed. Before each email or Teams post the flow writes a *Reserved* row, and sends only if that succeeds. The send has no automatic retry. The row then becomes *Sent*; *Failed* if the provider definitely rejected it (a 4xx other than 408/429); or *Reconcile* if the outcome is unknown (a timeout, 5xx or throttling). Only *Failed* rows are ever retried. A person checks *Reconcile* and *Reserved* rows (the **Needs checking** view) with the recipient. A *Reserved* row is **not** proof of delivery: the run may have stopped after reserving and before sending. Set a row to *Sent* only when the recipient confirms the message arrived; otherwise set *Failed* to allow a resend. Setting *Sent* without that check can leave a notice unsent for good, and for C3 it lets UrgentSent become Yes |
 | **Master switches, off by default** | `DispatchEnabled` = No: C2 and C3 send nothing (runs show as Cancelled). `ExpiryWritesEnabled` = No: C1 changes nothing and emails the support mailbox the pages it would have expired. Turn each on only after it has been proven, and set `DispatchEnabled` back to No to stop new runs (see **Stopping** for a run already going) |
 | **Failure alert** (1.5.0.0) | Each flow's steps sit in a main scope: an error no step handles (a list that can't be read, a connection failure) sends the support mailbox one high-importance *Flow failed* email with the run link and the failed steps. A run that never starts sends nothing: the support mailbox's owners check each Monday that C1 ran every day and C2 ran that morning. List reads page up to 100,000 rows (Power Automate Premium; 5,000 without it) |
 | **Urgent go-live date** | `UrgentGoLiveDate`: C3 ignores posts first published before it, so editing an old or migrated post never sends an alert. Set it once at go-live and don't move it |
 | **One destination, one key** (1.4.0.0) | Keys name the Comms Distribution row (`port#ID`), not just the port, so two rows for the same port each get their delivery and never block each other. Changing a row's address keeps its key: that week's roundup or that notice isn't sent again to the new address. The address used is read from the row just before sending and written to the Delivery Log |
 | **Retry claims** (1.4.0.0) | A *Failed* row is claimed for a retry with an ETag check (`If-Match`): if another run changed the row after this run read it, the claim fails with 412, nothing is sent and support is told. C2 also runs one at a time (C3 already did), so a resubmitted roundup waits for the running one to finish |
-| **Stopping** | `DispatchEnabled` is read when a run starts, so setting it to No stops **new** runs only. To stop a run already going, set the destinations' `Enabled` to No in Comms Distribution: each row is read again just before it is sent, and a switched-off row is skipped and reported. To stop at once, also cancel the run in the flow's run history. Then open the Delivery Log **Needs checking** view: a row left *Reserved* by a cancelled run may or may not have gone; check with the recipient and set it to Sent or Failed. Turning the flow off doesn't stop a run already going |
+| **Stopping** | `DispatchEnabled` is read when a run starts, so setting it to No stops **new** runs only. To stop a run already going, set the destinations' `Enabled` to No in Comms Distribution: each row is read again just before it is sent, and a switched-off row is skipped and reported. To stop at once, also cancel the run in the flow's run history. Then open the Delivery Log **Needs checking** view: a row left *Reserved* by a cancelled run may or may not have gone; check with the recipient: Sent only if it arrived, otherwise Failed. Turning the flow off doesn't stop a run already going |
 | **Fixed roundup week** | C2 covers Monday 00:00 to Monday 00:00 UK time, the week before the run. A late or repeated run covers the same posts and reuses the same dispatch keys, so nothing is sent twice |
 
 ## How it works
@@ -87,6 +100,16 @@ flowchart LR
 ```
 
 ## Deploying
+
+Deploy from the **deployment kit** (`SharePointNews-DeploymentKit_<version>.zip`,
+CI artifact *SharePointNews-DeploymentKit*, or
+`python tools/build_kit.py --root solutions/SharePointNews` from the repo).
+It holds the importable solution, this README (deployment, testing,
+troubleshooting), the provisioning and retention scripts, the list schema,
+the Publisher Guide page, the term sets, the skills, the validation tools and
+the Power Platform deployment plan, with a `MANIFEST.json` of SHA-256
+checksums and the source commit. Check the checksums before you start and
+keep the manifest with the test evidence.
 
 1. **IT foundations.** Request both sites through the governance Site
    Requests list. Associate both with the intranet hub, and designate HPUK
@@ -217,6 +240,7 @@ is not the production permission model.
 | Sent, then log failure | Make the Delivery Log read-only for the flow identity just after a send (or break Mark sent in a copy): the row stays Reserved, support is told it was sent but not logged, and a re-run doesn't resend it |
 | Failure alert | In a test copy of C2, change Get destinations to a list name that doesn't exist and run it: the run fails and the support mailbox gets one *Flow failed* email naming the step |
 | Paging | With 150 expired test posts, one C1 run processes all of them |
+| Reserved, never sent | In a test copy of C2, add a Terminate after *Email Reserve new* and run it: the row stays Reserved and nothing is sent. The alert and the Needs checking view treat it as unconfirmed; the tester confirms nothing arrived, sets Failed, and the next run sends it once |
 | Stop during a run | With several destinations, start C2 and set the later rows' `Enabled` to No: those rows are reported as switched off and not sent. Cancel a run in run history mid-way: any row left Reserved shows in *Needs checking* |
 | Switches off | With `DispatchEnabled` = No, publishing an urgent post and running C2 send nothing (runs show Cancelled). With `ExpiryWritesEnabled` = No, C1 emails a dry-run list and changes no page |
 | Go-live date | Editing and republishing an urgent post first published before `UrgentGoLiveDate` sends nothing |
