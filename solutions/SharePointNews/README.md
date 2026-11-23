@@ -9,12 +9,17 @@ It uses standard modern pages only, with no SPFx.
 > An independent release-readiness review of 1.5.0.0 found a recovery
 > instruction that could mark an unsent notice as sent (the failure email
 > said a *Reserved* row had been sent), and that the news deployment and
-> test materials weren't supplied with the solution. 1.6.0.0 corrects the
+> test materials weren't supplied with the solution. 1.6.0.0 corrected the
 > instruction (a Reserved row is never proof of delivery) and ships as a
-> deployment kit (`SharePointNews-DeploymentKit_1_6_0_0.zip`, with this
-> README, the scripts, schema, pages, taxonomy and a `MANIFEST.json`). The
-> hold lifts only when the Testing table passes in test on 1.6.0.0
-> (including *Reserved, never sent*), the reviewer has re-reviewed the kit,
+> deployment kit (this README, the scripts, schema, pages, taxonomy and a
+> `MANIFEST.json`). A further finding on 23 November 2026: C2 took its week
+> from the time it ran, so a failed roundup resubmitted after the next
+> Monday processed the new week and left the failed one outstanding. 1.7.0.0
+> takes the week from the run's scheduled time and adds `RoundupReplayWeek`
+> (see *Replaying a roundup week*). The hold lifts only when the Testing
+> table passes in test on 1.7.0.0 (including *Reserved, never sent* and
+> *Roundup across the Monday boundary*), the reviewer has re-reviewed
+> `SharePointNews-DeploymentKit_1_7_0_0.zip`,
 > and the release decision is recorded. Don't import into production before
 > then.
 
@@ -83,7 +88,7 @@ all ports (decision 1).
 | **One destination, one key** (1.4.0.0) | Keys name the Comms Distribution row (`port#ID`), not just the port, so two rows for the same port each get their delivery and never block each other. Changing a row's address keeps its key: that week's roundup or that notice isn't sent again to the new address. The address used is read from the row just before sending and written to the Delivery Log |
 | **Retry claims** (1.4.0.0) | A *Failed* row is claimed for a retry with an ETag check (`If-Match`): if another run changed the row after this run read it, the claim fails with 412, nothing is sent and support is told. C2 also runs one at a time (C3 already did), so a resubmitted roundup waits for the running one to finish |
 | **Stopping** | `DispatchEnabled` is read when a run starts, so setting it to No stops **new** runs only. To stop a run already going, set the destinations' `Enabled` to No in Comms Distribution: each row is read again just before it is sent, and a switched-off row is skipped and reported. To stop at once, also cancel the run in the flow's run history. Then open the Delivery Log **Needs checking** view: a row left *Reserved* by a cancelled run may or may not have gone; check with the recipient: Sent only if it arrived, otherwise Failed. Turning the flow off doesn't stop a run already going |
-| **Fixed roundup week** | C2 covers Monday 00:00 to Monday 00:00 UK time, the week before the run. A late or repeated run covers the same posts and reuses the same dispatch keys, so nothing is sent twice |
+| **Fixed roundup week** (1.7.0.0) | C2 covers Monday 00:00 to Monday 00:00 UK time, the week before the run, and works the week out from the run's **scheduled** time, not the time it executes. A late run, or a run resubmitted from run history, keeps its own week and reuses the same dispatch keys, so nothing is sent twice. To resend a week whose *Failed* rows are still outstanding after the next Monday (for example a resubmit that Power Automate started afresh), use **Replaying a roundup week** below: never rely on a later run to pick up an earlier week |
 
 ## How it works
 
@@ -109,7 +114,11 @@ troubleshooting), the provisioning and retention scripts, the list schema,
 the Publisher Guide page, the term sets, the skills, the validation tools and
 the Power Platform deployment plan, with a `MANIFEST.json` of SHA-256
 checksums and the source commit. Check the checksums before you start and
-keep the manifest with the test evidence.
+keep the manifest with the test evidence. From the unpacked kit folder,
+`python tools/validate_flows.py --root .` checks the flows and
+`python tools/build_solution.py --root . --out out` rebuilds the solution
+for comparison with `solution/`. (The dashboard validator is governance-only
+and isn't in this kit.)
 
 1. **IT foundations.** Request both sites through the governance Site
    Requests list. Associate both with the intranet hub, and designate HPUK
@@ -174,7 +183,7 @@ keep the manifest with the test evidence.
    python solutions/SharePointGovernance/tools/build_solution.py --root solutions/SharePointNews
    ```
    It needs three connections (SharePoint, Office 365 Outlook, Microsoft
-   Teams), signed in as the named news flow owner, and eleven environment variables,
+   Teams), signed in as the named news flow owner, and twelve environment variables,
    including the Communications shared mailbox (`SupportOwnerEmail`) and the urgent publishers'
    addresses, separated by semicolons (`UrgentPublisherEmails`). None is
    mandatory at import: after importing, open the solution → **Environment
@@ -255,11 +264,35 @@ is not the production permission model.
 | Company-wide roundup | An enabled Comms Distribution row with Port All ports gets one digest listing every port's posts. An urgent post for All ports does **not** go to that row |
 | Roundup by theme | `RoundupGroupByTheme` = Yes: posts appear under their theme headings (a post with two themes under both), posts with no theme under Other news |
 | Roundup | Covers last Monday 00:00 to this Monday 00:00 UK time, for the right ports. A port with no posts gets nothing. A re-run later in the week sends nothing new |
+| Roundup across the Monday boundary | Week A: make one destination fail (e.g. a Teams channel the flow owner isn't in) so its row is *Failed*. After the next Monday's run (week B) has finished, fix the destination. (1) Resubmit week A's original run: its Current_week_key is A and only the failed row is sent, or it shows B and nothing is sent for A; record which. (2) Set `RoundupReplayWeek` to A's Monday and run C2: A's failed row is sent once, B's rows are not resent, and the support mailbox gets the replay reminder. (3) Run again with it still set: nothing is sent, the reminder repeats. (4) Set it to a Tuesday, a future Monday and a Monday 10 weeks back: each is ignored and reported, and only the run's own week is processed. Clear it |
 | Daylight saving | Runs in the week the clocks change still fire at 06:00 and 07:00 UK time |
 | Reader boundary | Someone outside the HPUK reader group can't open pages or attachments |
 | Retention | Deleting a test page leaves a copy in the Preservation Hold library (after the policy has distributed) |
 | Retention check | With an existing rule of the wrong duration, or a KeepAndDelete rule without `-DeleteAfterRetention`, the script reports the difference and changes nothing. A rejected location update stops the run. The check passes only when both sites are in the policy and Distribution is Success |
 | Provisioning re-run | Run the script twice on a clean pair of sites: the second run reports no drift and changes nothing. On a site with a blank Status default, it reports the drift; with `-FixDrift` it sets Live. With an item given its own permissions in Delivery Log, `-RepairPermissions` keeps it and lists it |
+
+### Replaying a roundup week
+
+Each roundup row's key holds its week: `roundup|2026-11-23|Felixstowe#4|Email`
+is the run of Monday 23 November (covering 16 to 22 November).
+
+1. Fix whatever made the row fail, then set the row's Delivery status to
+   *Failed* if it isn't already (a *Reconcile* or *Reserved* row only after
+   the recipient confirms it didn't arrive).
+2. Before the next Monday 07:00: resubmit the failed run from C2's run
+   history. Open the new run's **Current_week_key** step: if it shows the failed
+   week, it is replaying that week and you are done.
+3. Otherwise (after the next Monday, or if Current_week_key shows a later
+   week): set the `RoundupReplayWeek` environment variable to the week in
+   the key (`2026-11-23`) and run C2 (**Run** on the flow). It processes that
+   week, where only the *Failed* rows send, and then its own week, where
+   rows already *Sent* are skipped. The support mailbox gets a reminder.
+   The value must be a Monday, before the run's own week and no more than 8
+   weeks back; anything else is ignored and reported, and only the run's own
+   week is processed.
+4. Check the row is now *Sent*, then **clear** `RoundupReplayWeek`. Until it
+   is cleared every run re-checks that week (nothing more is sent) and emails
+   the reminder.
 
 ## Upgrading from 1.3.x or earlier
 

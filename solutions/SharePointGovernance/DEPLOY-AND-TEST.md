@@ -169,7 +169,7 @@ Record each result (pass, fail, notes) in the UAT log. For any fail, keep the fl
 - Any other failure can be accepted only by the owner of that control (InfoSec/IAM for access and guests, records owner for retention, IT Operations for automation), recorded with an expiry date and a compensating control. The IT PM and service owner can't waive it alone.
 - The verifier signs off each test against its evidence (run history, `###RESULT###` lines, list items, emails), with the kit's `MANIFEST.json`, the environment variable values and the test identities.
 
-Review findings R10 to R17 have build changes in solution 1.9.0.0 (governance) and 1.6.0.0 (news), but each closes only when its closure test has passed here and the accountable owner accepts it. R07, R08, R12 and R13 also need owner or Control Board decisions (see `PERMISSIONS.md` for the R12 draft).
+Review findings R10 to R17 have build changes in solution 1.9.0.0 (governance) and 1.7.0.0 (news), but each closes only when its closure test has passed here and the accountable owner accepts it. R07, R08, R12 and R13 also need owner or Control Board decisions (see `PERMISSIONS.md` for the R12 draft).
 
 ## 4. Go live (production)
 

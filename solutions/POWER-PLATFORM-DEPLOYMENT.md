@@ -6,7 +6,7 @@ stay supported in BAU:
 | Solution | Flows | Connectors |
 |----------|-------|------------|
 | **SharePoint Governance (BAU)**, `solutions/SharePointGovernance` (1.9.0.0) | 7: 01, 02, 03, 05, 06, 07, 08 | SharePoint, Office 365 Outlook, Approvals, HTTP with Microsoft Entra ID, Azure Automation |
-| **SharePoint News and Notices**, `solutions/SharePointNews` (1.6.0.0) | 4: C1, C2, C3a, C3b | SharePoint, Office 365 Outlook, Microsoft Teams |
+| **SharePoint News and Notices**, `solutions/SharePointNews` (1.7.0.0) | 4: C1, C2, C3a, C3b | SharePoint, Office 365 Outlook, Microsoft Teams |
 
 **Status today: unmanaged only.** Each solution is built as an **unmanaged**
 .zip and imported by hand. The managed pipeline below is a **proposal; it
