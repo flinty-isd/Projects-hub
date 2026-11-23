@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
+  "elmType": "div",
+  "txtContent": "=if(@currentField == '', '', toLocaleDateString(@currentField))",
+  "attributes": {
+    "title": "=if(@currentField != '' && Number(@currentField) < Number(@now) && [$Status] != 'Closed', 'Past due', '')"
+  },
+  "style": {
+    "color": "=if(@currentField != '' && Number(@currentField) < Number(@now) && [$Status] != 'Closed', '#a4262c', '')",
+    "font-weight": "=if(@currentField != '' && Number(@currentField) < Number(@now) && [$Status] != 'Closed', '600', 'normal')"
+  }
+}

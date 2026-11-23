@@ -1,0 +1,26 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -q
+
+  powershell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # pwsh is preinstalled on the GitHub-hosted Ubuntu runners.
+      # PnP.PowerShell is stubbed (tests/powershell/modules), so this runs the
+      # provisioning and formatting scripts without needing a tenant.
+      - run: pwsh -NoProfile -File tests/powershell/Invoke-DeployTests.ps1

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
+  "elmType": "div",
+  "txtContent": "@currentField",
+  "attributes": {
+    "title": "=if(Number(@currentField) >= 15, 'Extreme', if(Number(@currentField) >= 10, 'High', if(Number(@currentField) >= 5, 'Moderate', 'Low')))"
+  },
+  "style": {
+    "display": "inline-block",
+    "min-width": "28px",
+    "padding": "2px 6px",
+    "text-align": "center",
+    "border-radius": "4px",
+    "font-weight": "700",
+    "background-color": "=if(Number(@currentField) >= 15,'#fde7e9', if(Number(@currentField) >= 10,'#fed9cc', if(Number(@currentField) >= 5,'#fff4ce','#dff6dd')))",
+    "color": "=if(Number(@currentField) >= 15,'#a4262c', if(Number(@currentField) >= 10,'#8a3d0b', if(Number(@currentField) >= 5,'#8a6116','#0b6a0b')))"
+  }
+}
