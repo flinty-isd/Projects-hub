@@ -30,6 +30,7 @@ It uses standard modern pages only, with no SPFx.
 | [`provisioning/Set-NewsRetention.ps1`](provisioning/Set-NewsRetention.ps1) | Purview retention policy: 7 years on both sites |
 | [`pages/Publisher-Guide.html`](pages/Publisher-Guide.html) | Content of Publisher-Guide.aspx on HPUK News |
 | [`powerautomate/flows/`](powerautomate/flows) | C1 expiry, C2 weekly port roundup, C3a/C3b urgent notice (one per site) |
+| [`pages/HPUK-News-Post-Template.md`](pages/HPUK-News-Post-Template.md) | Step-by-step build of the *HPUK News post* page template (and *Other News post*) in the SharePoint editor |
 | [`C1-WALKTHROUGH.md`](C1-WALKTHROUGH.md) | One-page walkthrough of C1 expiry: each step, a normal day, what each email means, how to check it |
 | [`taxonomy/`](taxonomy) | Department and Category term sets (term-store import files) |
 | [`skills/hpuk-image-banner/`](skills/hpuk-image-banner) | SharePoint site skill for every image in a News post (banner, thumbnail and body web parts): works out the size, crop and focal point, with a Paint recipe and READY checks. Optional Python version in [`tools/image-banner/`](tools/image-banner) |
@@ -167,10 +168,11 @@ and isn't in this kit.)
    shows Success (up to 7 days).
 3. **Manual site settings.** These have no supported cmdlet:
    - Site Pages → *Settings → Audience targeting* → **On**, on both sites.
-   - Page templates, only if you didn't use `-CreateTemplates`: create
-     *HPUK News post* and *Other News post* by hand (+ New → News post →
-     lay out the sections → *Save as template*) in the order summary,
-     main content, action required and deadline, attachments, contact.
+   - Page templates, only if you didn't use `-CreateTemplates`: build
+     *HPUK News post* and *Other News post* by hand, following
+     [`pages/HPUK-News-Post-Template.md`](pages/HPUK-News-Post-Template.md)
+     (sections Summary, Main content, Action required and deadline,
+     Attachments, Contact; no author byline; saved as a template).
    - Home pages: set up the News web parts as listed below.
 4. **Comms Distribution.** Add one row per port, with its email group, Team ID
    and Channel ID. For a company-wide roundup, add a row with Port **All
