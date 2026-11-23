@@ -39,7 +39,7 @@ permissions: a call succeeds only if the flow owner could do it themselves.
 | Input | Who sets it | Used for | Control |
 |---|---|---|---|
 | Target site (Access Requests) | Requester picks a Site Register row | Group IDs come from the **Site Register**, not the request | Site Register edit rights: service owner team only (check it is not editable by requesters) |
-| OwnersGroupId, MembersGroupId, VisitorsGroupId, GuestsGroupId (Site Requests) | **Requester** | The runbook binds these groups to the new site From 1.9.0.0 flow 03 looks each group up in Graph before any approval: a group that doesn't exist, isn't a security group, is a Microsoft 365 group, or (for Guests) is synced from AD returns the request. The approval shows each group's name and type, so the service owner can see an unrelated group. A real but unrelated security group still depends on the service owner noticing it (T03b) |
+| OwnersGroupId, MembersGroupId, VisitorsGroupId, GuestsGroupId (Site Requests) | **Requester** | The runbook binds these groups to the new site | From 1.9.0.0 flow 03 looks each group up in Graph before any approval: a group that doesn't exist, isn't a security group, is a Microsoft 365 group, or (for Guests) is synced from AD returns the request. The approval shows each group's name and type, so the service owner can see an unrelated group. A real but unrelated security group still depends on the service owner noticing it (T03b): **residual risk, accepted** (§6) |
 | GuestEmail, AccessEndDate (Access Requests) | Requester | Guest invitation, 90-day limit | InfoSec approval; end date ≤ 90 days enforced by flow 01 |
 | Comms Distribution rows (news) | Configuration maintainers only | Where news is sent | List restricted by Provision-NewsSites.ps1; the flow identity can only read it |
 
@@ -58,5 +58,36 @@ permissions: a call succeeds only if the flow owner could do it themselves.
 - Export the Graph consent for the HTTP with Entra ID connection, and the managed identity's role assignments and Sites.Selected grants, and file them with the grant register.
 - Run T01 and keep the runbook's read-back: groups, sharing, label, and the Guests group in Visitors.
 - Effective-access check on each news site: Provision-NewsSites.ps1 reports no drift; an account outside the HPUK reader group (a tenant peer) can't open a page, an attachment in Notices and Attachments, or a video in News Videos by direct link.
-- On a test Site Request, enter an unrelated group's ID: the approval must make that visible to the service owner (after the proposed change), and the service owner rejects it.
+- On a test Site Request, enter an unrelated but real security group's ID (T03b): the approval shows that group's name and type, and the service owner rejects it.
 - InfoSec signs off the two **Exception** rows (SharePoint Administrator for the managed identity; Sites.FullControl.All if provisioning runs app-only), or names the narrower route.
+
+## 6. Residual risk: an unrelated security group on a Site Request
+
+Flow 03 proves each requested group exists and is a security group of the
+right kind, and shows its name and type in the approval. It can't prove the
+group *belongs* to the site being requested: a requester could name a real
+security group that serves something else, and only the service owner (and
+InfoSec for Highly Confidential or shared sites) would notice. The project
+chose (23 November 2026) to accept this rather than add a naming standard or
+group-ownership check, subject to InfoSec's agreement below.
+
+**What the approver checks:** every group named in the approval is the one
+for this site's team (its name matches the site or department and its
+purpose); none is a broad or privileged group (all-staff, department-wide,
+admin or service groups); none is already used by another site in the Site
+Register unless that sharing is intended. If in doubt, reject and ask the
+requester.
+
+**Decision Log entry (draft for InfoSec and the Control Board)**
+
+| Field | Value |
+|---|---|
+| Title | DL-GOV-R12a |
+| Category | Access |
+| Decision | Accept that flow 03 relies on the service owner's approval (and InfoSec's where required) to spot a real but unrelated security group on a Site Request. No automatic naming or ownership check is added |
+| Options considered | A: group names must start with the site alias, and groups already bound to another site are refused. B: a site owner must be an Entra owner of each cloud group, plus the reuse check. C: reuse check and an InfoSec deny list only. D: accept the residual risk (chosen) |
+| Compensating controls | Flow 03 refuses missing, non-security, Microsoft 365 and (for Guests) AD-synced groups; the approval lists each group's name and type; T03b proves it; the runbook reads back the bound groups; SAM site access reviews and attestation (S1, S4) put group membership in front of owners every quarter; flow 07 lists site issues monthly |
+| Risk | Low to Medium (InfoSec to confirm) |
+| Accepted by | InfoSec (Ian Lowe); recorded for the Control Board |
+| Review | At the first quarterly SAM attestation after go-live, or sooner if a wrong group is found on any site |
+| Decision date | *(InfoSec date)* |
