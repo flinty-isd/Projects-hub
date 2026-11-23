@@ -3,7 +3,7 @@
   "uniqueName": "SharePointNews",
   "displayName": "SharePoint News and Notices",
   "description": "Expiry, weekly port roundup and urgent notice flows for the HPUK News and Other News sites.",
-  "version": "1.6.0.0",
+  "version": "1.7.0.0",
   "kitInclude": ["README.md", "solution-config.json", "powerautomate", "provisioning", "sharepoint", "pages", "taxonomy", "skills", "tools"],
   "publisher": {
     "uniqueName": "HPUKIT",
@@ -47,6 +47,11 @@
       "displayName": "Dispatch enabled",
       "description": "Master switch for outbound email and Teams posts from the roundup and urgent flows. No (the default) means they send nothing. Set to Yes only once the Comms Distribution rows have been tested; set back to No to stop all sending at once.",
       "default": false
+    },
+    "RoundupReplayWeek": {
+      "displayName": "Roundup replay week",
+      "description": "Recovery only. Leave empty. To resend a roundup week whose Failed rows are still outstanding after the next Monday, set this to that week's Monday as yyyy-MM-dd (the date in the Delivery Log key roundup|yyyy-MM-dd|...) and run C2: it processes that week (only Failed rows send) and its own week. Must be a Monday up to 8 weeks back. Clear it afterwards; every run while it is set emails a reminder.",
+      "default": ""
     },
     "ExpiryWritesEnabled": {
       "displayName": "Expiry writes enabled",

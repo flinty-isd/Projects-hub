@@ -126,7 +126,7 @@ Record each result (pass, fail, notes) in the UAT log. For any fail, keep the fl
 | T01 | 03 Site request | New Site Requests item: alias `hpuk-pof-test-uat1`, two test owners, groups, General | Service owner approval; IT Ops asked for the Sites.Selected grant; site created; Automation job **Completed** with a `###RESULT###` line of `Success` including the read-back step; the approval lists each group's name and type from Entra; check on the site itself that groups, sharing, label and secondary admin are as requested and no individual users are in the site groups; then Status *Provisioned* and a Site Register row |
 | T02 | 03 Naming | Alias `HPUK-Test_UAT2` | Status *Returned - Naming standard*; requester emailed |
 | T03 | 03 Ownership | Same person as primary and secondary owner | Status *Returned - Ownership invalid* |
-| T03b | 03 Group check | Three requests: Members group ID of a group that doesn't exist; of a Microsoft 365 group; Guests group ID of an AD-synced group | Each *Returned - Ownership invalid*, DecisionLog names the INVALID group; no approval is sent. A fourth request with an unrelated but real security group reaches the service owner showing that group's name, and is rejected |
+| T03b | 03 Group check | Three requests: Members group ID of a group that doesn't exist; of a Microsoft 365 group; Guests group ID of an AD-synced group | Each *Returned - Ownership invalid*, DecisionLog names the INVALID group; no approval is sent. A fourth request with an unrelated but real security group reaches the service owner showing that group's name, and is rejected. That last case depends on the approver: an accepted residual risk (`PERMISSIONS.md` §6, DL-GOV-R12a) |
 | T04a | 03 Grant refused | IT Ops rejects the grant approval | *Provisioning failed*; service owner told; no Site Register row |
 | T04b | 03 Grant missing | IT Ops approves but doesn't actually apply the grant | Job fails or result not Success (403); *Provisioning failed*; high-importance email to service owner and IT Ops with the job ID and errors; no Site Register row |
 | T04c | 03 Partial baseline | Use a sensitivity label name that isn't published | Result not Success; *Provisioning failed*; the email lists the steps done, so the partial site can be corrected |
@@ -169,7 +169,7 @@ Record each result (pass, fail, notes) in the UAT log. For any fail, keep the fl
 - Any other failure can be accepted only by the owner of that control (InfoSec/IAM for access and guests, records owner for retention, IT Operations for automation), recorded with an expiry date and a compensating control. The IT PM and service owner can't waive it alone.
 - The verifier signs off each test against its evidence (run history, `###RESULT###` lines, list items, emails), with the kit's `MANIFEST.json`, the environment variable values and the test identities.
 
-Review findings R10 to R17 have build changes in solution 1.9.0.0 (governance) and 1.6.0.0 (news), but each closes only when its closure test has passed here and the accountable owner accepts it. R07, R08, R12 and R13 also need owner or Control Board decisions (see `PERMISSIONS.md` for the R12 draft).
+Review findings R10 to R17 have build changes in solution 1.9.0.0 (governance) and 1.7.0.0 (news), but each closes only when its closure test has passed here and the accountable owner accepts it. R07, R08, R12 and R13 also need owner or Control Board decisions (see `PERMISSIONS.md` for the R12 draft).
 
 ## 4. Go live (production)
 

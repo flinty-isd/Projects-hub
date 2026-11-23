@@ -35,7 +35,8 @@ if missing:
 EXTRA = {"docs/POWER-PLATFORM-DEPLOYMENT.md": REPO / "solutions" / "POWER-PLATFORM-DEPLOYMENT.md"}
 if ROOT != TOOLS.parent:
     # The tools that validate and build the flows live with governance; ship them too.
-    EXTRA.update({f"tools/{f.name}": f for f in sorted(TOOLS.glob("*.py"))})
+    # validate_dashboard.py is governance-only (the news solution has no dashboard).
+    EXTRA.update({f"tools/{f.name}": f for f in sorted(TOOLS.glob("*.py")) if f.name != "validate_dashboard.py"})
 
 
 def files():

@@ -28,7 +28,7 @@ Use this skill for the four flows in the **SharePoint News and Notices** solutio
 - **C1 News Expiry**: sets **Status** to Expired and **Show in News** to No on posts
   past their Expiry Date.
   Runs daily at 06:00 UK time, or on demand.
-- **C2 News Port Roundup**: emails and posts a weekly digest to each port.
+- **C2 News Port Roundup**: emails and posts a weekly digest to each port. Its week comes from the run's scheduled Monday, and the date in each Delivery Log key (`roundup|yyyy-MM-dd|...`) is that Monday. To resend a week after the next Monday has passed, set **Roundup replay week** to that date and run C2, then clear it (README: Replaying a roundup week).
   Mondays at 07:00 UK time.
 - **C3a News Urgent HPUK** and **C3b News Urgent Other**: send an urgent notice
   when an urgent post is published.
