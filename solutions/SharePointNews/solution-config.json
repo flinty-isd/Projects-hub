@@ -4,7 +4,7 @@
   "displayName": "SharePoint News and Notices",
   "description": "Expiry, weekly port roundup and urgent notice flows for the HPUK News and Other News sites.",
   "version": "1.7.0.0",
-  "kitInclude": ["README.md", "solution-config.json", "powerautomate", "provisioning", "sharepoint", "pages", "taxonomy", "skills", "tools"],
+  "kitInclude": ["README.md", "C1-WALKTHROUGH.md", "solution-config.json", "powerautomate", "provisioning", "sharepoint", "pages", "taxonomy", "skills", "tools"],
   "publisher": {
     "uniqueName": "HPUKIT",
     "displayName": "HPUK IT",
