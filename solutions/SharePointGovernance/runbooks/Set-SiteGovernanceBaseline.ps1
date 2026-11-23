@@ -135,12 +135,23 @@ $check = Get-PnPTenantSite -Url $SiteUrl -Connection $admin
 $problems = @()
 if ("$($check.SharingCapability)" -ne $ExternalSharing) { $problems += "Sharing is $($check.SharingCapability), expected $ExternalSharing" }
 if ("$($check.DenyAddAndCustomizePages)" -notin @('Enabled', 'True')) { $problems += "Custom script is not blocked ($($check.DenyAddAndCustomizePages))" }
-if ($check.SensitivityLabel -and $label -and "$($check.SensitivityLabel)" -ne "$($label.Id)") { $problems += "Sensitivity label on the site is $($check.SensitivityLabel), expected $($label.Id)" }
+# The label must be present and be the requested one: an empty label is a failure, not a pass.
+if ([string]::IsNullOrWhiteSpace("$($check.SensitivityLabel)")) { $problems += "No sensitivity label on the site (expected '$SensitivityLabel')" }
+elseif ("$($check.SensitivityLabel)" -ne "$($label.Id)") { $problems += "Sensitivity label on the site is $($check.SensitivityLabel), expected '$SensitivityLabel' ($($label.Id))" }
+# The secondary owner must actually be a site collection admin.
+$admins = @(Get-PnPSiteCollectionAdmin -Connection $site | ForEach-Object { "$($_.Email)".ToLowerInvariant(); "$($_.LoginName)".ToLowerInvariant() })
+if (-not ($admins | Where-Object { $_ -eq $SecondaryOwner.ToLowerInvariant() -or $_ -like "*|$($SecondaryOwner.ToLowerInvariant())" })) {
+    $problems += "Secondary owner $SecondaryOwner is not a site collection admin"
+}
 foreach ($a in $assignments) {
     $claim = Get-GroupClaim $a.Id
-    if (-not (Get-PnPGroupMember -Group $a.Group -Connection $site | Where-Object LoginName -eq $claim)) {
+    $members = @(Get-PnPGroupMember -Group $a.Group -Connection $site)
+    if (-not ($members | Where-Object LoginName -eq $claim)) {
         $problems += "Group $($a.Id) is not in '$($a.Group.Title)'"
     }
+    # Access stays group-based: no individual users left in the SharePoint group.
+    $people = @($members | Where-Object { $_.LoginName -like 'i:0#.f|membership|*' })
+    if ($people) { $problems += "'$($a.Group.Title)' still has individual users: $($people.LoginName -join ', ')" }
 }
 if ($problems) {
     $result.Errors += $problems
@@ -148,7 +159,7 @@ if ($problems) {
     Write-Result
     throw "Baseline read-back found $($problems.Count) problem(s); see the result line."
 }
-$result.Steps += 'Read back: sharing, custom script, label and group membership confirmed'
+$result.Steps += 'Read back: sharing, custom script, label present and correct, secondary admin, group membership and no individual users confirmed'
 
 $result.Status = 'Success'
 Write-Result

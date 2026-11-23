@@ -182,6 +182,130 @@
                 ]
               }
             },
+            "Get_owners_group": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_webcontents",
+                  "operationId": "InvokeHttp",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                },
+                "parameters": {
+                  "request/method": "GET",
+                  "request/url": "https://graph.microsoft.com/v1.0/groups/@{trim(triggerBody()?['OwnersGroupId'])}?$select=id,displayName,securityEnabled,mailEnabled,groupTypes,onPremisesSyncEnabled"
+                }
+              },
+              "runAfter": {
+                "Get_secondary_owner": [
+                  "Succeeded",
+                  "Failed"
+                ]
+              }
+            },
+            "Get_members_group": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_webcontents",
+                  "operationId": "InvokeHttp",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                },
+                "parameters": {
+                  "request/method": "GET",
+                  "request/url": "https://graph.microsoft.com/v1.0/groups/@{trim(triggerBody()?['MembersGroupId'])}?$select=id,displayName,securityEnabled,mailEnabled,groupTypes,onPremisesSyncEnabled"
+                }
+              },
+              "runAfter": {
+                "Get_owners_group": [
+                  "Succeeded",
+                  "Failed"
+                ]
+              }
+            },
+            "Condition_has_visitors_group": {
+              "type": "If",
+              "expression": {
+                "not": {
+                  "equals": [
+                    "@trim(coalesce(triggerBody()?['VisitorsGroupId'], ''))",
+                    ""
+                  ]
+                }
+              },
+              "actions": {
+                "Get_visitors_group": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_webcontents",
+                      "operationId": "InvokeHttp",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                    },
+                    "parameters": {
+                      "request/method": "GET",
+                      "request/url": "https://graph.microsoft.com/v1.0/groups/@{trim(triggerBody()?['VisitorsGroupId'])}?$select=id,displayName,securityEnabled,mailEnabled,groupTypes,onPremisesSyncEnabled"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "runAfter": {
+                "Get_members_group": [
+                  "Succeeded",
+                  "Failed"
+                ]
+              }
+            },
+            "Condition_has_guests_group": {
+              "type": "If",
+              "expression": {
+                "not": {
+                  "equals": [
+                    "@trim(coalesce(triggerBody()?['GuestsGroupId'], ''))",
+                    ""
+                  ]
+                }
+              },
+              "actions": {
+                "Get_guests_group": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_webcontents",
+                      "operationId": "InvokeHttp",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents"
+                    },
+                    "parameters": {
+                      "request/method": "GET",
+                      "request/url": "https://graph.microsoft.com/v1.0/groups/@{trim(triggerBody()?['GuestsGroupId'])}?$select=id,displayName,securityEnabled,mailEnabled,groupTypes,onPremisesSyncEnabled"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "runAfter": {
+                "Condition_has_visitors_group": [
+                  "Succeeded",
+                  "Failed"
+                ]
+              }
+            },
+            "Compose_group_check": {
+              "type": "Compose",
+              "description": "What each requested group really is, from Graph. The service owner sees this in the approval; any INVALID returns the request.",
+              "inputs": {
+                "Owners": "@{if(and(equals(actions('Get_owners_group')?['status'], 'Succeeded'), equals(body('Get_owners_group')?['securityEnabled'], true), not(contains(string(coalesce(body('Get_owners_group')?['groupTypes'], json('[]'))), 'Unified'))), concat(body('Get_owners_group')?['displayName'], ' (security group, ', if(equals(body('Get_owners_group')?['onPremisesSyncEnabled'], true), 'synced from AD', 'cloud'), ')'), 'INVALID: not found, not a security group, or a Microsoft 365 group')}",
+                "Members": "@{if(and(equals(actions('Get_members_group')?['status'], 'Succeeded'), equals(body('Get_members_group')?['securityEnabled'], true), not(contains(string(coalesce(body('Get_members_group')?['groupTypes'], json('[]'))), 'Unified'))), concat(body('Get_members_group')?['displayName'], ' (security group, ', if(equals(body('Get_members_group')?['onPremisesSyncEnabled'], true), 'synced from AD', 'cloud'), ')'), 'INVALID: not found, not a security group, or a Microsoft 365 group')}",
+                "Visitors": "@{if(empty(trim(coalesce(triggerBody()?['VisitorsGroupId'], ''))), 'none requested', if(and(equals(actions('Get_visitors_group')?['status'], 'Succeeded'), equals(body('Get_visitors_group')?['securityEnabled'], true), not(contains(string(coalesce(body('Get_visitors_group')?['groupTypes'], json('[]'))), 'Unified'))), concat(body('Get_visitors_group')?['displayName'], ' (security group, ', if(equals(body('Get_visitors_group')?['onPremisesSyncEnabled'], true), 'synced from AD', 'cloud'), ')'), 'INVALID: not found, not a security group, or a Microsoft 365 group'))}",
+                "Guests": "@{if(empty(trim(coalesce(triggerBody()?['GuestsGroupId'], ''))), 'none requested', if(and(equals(actions('Get_guests_group')?['status'], 'Succeeded'), equals(body('Get_guests_group')?['securityEnabled'], true), not(contains(string(coalesce(body('Get_guests_group')?['groupTypes'], json('[]'))), 'Unified')), not(equals(body('Get_guests_group')?['onPremisesSyncEnabled'], true))), concat(body('Get_guests_group')?['displayName'], ' (security group, ', if(equals(body('Get_guests_group')?['onPremisesSyncEnabled'], true), 'synced from AD', 'cloud'), ')'), 'INVALID: not found, not a security group, or a Microsoft 365 group, or synced from AD (the Guests group must be a cloud group)'))}"
+              },
+              "runAfter": {
+                "Condition_has_guests_group": [
+                  "Succeeded",
+                  "Failed"
+                ]
+              }
+            },
             "Condition_RequestValid": {
               "type": "If",
               "expression": {
@@ -249,6 +373,14 @@
                         null
                       ]
                     }
+                  },
+                  {
+                    "not": {
+                      "contains": [
+                        "@string(outputs('Compose_group_check'))",
+                        "INVALID"
+                      ]
+                    }
                   }
                 ]
               },
@@ -265,7 +397,7 @@
                       "approvalType": "Basic",
                       "WebhookApprovalCreationInput/title": "@{concat('New SharePoint site: ', triggerBody()?['Title'])}",
                       "WebhookApprovalCreationInput/assignedTo": "@parameters('SharePointServiceOwnerEmail')",
-                      "WebhookApprovalCreationInput/details": "@{concat('Site: ', triggerBody()?['Title'], ' (', concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias']), ')', decodeUriComponent('%0A'), 'Department: ', triggerBody()?['Department'], decodeUriComponent('%0A'), 'Primary owner: ', triggerBody()?['PrimaryOwner']?['Email'], decodeUriComponent('%0A'), 'Secondary owner: ', triggerBody()?['SecondaryOwner']?['Email'], decodeUriComponent('%0A'), 'Sensitivity: ', triggerBody()?['Sensitivity']?['Value'], decodeUriComponent('%0A'), 'External sharing: ', if(equals(triggerBody()?['ExternalSharingRequired'], true), 'Requested', 'Off'))}",
+                      "WebhookApprovalCreationInput/details": "@{concat('Site: ', triggerBody()?['Title'], ' (', concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias']), ')', decodeUriComponent('%0A'), 'Department: ', triggerBody()?['Department'], decodeUriComponent('%0A'), 'Primary owner: ', triggerBody()?['PrimaryOwner']?['Email'], decodeUriComponent('%0A'), 'Secondary owner: ', triggerBody()?['SecondaryOwner']?['Email'], decodeUriComponent('%0A'), 'Sensitivity: ', triggerBody()?['Sensitivity']?['Value'], decodeUriComponent('%0A'), 'External sharing: ', if(equals(triggerBody()?['ExternalSharingRequired'], true), 'Requested', 'Off'), decodeUriComponent('%0A'), 'Owners group: ', outputs('Compose_group_check')?['Owners'], decodeUriComponent('%0A'), 'Members group: ', outputs('Compose_group_check')?['Members'], decodeUriComponent('%0A'), 'Visitors group: ', outputs('Compose_group_check')?['Visitors'], decodeUriComponent('%0A'), 'Guests group: ', outputs('Compose_group_check')?['Guests'], decodeUriComponent('%0A'), 'Check these are the right groups for this site before approving.')}",
                       "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
                       "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
                       "WebhookApprovalCreationInput/enableNotifications": true,
@@ -314,7 +446,7 @@
                               "approvalType": "Basic",
                               "WebhookApprovalCreationInput/title": "@{concat('Security review - new site: ', triggerBody()?['Title'])}",
                               "WebhookApprovalCreationInput/assignedTo": "@parameters('InfoSecApproverEmail')",
-                              "WebhookApprovalCreationInput/details": "@{concat('Site: ', triggerBody()?['Title'], ' (', concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias']), ')', decodeUriComponent('%0A'), 'Department: ', triggerBody()?['Department'], decodeUriComponent('%0A'), 'Primary owner: ', triggerBody()?['PrimaryOwner']?['Email'], decodeUriComponent('%0A'), 'Secondary owner: ', triggerBody()?['SecondaryOwner']?['Email'], decodeUriComponent('%0A'), 'Sensitivity: ', triggerBody()?['Sensitivity']?['Value'], decodeUriComponent('%0A'), 'External sharing: ', if(equals(triggerBody()?['ExternalSharingRequired'], true), 'Requested', 'Off'))}",
+                              "WebhookApprovalCreationInput/details": "@{concat('Site: ', triggerBody()?['Title'], ' (', concat(parameters('TenantRootUrl'), '/sites/', triggerBody()?['SiteAlias']), ')', decodeUriComponent('%0A'), 'Department: ', triggerBody()?['Department'], decodeUriComponent('%0A'), 'Primary owner: ', triggerBody()?['PrimaryOwner']?['Email'], decodeUriComponent('%0A'), 'Secondary owner: ', triggerBody()?['SecondaryOwner']?['Email'], decodeUriComponent('%0A'), 'Sensitivity: ', triggerBody()?['Sensitivity']?['Value'], decodeUriComponent('%0A'), 'External sharing: ', if(equals(triggerBody()?['ExternalSharingRequired'], true), 'Requested', 'Off'), decodeUriComponent('%0A'), 'Owners group: ', outputs('Compose_group_check')?['Owners'], decodeUriComponent('%0A'), 'Members group: ', outputs('Compose_group_check')?['Members'], decodeUriComponent('%0A'), 'Visitors group: ', outputs('Compose_group_check')?['Visitors'], decodeUriComponent('%0A'), 'Guests group: ', outputs('Compose_group_check')?['Guests'], decodeUriComponent('%0A'), 'Check these are the right groups for this site before approving.')}",
                               "WebhookApprovalCreationInput/itemLink": "@triggerBody()?['{Link}']",
                               "WebhookApprovalCreationInput/itemLinkDescription": "Open the request",
                               "WebhookApprovalCreationInput/enableNotifications": true,
@@ -829,7 +961,7 @@
                         "table": "Site Requests",
                         "id": "@triggerBody()?['ID']",
                         "item/Status/Value": "Returned - Ownership invalid",
-                        "item/DecisionLog": "Every site needs two different named, enabled, internal owners (no service/shared accounts) and Owners/Members security groups."
+                        "item/DecisionLog": "@{concat('Every site needs two different named, enabled, internal owners (no service/shared accounts) and Owners and Members security groups that exist. ', 'Groups found: Owners ', outputs('Compose_group_check')?['Owners'], '; Members ', outputs('Compose_group_check')?['Members'], '; Visitors ', outputs('Compose_group_check')?['Visitors'], '; Guests ', outputs('Compose_group_check')?['Guests'], '.')}"
                       }
                     },
                     "runAfter": {}
@@ -858,9 +990,8 @@
                 }
               },
               "runAfter": {
-                "Get_secondary_owner": [
-                  "Succeeded",
-                  "Failed"
+                "Compose_group_check": [
+                  "Succeeded"
                 ]
               }
             }

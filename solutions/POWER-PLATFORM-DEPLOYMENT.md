@@ -5,8 +5,8 @@ stay supported in BAU:
 
 | Solution | Flows | Connectors |
 |----------|-------|------------|
-| **SharePoint Governance (BAU)**, `solutions/SharePointGovernance` (1.8.0.0) | 7: 01, 02, 03, 05, 06, 07, 08 | SharePoint, Office 365 Outlook, Approvals, HTTP with Microsoft Entra ID, Azure Automation |
-| **SharePoint News and Notices**, `solutions/SharePointNews` (1.5.0.0) | 4: C1, C2, C3a, C3b | SharePoint, Office 365 Outlook, Microsoft Teams |
+| **SharePoint Governance (BAU)**, `solutions/SharePointGovernance` (1.9.0.0) | 7: 01, 02, 03, 05, 06, 07, 08 | SharePoint, Office 365 Outlook, Approvals, HTTP with Microsoft Entra ID, Azure Automation |
+| **SharePoint News and Notices**, `solutions/SharePointNews` (1.6.0.0) | 4: C1, C2, C3a, C3b | SharePoint, Office 365 Outlook, Microsoft Teams |
 
 **Status today: unmanaged only.** Each solution is built as an **unmanaged**
 .zip and imported by hand. The managed pipeline below is a **proposal; it
@@ -170,7 +170,7 @@ deploys to Test automatically, then waits for an approved Production run.
   `###RESULT###` object saying Success, not the flow run (G-10).
 - **News deliveries needing a person.** Check the Delivery Log *Needs
   checking* view (rows left Reserved or Reconcile) whenever a failure alert
-  arrives, and weekly. The news flows never resend those on their own.
+  arrives, and weekly. The news flows never resend those on their own. A Reserved row isn't proof of delivery: set Sent only when the recipient confirms it arrived, otherwise Failed.
 - **Emergency stop for news.** Set the `DispatchEnabled` environment variable
   to No: **new** roundup and urgent runs send nothing. A run already going
   read the switch when it started, so also set the Comms Distribution rows'

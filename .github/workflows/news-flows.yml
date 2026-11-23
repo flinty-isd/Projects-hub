@@ -22,10 +22,15 @@ jobs:
           python-version: "3.12"
       - name: Validate flow definitions against the list schema
         run: python solutions/SharePointGovernance/tools/validate_flows.py --root solutions/SharePointNews
-      - name: Build the importable solution package
-        run: python solutions/SharePointGovernance/tools/build_solution.py --root solutions/SharePointNews --out dist
+      - name: Build the solution package and the deployment kit
+        run: python solutions/SharePointGovernance/tools/build_kit.py --root solutions/SharePointNews --out dist
       - name: Upload solution package
         uses: actions/upload-artifact@v4
         with:
           name: SharePointNews-solution
-          path: dist/*.zip
+          path: dist/SharePointNews_*.zip
+      - name: Upload deployment kit
+        uses: actions/upload-artifact@v4
+        with:
+          name: SharePointNews-DeploymentKit
+          path: dist/SharePointNews-DeploymentKit_*.zip

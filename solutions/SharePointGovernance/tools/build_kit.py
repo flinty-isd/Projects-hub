@@ -1,12 +1,15 @@
-"""Build the governance deployment kit: one versioned zip with everything
-DEPLOY-AND-TEST.md refers to, plus a manifest of SHA-256 checksums.
+"""Build a deployment kit: one versioned zip with the importable solution and
+everything its deployment and test guide refers to, plus a manifest of
+SHA-256 checksums. Governance by default; --root solutions/SharePointNews
+builds the news kit. Each solution-config.json lists its kit contents in
+"kitInclude".
 
 The kit holds the importable solution (built here, so the two always match),
 the runbook, provisioning script, list schema and CSV templates, dashboard
 definition, SAM policy sheet, guides, diagrams, the Claude skill and the
 tools themselves, so a second operator can deploy from the kit alone.
 
-Usage: python solutions/SharePointGovernance/tools/build_kit.py [--out DIR]
+Usage: python solutions/SharePointGovernance/tools/build_kit.py [--root DIR] [--out DIR]
 """
 import hashlib
 import json
@@ -15,17 +18,24 @@ import sys
 import zipfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-REPO = ROOT.parent.parent
+TOOLS = Path(__file__).resolve().parent
+ROOT = Path(sys.argv[sys.argv.index("--root") + 1]).resolve() if "--root" in sys.argv else TOOLS.parent
+REPO = TOOLS.parent.parent.parent
 OUT = Path(sys.argv[sys.argv.index("--out") + 1]).resolve() if "--out" in sys.argv else ROOT / "dist"
 CONFIG = json.loads((ROOT / "solution-config.json").read_text())
 VERSION = CONFIG["version"]
 VTAG = VERSION.replace(".", "_")
 
+NAME = CONFIG["uniqueName"]
 # Folders and files copied into the kit, relative to the solution folder.
-INCLUDE = ["README.md", "DEPLOY-AND-TEST.md", "SAM-POLICIES.md", "PERMISSIONS.md", "solution-config.json",
-           "powerautomate", "runbooks", "provisioning", "sharepoint", "diagrams", "skills", "tools"]
+INCLUDE = CONFIG["kitInclude"]
+missing = [n for n in INCLUDE if not (ROOT / n).exists()]
+if missing:
+    sys.exit(f"kitInclude names files that don't exist: {missing}")
 EXTRA = {"docs/POWER-PLATFORM-DEPLOYMENT.md": REPO / "solutions" / "POWER-PLATFORM-DEPLOYMENT.md"}
+if ROOT != TOOLS.parent:
+    # The tools that validate and build the flows live with governance; ship them too.
+    EXTRA.update({f"tools/{f.name}": f for f in sorted(TOOLS.glob("*.py"))})
 
 
 def files():
@@ -40,15 +50,15 @@ def files():
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    subprocess.run([sys.executable, str(ROOT / "tools" / "build_solution.py"), "--out", str(OUT)], check=True)
-    solution = OUT / f"SharePointGovernance_{VTAG}.zip"
+    subprocess.run([sys.executable, str(TOOLS / "build_solution.py"), "--root", str(ROOT), "--out", str(OUT)], check=True)
+    solution = OUT / f"{NAME}_{VTAG}.zip"
     commit = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip() or "unknown"
 
     entries = list(files()) + [(f"solution/{solution.name}", solution)]
-    manifest = {"kit": "SharePoint governance deployment kit", "version": VERSION, "sourceCommit": commit,
+    manifest = {"kit": f"{CONFIG['displayName']} deployment kit", "version": VERSION, "sourceCommit": commit,
                 "files": {arc: hashlib.sha256(f.read_bytes()).hexdigest() for arc, f in entries}}
-    kit = OUT / f"SharePointGovernance-DeploymentKit_{VTAG}.zip"
-    top = f"SharePointGovernance-DeploymentKit_{VTAG}"
+    kit = OUT / f"{NAME}-DeploymentKit_{VTAG}.zip"
+    top = f"{NAME}-DeploymentKit_{VTAG}"
     with zipfile.ZipFile(kit, "w", zipfile.ZIP_DEFLATED) as z:
         for arc, f in entries:
             z.write(f, f"{top}/{arc}")
