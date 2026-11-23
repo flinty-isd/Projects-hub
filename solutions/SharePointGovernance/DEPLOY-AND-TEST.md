@@ -174,7 +174,7 @@ Review findings R10 to R17 have build changes in solution 1.9.0.0 (governance) a
 ## 4. Go live (production)
 
 1. Agree the date with the Control Board (plan: w/c 4 January 2027).
-2. Repeat 2.1 to 2.7 in production with **real** values: the real governance site, role mailboxes and Automation account. Load the full Site Register (225 sites) after the owner emails have been checked.
+2. Repeat 2.1 to 2.7 in production with **real** values: the real governance site (`https://hphneu.sharepoint.com/sites/hpuk-pof-it-enterprisegovernance`), role mailboxes and Automation account. Load the full Site Register (225 sites) after the owner emails have been checked.
 3. Turn the flows on in the same order, with both switches still **No**.
 4. Run the production smoke tests: T01 with a real request, T05 and T10 with real accounts, T22, and T25 on a test copy of a flow: the *Flow failed* email reaches IT Ops, the service owner and the support mailbox (Intercommunications@fdrc.co.uk).
 5. Brief site owners (comms lead), then set **Send urgent site alerts** = Yes and, from the 1st of the next month, **Send the monthly owner digest** = Yes.
