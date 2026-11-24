@@ -1,0 +1,653 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "PMO 04 - Change request approval",
+  "description": "Runs when a Change Request is created. Allocates CR-nnn if blank, then asks the PMO approvers to review it (14 days). Within tolerance (not a scope change, budget impact up to CRBudgetTolerance, schedule impact up to CRScheduleToleranceDays) the PMO approval is the decision; otherwise an approved PMO review goes to the Steering Committee approvers (21 days). Records Approved, Rejected, Returned to requester or Decision overdue on the request with who decided and their comments, logs an Approved or Rejected decision in the Action and Decision Tracker (Decision Made, Completed), and emails the requester. Does nothing while CRApprovalsEnabled is No: requests stay Submitted.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_approvals": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "PMOSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/EnterprisePMO"
+    },
+    "PMOOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{pmo-shared-mailbox}@{domain}"
+    },
+    "SupportMailboxEmail": {
+      "type": "String",
+      "defaultValue": ""
+    },
+    "CRApprovalsEnabled": {
+      "type": "Bool",
+      "defaultValue": false
+    },
+    "CRPMOApproverEmails": {
+      "type": "String",
+      "defaultValue": "{pmo-governance-lead}@{domain}"
+    },
+    "CRSteerCoApproverEmails": {
+      "type": "String",
+      "defaultValue": "{steering-committee-chair}@{domain}"
+    },
+    "CRBudgetTolerance": {
+      "type": "Int",
+      "defaultValue": 25000
+    },
+    "CRScheduleToleranceDays": {
+      "type": "Int",
+      "defaultValue": 10
+    }
+  },
+  "triggers": {
+    "When_a_change_request_is_created": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnNewItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('PMOSiteUrl')",
+          "table": "Change Requests"
+        }
+      },
+      "recurrence": {
+        "frequency": "Minute",
+        "interval": 5
+      },
+      "splitOn": "@triggerOutputs()?['body/value']"
+    }
+  },
+  "actions": {
+    "Init_Outcome": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "Outcome",
+            "type": "string",
+            "value": "Decision overdue"
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Init_DecidedBy": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "DecidedBy",
+            "type": "string",
+            "value": ""
+          }
+        ]
+      },
+      "runAfter": {
+        "Init_Outcome": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Init_Comments": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "Comments",
+            "type": "string",
+            "value": ""
+          }
+        ]
+      },
+      "runAfter": {
+        "Init_DecidedBy": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Init_Forum": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "Forum",
+            "type": "string",
+            "value": "PMO"
+          }
+        ]
+      },
+      "runAfter": {
+        "Init_Comments": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Scope_Main": {
+      "type": "Scope",
+      "actions": {
+        "Condition_Approvals_enabled": {
+          "type": "If",
+          "expression": {
+            "equals": [
+              "@parameters('CRApprovalsEnabled')",
+              true
+            ]
+          },
+          "actions": {
+            "Compose_cr": {
+              "type": "Compose",
+              "inputs": {
+                "ref": "@{coalesce(triggerBody()?['CRReference'], concat('CR-', formatNumber(triggerBody()?['ID'], '000')))}",
+                "needsSteerCo": "@or(equals(triggerBody()?['ChangeType']?['Value'], 'Scope'), equals(triggerBody()?['ChangeType']?['Value'], 'Multiple'), greater(abs(coalesce(triggerBody()?['BudgetImpact'], 0)), parameters('CRBudgetTolerance')), greater(coalesce(triggerBody()?['ScheduleImpactDays'], 0), parameters('CRScheduleToleranceDays')))",
+                "route": "@{if(or(equals(triggerBody()?['ChangeType']?['Value'], 'Scope'), equals(triggerBody()?['ChangeType']?['Value'], 'Multiple'), greater(abs(coalesce(triggerBody()?['BudgetImpact'], 0)), parameters('CRBudgetTolerance')), greater(coalesce(triggerBody()?['ScheduleImpactDays'], 0), parameters('CRScheduleToleranceDays'))), 'Steering Committee', 'PMO')}",
+                "requester": "@{coalesce(triggerBody()?['RequestedBy']?['Email'], triggerBody()?['Author']?['Email'])}"
+              },
+              "runAfter": {},
+              "description": "Steering Committee decides any scope change, and any budget or schedule change over tolerance; the PMO decides the rest."
+            },
+            "Mark_PMO_review": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PatchItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PMOSiteUrl')",
+                  "table": "Change Requests",
+                  "id": "@triggerBody()?['ID']",
+                  "item/Title": "@triggerBody()?['Title']",
+                  "item/Workstream/Id": "@triggerBody()?['Workstream']?['Id']",
+                  "item/ChangeType/Value": "@triggerBody()?['ChangeType']?['Value']",
+                  "item/Description": "@triggerBody()?['Description']",
+                  "item/Justification": "@triggerBody()?['Justification']",
+                  "item/Status/Value": "Under review - PMO",
+                  "item/CRReference": "@outputs('Compose_cr')?['ref']",
+                  "item/DecisionRoute": "@outputs('Compose_cr')?['route']"
+                }
+              },
+              "runAfter": {
+                "Compose_cr": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Scope_Decide": {
+              "type": "Scope",
+              "actions": {
+                "Approval_PMO": {
+                  "type": "OpenApiConnection",
+                  "description": "Times out after 14 days with no response.",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_approvals",
+                      "operationId": "StartAndWaitForAnApproval",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                    },
+                    "parameters": {
+                      "approvalType": "Basic",
+                      "WebhookApprovalCreationInput/title": "@{concat('PMO review: ', outputs('Compose_cr')?['ref'], ' ', triggerBody()?['Title'])}",
+                      "WebhookApprovalCreationInput/assignedTo": "@parameters('CRPMOApproverEmails')",
+                      "WebhookApprovalCreationInput/details": "@{concat(outputs('Compose_cr')?['ref'], ': ', triggerBody()?['Title'], decodeUriComponent('%0A%0A'), 'Workstream: ', coalesce(triggerBody()?['Workstream']?['Value'], '-'), decodeUriComponent('%0A%0A'), 'Change type: ', triggerBody()?['ChangeType']?['Value'], decodeUriComponent('%0A%0A'), 'Budget impact (GBP): ', string(coalesce(triggerBody()?['BudgetImpact'], 0)), '   Schedule impact (days): ', string(coalesce(triggerBody()?['ScheduleImpactDays'], 0)), decodeUriComponent('%0A%0A'), 'Change requested: ', coalesce(triggerBody()?['Description'], '-'), decodeUriComponent('%0A%0A'), 'Justification: ', coalesce(triggerBody()?['Justification'], '-'), decodeUriComponent('%0A%0A'), 'Impact on baseline: ', coalesce(triggerBody()?['ImpactSummary'], '-'), decodeUriComponent('%0A%0A'), 'Requested by: ', coalesce(triggerBody()?['RequestedBy']?['DisplayName'], triggerBody()?['Author']?['DisplayName']), decodeUriComponent('%0A%0A'), 'Approve if the request is complete and correct; it then goes to: ', outputs('Compose_cr')?['route'], '.')}",
+                      "WebhookApprovalCreationInput/itemLink": "@{concat(parameters('PMOSiteUrl'), '/Lists/ChangeRequests/DispForm.aspx?ID=', string(triggerBody()?['ID']))}",
+                      "WebhookApprovalCreationInput/itemLinkDescription": "Open the item",
+                      "WebhookApprovalCreationInput/enableNotifications": true,
+                      "WebhookApprovalCreationInput/enableReassignment": true
+                    }
+                  },
+                  "limit": {
+                    "timeout": "P14D"
+                  },
+                  "runAfter": {}
+                },
+                "Set_decided_by_PMO": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "DecidedBy",
+                    "value": "@{coalesce(first(outputs('Approval_PMO')?['body/responses'])?['responder']?['displayName'], 'approver')}"
+                  },
+                  "runAfter": {
+                    "Approval_PMO": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Set_comments_PMO": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "Comments",
+                    "value": "@{concat('PMO (', coalesce(first(outputs('Approval_PMO')?['body/responses'])?['responder']?['displayName'], 'approver'), '): ', coalesce(first(outputs('Approval_PMO')?['body/responses'])?['comments'], 'no comment'))}"
+                  },
+                  "runAfter": {
+                    "Set_decided_by_PMO": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Set_outcome_PMO": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "Outcome",
+                    "value": "@{if(equals(outputs('Approval_PMO')?['body/outcome'], 'Approve'), if(outputs('Compose_cr')?['needsSteerCo'], 'Pending Steering Committee', 'Approved'), 'Returned to requester')}"
+                  },
+                  "runAfter": {
+                    "Set_comments_PMO": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Condition_Needs_Steering_Committee": {
+                  "type": "If",
+                  "expression": {
+                    "equals": [
+                      "@variables('Outcome')",
+                      "Pending Steering Committee"
+                    ]
+                  },
+                  "actions": {
+                    "Set_forum_SteerCo": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Forum",
+                        "value": "Steering Committee"
+                      },
+                      "runAfter": {}
+                    },
+                    "Set_outcome_waiting": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Outcome",
+                        "value": "Decision overdue"
+                      },
+                      "runAfter": {
+                        "Set_forum_SteerCo": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Get_cr_before_SteerCo": {
+                      "type": "OpenApiConnection",
+                      "description": "Fresh read so edits made during the PMO review aren't overwritten.",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "GetItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('PMOSiteUrl')",
+                          "table": "Change Requests",
+                          "id": "@triggerBody()?['ID']"
+                        }
+                      },
+                      "runAfter": {
+                        "Set_outcome_waiting": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Mark_SteerCo_review": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PatchItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('PMOSiteUrl')",
+                          "table": "Change Requests",
+                          "id": "@triggerBody()?['ID']",
+                          "item/Title": "@body('Get_cr_before_SteerCo')?['Title']",
+                          "item/Workstream/Id": "@body('Get_cr_before_SteerCo')?['Workstream']?['Id']",
+                          "item/ChangeType/Value": "@body('Get_cr_before_SteerCo')?['ChangeType']?['Value']",
+                          "item/Description": "@body('Get_cr_before_SteerCo')?['Description']",
+                          "item/Justification": "@body('Get_cr_before_SteerCo')?['Justification']",
+                          "item/Status/Value": "Under review - Steering Committee"
+                        }
+                      },
+                      "runAfter": {
+                        "Get_cr_before_SteerCo": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Approval_SteerCo": {
+                      "type": "OpenApiConnection",
+                      "description": "Times out after 21 days with no response.",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_approvals",
+                          "operationId": "StartAndWaitForAnApproval",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                        },
+                        "parameters": {
+                          "approvalType": "Basic",
+                          "WebhookApprovalCreationInput/title": "@{concat('Steering Committee decision: ', outputs('Compose_cr')?['ref'], ' ', triggerBody()?['Title'])}",
+                          "WebhookApprovalCreationInput/assignedTo": "@parameters('CRSteerCoApproverEmails')",
+                          "WebhookApprovalCreationInput/details": "@{concat(outputs('Compose_cr')?['ref'], ': ', triggerBody()?['Title'], decodeUriComponent('%0A%0A'), 'Workstream: ', coalesce(triggerBody()?['Workstream']?['Value'], '-'), decodeUriComponent('%0A%0A'), 'Change type: ', triggerBody()?['ChangeType']?['Value'], decodeUriComponent('%0A%0A'), 'Budget impact (GBP): ', string(coalesce(triggerBody()?['BudgetImpact'], 0)), '   Schedule impact (days): ', string(coalesce(triggerBody()?['ScheduleImpactDays'], 0)), decodeUriComponent('%0A%0A'), 'Change requested: ', coalesce(triggerBody()?['Description'], '-'), decodeUriComponent('%0A%0A'), 'Justification: ', coalesce(triggerBody()?['Justification'], '-'), decodeUriComponent('%0A%0A'), 'Impact on baseline: ', coalesce(triggerBody()?['ImpactSummary'], '-'), decodeUriComponent('%0A%0A'), 'Requested by: ', coalesce(triggerBody()?['RequestedBy']?['DisplayName'], triggerBody()?['Author']?['DisplayName']), decodeUriComponent('%0A%0A'), 'PMO review: ', variables('Comments'))}",
+                          "WebhookApprovalCreationInput/itemLink": "@{concat(parameters('PMOSiteUrl'), '/Lists/ChangeRequests/DispForm.aspx?ID=', string(triggerBody()?['ID']))}",
+                          "WebhookApprovalCreationInput/itemLinkDescription": "Open the item",
+                          "WebhookApprovalCreationInput/enableNotifications": true,
+                          "WebhookApprovalCreationInput/enableReassignment": true
+                        }
+                      },
+                      "limit": {
+                        "timeout": "P21D"
+                      },
+                      "runAfter": {
+                        "Mark_SteerCo_review": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Set_decided_by_SteerCo": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "DecidedBy",
+                        "value": "@{concat(variables('DecidedBy'), ' (PMO); ', coalesce(first(outputs('Approval_SteerCo')?['body/responses'])?['responder']?['displayName'], 'approver'), ' (Steering Committee)')}"
+                      },
+                      "runAfter": {
+                        "Approval_SteerCo": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Set_comments_SteerCo": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Comments",
+                        "value": "@{concat(variables('Comments'), ' | Steering Committee (', coalesce(first(outputs('Approval_SteerCo')?['body/responses'])?['responder']?['displayName'], 'approver'), '): ', coalesce(first(outputs('Approval_SteerCo')?['body/responses'])?['comments'], 'no comment'))}"
+                      },
+                      "runAfter": {
+                        "Set_decided_by_SteerCo": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Set_outcome_SteerCo": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Outcome",
+                        "value": "@{if(equals(outputs('Approval_SteerCo')?['body/outcome'], 'Approve'), 'Approved', 'Rejected')}"
+                      },
+                      "runAfter": {
+                        "Set_comments_SteerCo": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Note_SteerCo_timed_out": {
+                      "type": "Compose",
+                      "inputs": "No Steering Committee decision within 21 days: outcome stays Decision overdue.",
+                      "runAfter": {
+                        "Approval_SteerCo": [
+                          "TimedOut"
+                        ]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  },
+                  "runAfter": {
+                    "Set_outcome_PMO": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Note_PMO_timed_out": {
+                  "type": "Compose",
+                  "inputs": "No PMO decision within 14 days: outcome stays Decision overdue.",
+                  "runAfter": {
+                    "Approval_PMO": [
+                      "TimedOut"
+                    ]
+                  }
+                }
+              },
+              "description": "Both approval stages. A timed-out approval is handled inside (Note_*_timed_out), so the scope succeeds and the outcome stays Decision overdue.",
+              "runAfter": {
+                "Mark_PMO_review": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Get_cr_now": {
+              "type": "OpenApiConnection",
+              "description": "Fresh read after the approvals: keeps edits made meanwhile, and a request the requester withdrew stays Withdrawn.",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PMOSiteUrl')",
+                  "table": "Change Requests",
+                  "id": "@triggerBody()?['ID']"
+                }
+              },
+              "runAfter": {
+                "Scope_Decide": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Compose_final_status": {
+              "type": "Compose",
+              "inputs": "@if(equals(body('Get_cr_now')?['Status']?['Value'], 'Withdrawn'), 'Withdrawn', variables('Outcome'))",
+              "runAfter": {
+                "Get_cr_now": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Record_decision": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PatchItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PMOSiteUrl')",
+                  "table": "Change Requests",
+                  "id": "@triggerBody()?['ID']",
+                  "item/Title": "@body('Get_cr_now')?['Title']",
+                  "item/Workstream/Id": "@body('Get_cr_now')?['Workstream']?['Id']",
+                  "item/ChangeType/Value": "@body('Get_cr_now')?['ChangeType']?['Value']",
+                  "item/Description": "@body('Get_cr_now')?['Description']",
+                  "item/Justification": "@body('Get_cr_now')?['Justification']",
+                  "item/Status/Value": "@outputs('Compose_final_status')",
+                  "item/DecidedBy": "@{variables('DecidedBy')}",
+                  "item/DecisionDate": "@utcNow()",
+                  "item/DecisionNote": "@{variables('Comments')}"
+                }
+              },
+              "runAfter": {
+                "Compose_final_status": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Condition_Decided": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "or": [
+                      {
+                        "equals": [
+                          "@variables('Outcome')",
+                          "Approved"
+                        ]
+                      },
+                      {
+                        "equals": [
+                          "@variables('Outcome')",
+                          "Rejected"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "not": {
+                      "equals": [
+                        "@outputs('Compose_final_status')",
+                        "Withdrawn"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "actions": {
+                "Log_decision": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "PostItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('PMOSiteUrl')",
+                      "table": "Action and Decision Tracker",
+                      "item/Title": "@{concat(outputs('Compose_cr')?['ref'], ' ', variables('Outcome'), ': ', triggerBody()?['Title'])}",
+                      "item/Category/Value": "Decision Made",
+                      "item/Workstream/Id": "@triggerBody()?['Workstream']?['Id']",
+                      "item/DecisionForum/Value": "@variables('Forum')",
+                      "item/Status/Value": "Completed",
+                      "item/DueDate": "@utcNow()",
+                      "item/DecisionOutcome": "@{concat('Change request ', outputs('Compose_cr')?['ref'], ' ', toLower(variables('Outcome')), '. ', variables('Comments'))}"
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Email_requester_outcome": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@{outputs('Compose_cr')?['requester']}",
+                      "emailMessage/Subject": "@{concat(outputs('Compose_cr')?['ref'], ' ', toLower(variables('Outcome')), ': ', triggerBody()?['Title'])}",
+                      "emailMessage/Body": "<p>Your change request <b>@{outputs('Compose_cr')?['ref']}</b>, @{triggerBody()?['Title']}, was <b>@{toLower(variables('Outcome'))}</b> by the @{variables('Forum')}.</p><p>@{variables('Comments')}</p><p>@{if(equals(variables('Outcome'), 'Approved'), 'The PMO will update the baseline (dates, budget, scope) and the affected RAID items and actions. Moving dates on RAID items and actions is recorded as date churn, so note the CR reference in the item.', 'Nothing changes in the baseline. Raise a new change request if the position changes.')}</p><p><a href=\"@{concat(parameters('PMOSiteUrl'), '/Lists/ChangeRequests/DispForm.aspx?ID=', string(triggerBody()?['ID']))}\">Open the change request</a></p>",
+                      "emailMessage/Importance": "Normal"
+                    }
+                  },
+                  "runAfter": {
+                    "Log_decision": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Email_not_decided": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_office365",
+                        "operationId": "SendEmailV2",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                      },
+                      "parameters": {
+                        "emailMessage/To": "@{concat(outputs('Compose_cr')?['requester'], ';', parameters('PMOOwnerEmail'))}",
+                        "emailMessage/Subject": "@{concat(outputs('Compose_cr')?['ref'], ' ', toLower(variables('Outcome')), ': ', triggerBody()?['Title'])}",
+                        "emailMessage/Body": "<p>Change request <b>@{outputs('Compose_cr')?['ref']}</b>, @{triggerBody()?['Title']}: <b>@{variables('Outcome')}</b>.</p><p>@{if(equals(variables('Outcome'), 'Returned to requester'), concat('The PMO returned it: ', variables('Comments'), '. Update the details and raise it again as a new request.'), concat('No decision was made in time (PMO 14 days, Steering Committee 21 days). ', variables('Comments'), ' The PMO will take it to the next Steering Committee and record the outcome on the request by hand.'))}</p><p><a href=\"@{concat(parameters('PMOSiteUrl'), '/Lists/ChangeRequests/DispForm.aspx?ID=', string(triggerBody()?['ID']))}\">Open the change request</a></p>",
+                        "emailMessage/Importance": "Normal"
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                }
+              },
+              "runAfter": {
+                "Record_decision": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {}
+        }
+      },
+      "runAfter": {
+        "Init_Forum": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Catch_run_failed": {
+      "type": "Scope",
+      "description": "Run-level failure alert: any error in Scope_Main that no step handled.",
+      "actions": {
+        "Select_failed_steps": {
+          "type": "Select",
+          "inputs": {
+            "from": "@result('Scope_Main')",
+            "select": "@concat('<li><b>', item()?['name'], '</b>: ', item()?['status'], ' ', coalesce(item()?['error']?['code'], item()?['outputs']?['statusCode'], ''), ' ', coalesce(item()?['error']?['message'], ''), '</li>')"
+          },
+          "runAfter": {}
+        },
+        "Alert_run_failed": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@{concat(parameters('PMOOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
+              "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
+              "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error it did not handle, so some of its work may not have been done. Nothing has been retried.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a> (started @{workflow()?['run']?['startTime']})</p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Open the run, find the failed step and its raw output, fix the cause, then resubmit the run. See Stopping and recovery in the EnterprisePMO deployment guide.</p>",
+              "emailMessage/Importance": "High"
+            }
+          },
+          "runAfter": {
+            "Select_failed_steps": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Scope_Main": [
+          "Failed",
+          "TimedOut"
+        ]
+      }
+    }
+  }
+}

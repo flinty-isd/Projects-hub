@@ -2,9 +2,19 @@
   "$comment": "Settings for SharePointGovernance/tools/build_solution.py --root solutions/EnterprisePMO. Bump 'version' for every release you import.",
   "uniqueName": "EnterprisePMO",
   "displayName": "Enterprise PMO Governance Hub",
-  "description": "Daily executive overdue digest, weekly predictive early warning and RAID / action date churn tracking for the Enterprise PMO hub site.",
-  "version": "1.0.0.0",
-  "kitInclude": ["README.md", "DEPLOY-AND-TEST.md", "solution-config.json", "powerautomate", "provisioning", "sharepoint", "diagrams"],
+  "description": "Daily executive overdue digest, weekly predictive early warning, RAID / action date churn tracking, change request approval and risk escalation requests for the Enterprise PMO hub site.",
+  "version": "1.1.0.0",
+  "kitInclude": [
+    "README.md",
+    "DEPLOY-AND-TEST.md",
+    "solution-config.json",
+    "powerautomate",
+    "provisioning",
+    "sharepoint",
+    "diagrams",
+    "copilot",
+    "tools"
+  ],
   "publisher": {
     "uniqueName": "HPUKIT",
     "displayName": "HPUK IT",
@@ -85,12 +95,45 @@
       "displayName": "Date churn window (days)",
       "description": "Look-back window for date churn, used by flows 02, 03a and 03b. Default 14.",
       "default": 14
+    },
+    "CRApprovalsEnabled": {
+      "displayName": "Change request approvals enabled",
+      "description": "Master switch for flow 04. No (the default) means new change requests stay Submitted and no approval is sent. Requests created while it is No are not picked up later; raise them again after switching on.",
+      "default": false
+    },
+    "CRPMOApproverEmails": {
+      "displayName": "Change request PMO approvers",
+      "description": "Semicolon-separated addresses for the PMO review stage (first to respond decides): the Lead Governance Specialist and a deputy, or a PMO mail-enabled group."
+    },
+    "CRSteerCoApproverEmails": {
+      "displayName": "Change request Steering Committee approvers",
+      "description": "Semicolon-separated addresses that record the Steering Committee decision (first to respond decides): normally the chair and the committee secretary, who records the decision taken in the meeting."
+    },
+    "CRBudgetTolerance": {
+      "displayName": "Change request budget tolerance (GBP)",
+      "description": "Budget impact (either direction) above which a change request goes to the Steering Committee. Set to the programme's agreed tolerance. Default 25000.",
+      "default": 25000
+    },
+    "CRScheduleToleranceDays": {
+      "displayName": "Change request schedule tolerance (days)",
+      "description": "Schedule impact above which a change request goes to the Steering Committee. Default 10.",
+      "default": 10
+    },
+    "EscalationApproverEmails": {
+      "displayName": "Escalation approvers",
+      "description": "Semicolon-separated addresses that approve requests to escalate a RAID item to the Executive Board (first to respond decides): the Head of PMO Delivery and a deputy."
+    },
+    "EscalationAlertsEnabled": {
+      "displayName": "Escalation Teams alerts enabled",
+      "description": "Lets flow 05 post an approved escalation to the Steering Committee channel straight away. No (the default) still runs the approval and flags the item; it just posts nothing.",
+      "default": false
     }
   },
   "connectionReferenceTag": "pmo",
   "connectionReferences": {
     "shared_sharepointonline": "SharePoint (PMO)",
     "shared_office365": "Office 365 Outlook (PMO)",
-    "shared_teams": "Microsoft Teams (PMO)"
+    "shared_teams": "Microsoft Teams (PMO)",
+    "shared_approvals": "Approvals (PMO)"
   }
 }

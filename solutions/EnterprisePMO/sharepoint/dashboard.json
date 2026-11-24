@@ -12,7 +12,7 @@
         "url": "{SiteUrl}/Lists/ChangeRequests/NewForm.aspx",
         "icon": "PageAdd",
         "audience": "All",
-        "description": "Raise a formal scope, budget or timeline baseline variance request"
+        "description": "Raise a scope, budget or timeline baseline change; the PMO reviews it and, over tolerance, the Steering Committee decides"
       },
       {
         "title": "Governance Framework & SOPs",
@@ -33,7 +33,7 @@
         "url": "{SiteUrl}/Lists/MasterRAIDLog/NewForm.aspx",
         "icon": "Warning",
         "audience": "All",
-        "description": "Log a critical blocker or high-impact risk; tick Escalated to Executive Board to put it in front of the Board"
+        "description": "Log a critical blocker or high-impact risk and tick Request Executive Board escalation: the Head of PMO approves it within 3 days and it goes straight to the Steering Committee"
       },
       {
         "title": "Portfolio Document Repository",
@@ -92,6 +92,19 @@
       ],
       "requiresInView": [
         "Status"
+      ]
+    },
+    {
+      "file": "status-format.json",
+      "columns": [
+        [
+          "Change Requests",
+          "Status"
+        ],
+        [
+          "Master RAID Log",
+          "EscalationStatus"
+        ]
       ]
     }
   ],
@@ -168,6 +181,46 @@
       "column": 2,
       "rowLimit": 10,
       "isDocumentLibrary": true
+    },
+    {
+      "key": "changes",
+      "list": "Change Requests",
+      "title": "Open change requests",
+      "heading": "Change requests in progress",
+      "query": "<Where><In><FieldRef Name=\"Status\"/><Values><Value Type=\"Choice\">Submitted</Value><Value Type=\"Choice\">Under review - PMO</Value><Value Type=\"Choice\">Under review - Steering Committee</Value><Value Type=\"Choice\">Decision overdue</Value></Values></In></Where><OrderBy><FieldRef Name=\"Created\"/></OrderBy>",
+      "fields": [
+        "CRReference",
+        "LinkTitle",
+        "Workstream",
+        "ChangeType",
+        "BudgetImpact",
+        "ScheduleImpactDays",
+        "DecisionRoute",
+        "Status"
+      ],
+      "section": 5,
+      "column": 1,
+      "rowLimit": 20
+    },
+    {
+      "key": "escalation-requests",
+      "list": "Master RAID Log",
+      "title": "Escalation requests",
+      "heading": "Escalation requests awaiting the Head of PMO",
+      "query": "<Where><In><FieldRef Name=\"EscalationStatus\"/><Values><Value Type=\"Choice\">Requested</Value><Value Type=\"Choice\">Not decided</Value></Values></In></Where><OrderBy><FieldRef Name=\"Modified\" Ascending=\"FALSE\"/></OrderBy>",
+      "fields": [
+        "ID",
+        "LinkTitle",
+        "Workstream",
+        "RAIDType",
+        "RAGRating",
+        "EscalationStatus",
+        "Editor",
+        "Modified"
+      ],
+      "section": 5,
+      "column": 2,
+      "rowLimit": 20
     }
   ]
 }

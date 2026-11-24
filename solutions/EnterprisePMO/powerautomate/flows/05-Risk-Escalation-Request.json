@@ -1,0 +1,592 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "PMO 05 - Risk and issue escalation request",
+  "description": "Runs when someone ticks Request Executive Board escalation on a Master RAID Log item that isn't already escalated. Claims the request (Escalation status Requested, ETag-checked so one request makes one approval) and asks the escalation approvers (the Head of PMO) to approve within 3 days. Approved: sets Escalated to Executive Board, so the item shows on the hub and in the daily digest, and posts an escalation card to the Steering Committee channel straight away (when EscalationAlertsEnabled is Yes). Declined or not decided: records the decision and clears the request so it can be asked again. Emails the submitter and the item owner either way (and the PMO mailbox if no one decided).",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_approvals": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+    },
+    "shared_teams": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "PMOSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/EnterprisePMO"
+    },
+    "PMOOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{pmo-shared-mailbox}@{domain}"
+    },
+    "SupportMailboxEmail": {
+      "type": "String",
+      "defaultValue": ""
+    },
+    "EscalationApproverEmails": {
+      "type": "String",
+      "defaultValue": "{head-of-pmo}@{domain}"
+    },
+    "EscalationAlertsEnabled": {
+      "type": "Bool",
+      "defaultValue": false
+    },
+    "SteerCoTeamId": {
+      "type": "String",
+      "defaultValue": ""
+    },
+    "SteerCoChannelId": {
+      "type": "String",
+      "defaultValue": ""
+    }
+  },
+  "triggers": {
+    "When_an_escalation_is_requested": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnUpdatedItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('PMOSiteUrl')",
+          "table": "Master RAID Log"
+        }
+      },
+      "recurrence": {
+        "frequency": "Minute",
+        "interval": 5
+      },
+      "splitOn": "@triggerOutputs()?['body/value']",
+      "conditions": [
+        {
+          "expression": "@and(equals(triggerBody()?['EscalationRequested'], true), not(equals(triggerBody()?['EscalatedToExecutiveBoard'], true)), contains(createArray('Not requested', 'Declined', 'Not decided', ''), coalesce(triggerBody()?['EscalationStatus']?['Value'], '')))"
+        }
+      ]
+    }
+  },
+  "actions": {
+    "Init_Outcome": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "Outcome",
+            "type": "string",
+            "value": "Not decided"
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Init_DecidedBy": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "DecidedBy",
+            "type": "string",
+            "value": ""
+          }
+        ]
+      },
+      "runAfter": {
+        "Init_Outcome": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Init_Comments": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "Comments",
+            "type": "string",
+            "value": ""
+          }
+        ]
+      },
+      "runAfter": {
+        "Init_DecidedBy": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Scope_Main": {
+      "type": "Scope",
+      "actions": {
+        "Get_item_now": {
+          "type": "OpenApiConnection",
+          "description": "Fresh read: another run (for example one started by flow 03a's update) may already have claimed this request.",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('PMOSiteUrl')",
+              "table": "Master RAID Log",
+              "id": "@triggerBody()?['ID']"
+            }
+          },
+          "runAfter": {}
+        },
+        "Condition_Still_unclaimed": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@body('Get_item_now')?['EscalationRequested']",
+                  true
+                ]
+              },
+              {
+                "not": {
+                  "equals": [
+                    "@body('Get_item_now')?['EscalationStatus']?['Value']",
+                    "Requested"
+                  ]
+                }
+              },
+              {
+                "not": {
+                  "equals": [
+                    "@body('Get_item_now')?['EscalatedToExecutiveBoard']",
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          "actions": {
+            "Claim_request": {
+              "type": "OpenApiConnection",
+              "description": "Sets Escalation status to Requested only if nobody has changed the item since Get_item_now (If-Match on its ETag). A run that loses the race gets 412 and stops quietly, so one request makes one approval.",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PMOSiteUrl')",
+                  "parameters/method": "POST",
+                  "parameters/uri": "_api/web/lists/GetByTitle('Master RAID Log')/items(@{triggerBody()?['ID']})",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=nometadata",
+                    "Content-Type": "application/json;odata=nometadata",
+                    "X-HTTP-Method": "MERGE",
+                    "IF-MATCH": "@{coalesce(body('Get_item_now')?['@odata.etag'], '\"no-etag\"')}"
+                  },
+                  "parameters/body": {
+                    "EscalationStatus": "Requested"
+                  }
+                },
+                "retryPolicy": {
+                  "type": "none"
+                }
+              },
+              "runAfter": {}
+            },
+            "Scope_Decide": {
+              "type": "Scope",
+              "actions": {
+                "Approval_escalation": {
+                  "type": "OpenApiConnection",
+                  "description": "Times out after 3 days with no response.",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_approvals",
+                      "operationId": "StartAndWaitForAnApproval",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+                    },
+                    "parameters": {
+                      "approvalType": "Basic",
+                      "WebhookApprovalCreationInput/title": "@{concat('Board escalation request: RAID-', string(triggerBody()?['ID']), ' ', triggerBody()?['Title'])}",
+                      "WebhookApprovalCreationInput/assignedTo": "@parameters('EscalationApproverEmails')",
+                      "WebhookApprovalCreationInput/details": "@{concat('RAID-', string(triggerBody()?['ID']), ' ', triggerBody()?['Title'], decodeUriComponent('%0A%0A'), 'Type: ', triggerBody()?['RAIDType']?['Value'], '   RAG: ', coalesce(triggerBody()?['RAGRating']?['Value'], 'Unassigned'), '   Workstream: ', coalesce(triggerBody()?['Workstream']?['Value'], '-'), decodeUriComponent('%0A%0A'), 'Owner: ', coalesce(triggerBody()?['Owner']?['DisplayName'], 'Unassigned'), '   Target: ', if(empty(triggerBody()?['TargetResolutionDate']), 'none', formatDateTime(convertFromUtc(triggerBody()?['TargetResolutionDate'], 'GMT Standard Time'), 'dd MMM yyyy')), decodeUriComponent('%0A%0A'), 'Why it needs the Board: ', coalesce(triggerBody()?['EscalationJustification'], '(not given)'), decodeUriComponent('%0A%0A'), 'Description: ', coalesce(triggerBody()?['Description'], '-'), decodeUriComponent('%0A%0A'), 'Requested by: ', coalesce(triggerBody()?['Editor']?['DisplayName'], 'unknown'), '. Approve to flag it Escalated to Executive Board: it then shows on the hub, goes in the daily digest when overdue, and is posted to the Steering Committee channel now.')}",
+                      "WebhookApprovalCreationInput/itemLink": "@{concat(parameters('PMOSiteUrl'), '/Lists/MasterRAIDLog/DispForm.aspx?ID=', string(triggerBody()?['ID']))}",
+                      "WebhookApprovalCreationInput/itemLinkDescription": "Open the item",
+                      "WebhookApprovalCreationInput/enableNotifications": true,
+                      "WebhookApprovalCreationInput/enableReassignment": true
+                    }
+                  },
+                  "limit": {
+                    "timeout": "P3D"
+                  },
+                  "runAfter": {}
+                },
+                "Set_decided_by": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "DecidedBy",
+                    "value": "@{coalesce(first(outputs('Approval_escalation')?['body/responses'])?['responder']?['displayName'], 'approver')}"
+                  },
+                  "runAfter": {
+                    "Approval_escalation": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Set_comments": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "Comments",
+                    "value": "@{coalesce(first(outputs('Approval_escalation')?['body/responses'])?['comments'], 'no comment')}"
+                  },
+                  "runAfter": {
+                    "Set_decided_by": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Set_outcome": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "Outcome",
+                    "value": "@{if(equals(outputs('Approval_escalation')?['body/outcome'], 'Approve'), 'Approved', 'Declined')}"
+                  },
+                  "runAfter": {
+                    "Set_comments": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Note_timed_out": {
+                  "type": "Compose",
+                  "inputs": "No decision within 3 days: outcome stays Not decided.",
+                  "runAfter": {
+                    "Approval_escalation": [
+                      "TimedOut"
+                    ]
+                  }
+                }
+              },
+              "description": "Head of PMO approval. A timed-out approval (3 days) is handled inside (Note_timed_out), so the scope succeeds and the outcome stays Not decided.",
+              "runAfter": {
+                "Claim_request": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Get_item_after_decision": {
+              "type": "OpenApiConnection",
+              "description": "Fresh read so edits made while the approval was open aren't overwritten.",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PMOSiteUrl')",
+                  "table": "Master RAID Log",
+                  "id": "@triggerBody()?['ID']"
+                }
+              },
+              "runAfter": {
+                "Scope_Decide": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Record_outcome": {
+              "type": "OpenApiConnection",
+              "description": "Declined or not decided clears Request Executive Board escalation, so the submitter can ask again.",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PatchItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PMOSiteUrl')",
+                  "table": "Master RAID Log",
+                  "id": "@triggerBody()?['ID']",
+                  "item/Title": "@body('Get_item_after_decision')?['Title']",
+                  "item/RAIDType/Value": "@body('Get_item_after_decision')?['RAIDType']?['Value']",
+                  "item/Workstream/Id": "@body('Get_item_after_decision')?['Workstream']?['Id']",
+                  "item/Status/Value": "@body('Get_item_after_decision')?['Status']?['Value']",
+                  "item/EscalationStatus/Value": "@variables('Outcome')",
+                  "item/EscalatedToExecutiveBoard": "@equals(variables('Outcome'), 'Approved')",
+                  "item/EscalationRequested": "@equals(variables('Outcome'), 'Approved')",
+                  "item/EscalationDecisionNote": "@{concat(variables('Outcome'), ' by ', variables('DecidedBy'), ' on ', formatDateTime(convertFromUtc(utcNow(), 'GMT Standard Time'), 'dd MMM yyyy HH:mm'), ' UK time: ', variables('Comments'))}"
+                }
+              },
+              "runAfter": {
+                "Get_item_after_decision": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Condition_Approved": {
+              "type": "If",
+              "expression": {
+                "equals": [
+                  "@variables('Outcome')",
+                  "Approved"
+                ]
+              },
+              "actions": {
+                "Condition_Alerts_enabled": {
+                  "type": "If",
+                  "expression": {
+                    "equals": [
+                      "@parameters('EscalationAlertsEnabled')",
+                      true
+                    ]
+                  },
+                  "actions": {
+                    "Compose_escalation_card": {
+                      "type": "Compose",
+                      "inputs": {
+                        "$schema": "http://adaptivecards.io/schemas/adaptivecard.json",
+                        "type": "AdaptiveCard",
+                        "version": "1.4",
+                        "body": [
+                          {
+                            "type": "Container",
+                            "style": "attention",
+                            "bleed": true,
+                            "items": [
+                              {
+                                "type": "TextBlock",
+                                "text": "NEW EXECUTIVE ESCALATION",
+                                "weight": "Bolder",
+                                "color": "Attention",
+                                "size": "Small"
+                              },
+                              {
+                                "type": "TextBlock",
+                                "text": "@{concat('RAID-', string(triggerBody()?['ID']), ' ', triggerBody()?['Title'])}",
+                                "weight": "Bolder",
+                                "size": "Medium",
+                                "spacing": "None",
+                                "wrap": true
+                              }
+                            ]
+                          },
+                          {
+                            "type": "FactSet",
+                            "facts": [
+                              {
+                                "title": "Type",
+                                "value": "@{triggerBody()?['RAIDType']?['Value']}"
+                              },
+                              {
+                                "title": "RAG",
+                                "value": "@{coalesce(triggerBody()?['RAGRating']?['Value'], 'Unassigned')}"
+                              },
+                              {
+                                "title": "Workstream",
+                                "value": "@{coalesce(triggerBody()?['Workstream']?['Value'], '-')}"
+                              },
+                              {
+                                "title": "Owner",
+                                "value": "@{coalesce(triggerBody()?['Owner']?['DisplayName'], 'Unassigned')}"
+                              },
+                              {
+                                "title": "Approved by",
+                                "value": "@{variables('DecidedBy')}"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "TextBlock",
+                            "text": "What the Board needs to do",
+                            "weight": "Bolder",
+                            "size": "Small",
+                            "separator": true
+                          },
+                          {
+                            "type": "TextBlock",
+                            "text": "@{coalesce(triggerBody()?['EscalationJustification'], '(not given)')}",
+                            "wrap": true
+                          }
+                        ],
+                        "actions": [
+                          {
+                            "type": "Action.OpenUrl",
+                            "title": "Open the RAID item",
+                            "url": "@{concat(parameters('PMOSiteUrl'), '/Lists/MasterRAIDLog/DispForm.aspx?ID=', string(triggerBody()?['ID']))}"
+                          }
+                        ]
+                      },
+                      "runAfter": {}
+                    },
+                    "Post_escalation_card": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_teams",
+                          "operationId": "PostCardToConversation",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+                        },
+                        "parameters": {
+                          "poster": "Flow bot",
+                          "location": "Channel",
+                          "body/recipient/groupId": "@parameters('SteerCoTeamId')",
+                          "body/recipient/channelId": "@parameters('SteerCoChannelId')",
+                          "body/messageBody": "@{string(outputs('Compose_escalation_card'))}"
+                        },
+                        "retryPolicy": {
+                          "type": "none"
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_escalation_card": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Record_outcome": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Email_submitter_outcome": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@{concat(coalesce(triggerBody()?['Editor']?['Email'], parameters('PMOOwnerEmail')), if(empty(triggerBody()?['Owner']?['Email']), '', concat(';', triggerBody()?['Owner']?['Email'])), if(equals(variables('Outcome'), 'Not decided'), concat(';', parameters('PMOOwnerEmail')), ''))}",
+                  "emailMessage/Subject": "@{concat('Board escalation ', toLower(variables('Outcome')), ': RAID-', string(triggerBody()?['ID']), ' ', triggerBody()?['Title'])}",
+                  "emailMessage/Body": "<p>The request to escalate <b>RAID-@{triggerBody()?['ID']} @{triggerBody()?['Title']}</b> to the Executive Board was <b>@{toLower(variables('Outcome'))}</b>@{if(equals(variables('Outcome'), 'Not decided'), ' (no decision within 3 days)', concat(' by ', variables('DecidedBy')))}.</p><p>Comments: @{variables('Comments')}</p><p>@{if(equals(variables('Outcome'), 'Approved'), 'It is now on the PMO hub and in front of the Steering Committee, and goes in the daily digest if it passes its target date.', 'The item is unchanged apart from the decision note. To ask again, tick Request Executive Board escalation and update Why it needs the Board.')}</p><p><a href=\"@{concat(parameters('PMOSiteUrl'), '/Lists/MasterRAIDLog/DispForm.aspx?ID=', string(triggerBody()?['ID']))}\">Open the RAID item</a></p>",
+                  "emailMessage/Importance": "Normal"
+                }
+              },
+              "runAfter": {
+                "Condition_Approved": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Handle_claim_conflict": {
+              "type": "If",
+              "expression": {
+                "equals": [
+                  "@outputs('Claim_request')?['statusCode']",
+                  412
+                ]
+              },
+              "actions": {},
+              "else": {
+                "actions": {
+                  "Email_claim_failed": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_office365",
+                        "operationId": "SendEmailV2",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                      },
+                      "parameters": {
+                        "emailMessage/To": "@{concat(parameters('PMOOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
+                        "emailMessage/Subject": "@{concat('Escalation request not processed: RAID-', string(triggerBody()?['ID']))}",
+                        "emailMessage/Body": "<p>Flow 05 could not claim the escalation request on RAID-@{triggerBody()?['ID']} @{triggerBody()?['Title']} (SharePoint returned @{outputs('Claim_request')?['statusCode']}: @{outputs('Claim_request')?['body']?['odata.error']?['message']?['value']}). No approval was sent. Fix the cause, then untick and re-tick Request Executive Board escalation on the item.</p>",
+                        "emailMessage/Importance": "High"
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                }
+              },
+              "runAfter": {
+                "Claim_request": [
+                  "Failed"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Get_item_now": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Init_Comments": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Catch_run_failed": {
+      "type": "Scope",
+      "description": "Run-level failure alert: any error in Scope_Main that no step handled.",
+      "actions": {
+        "Select_failed_steps": {
+          "type": "Select",
+          "inputs": {
+            "from": "@result('Scope_Main')",
+            "select": "@concat('<li><b>', item()?['name'], '</b>: ', item()?['status'], ' ', coalesce(item()?['error']?['code'], item()?['outputs']?['statusCode'], ''), ' ', coalesce(item()?['error']?['message'], ''), '</li>')"
+          },
+          "runAfter": {}
+        },
+        "Alert_run_failed": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@{concat(parameters('PMOOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
+              "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
+              "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error it did not handle, so some of its work may not have been done. Nothing has been retried.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a> (started @{workflow()?['run']?['startTime']})</p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Open the run, find the failed step and its raw output, fix the cause, then resubmit the run. See Stopping and recovery in the EnterprisePMO deployment guide.</p>",
+              "emailMessage/Importance": "High"
+            }
+          },
+          "runAfter": {
+            "Select_failed_steps": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Scope_Main": [
+          "Failed",
+          "TimedOut"
+        ]
+      }
+    }
+  }
+}

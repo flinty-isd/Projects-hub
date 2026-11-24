@@ -31,6 +31,11 @@ flowchart LR
   F2 -- "weekly row" --> SNAP
   F2 -- "score >= threshold" --> T2["Teams: PMO Risk Advisory"]
   SNAP --> PBI["Power BI trend report"]
+  CR[("Change Requests")] -- "new request" --> F4["04 Change request approval"]
+  F4 -- "Decision Made" --> ACT
+  RAID -- "escalation requested" --> F5["05 Escalation request"]
+  F5 -- "flag escalated" --> RAID
+  F5 -- "approved" --> T1
 ```
 
 ## 01 Daily executive overdue digest
@@ -85,4 +90,50 @@ flowchart TD
   C -- Yes --> D["Count this item's pushes in window,<br/>add PMO Date Push Log row"]
   C -- No --> E
   D --> E["Update item: TrackedDueDate, TrackedStatus,<br/>original baseline (first time only),<br/>Closed/Completed date when Status just closed,<br/>push count and note"]
+```
+
+## 04 Change request approval
+
+```mermaid
+flowchart TD
+  A["Change request created"] --> B{"CRApprovalsEnabled?"}
+  B -- No --> Z["Stays Submitted"]
+  B -- Yes --> C["CR-nnn, route: Steering Committee if scope change<br/>or budget/schedule over tolerance, else PMO"]
+  C --> D["Under review - PMO"]
+  D --> E{"PMO approval (14 days)"}
+  E -- Reject --> R["Returned to requester"]
+  E -- "Timed out" --> O["Decision overdue"]
+  E -- "Approve, within tolerance" --> AP["Approved (PMO)"]
+  E -- "Approve, over tolerance" --> S["Under review - Steering Committee"]
+  S --> F{"Steering Committee approval (21 days)"}
+  F -- Approve --> AS["Approved (Steering Committee)"]
+  F -- Reject --> RJ["Rejected"]
+  F -- "Timed out" --> O
+  AP --> L["Re-read item (Withdrawn wins), record decision"]
+  AS --> L
+  RJ --> L
+  R --> L
+  O --> L
+  L --> M{"Approved or Rejected?"}
+  M -- Yes --> N["Log Decision Made in Action and Decision Tracker,<br/>email requester"]
+  M -- No --> P["Email requester and PMO mailbox"]
+```
+
+## 05 Risk and issue escalation request
+
+```mermaid
+flowchart TD
+  A["RAID item: Request Executive Board escalation ticked"] --> B{"Trigger condition: not escalated,<br/>status Not requested / Declined / Not decided"}
+  B -- No --> Z["No run"]
+  B -- Yes --> C["Re-read item"]
+  C --> D{"Claim: status = Requested<br/>(If-Match ETag)"}
+  D -- "412: claimed by another run" --> Z2["Stop quietly"]
+  D -- OK --> E{"Head of PMO approval (3 days)"}
+  E -- Approve --> F["Escalated to Executive Board = Yes,<br/>status Approved"]
+  F --> G["Card to Steering Committee channel<br/>(if EscalationAlertsEnabled)"]
+  E -- Reject --> H["Status Declined, tick cleared"]
+  E -- "Timed out" --> I["Status Not decided, tick cleared"]
+  G --> J["Email submitter and owner"]
+  H --> J
+  I --> J
 ```

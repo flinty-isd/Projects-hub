@@ -158,7 +158,49 @@
           "type": "Boolean",
           "required": false,
           "default": "0",
-          "indexed": true
+          "indexed": true,
+          "flowManaged": true,
+          "notes": "Set by flow 05 when the Head of PMO approves an escalation request. Not on the forms; the PMO can still set it in grid view for an escalation agreed outside the flow."
+        },
+        {
+          "internalName": "EscalationRequested",
+          "displayName": "Request Executive Board escalation",
+          "type": "Boolean",
+          "required": false,
+          "default": "0",
+          "notes": "Tick to ask the Head of PMO to put this item in front of the Executive Board (flow 05). Cleared again if the request is declined or not decided, so it can be ticked again."
+        },
+        {
+          "internalName": "EscalationJustification",
+          "displayName": "Why it needs the Board",
+          "type": "Note",
+          "required": false,
+          "notes": "What the Board must decide or unblock, and by when. Shown in the approval request."
+        },
+        {
+          "internalName": "EscalationStatus",
+          "displayName": "Escalation status",
+          "type": "Choice",
+          "required": false,
+          "choices": [
+            "Not requested",
+            "Requested",
+            "Approved",
+            "Declined",
+            "Not decided"
+          ],
+          "default": "Not requested",
+          "flowManaged": true,
+          "indexed": true,
+          "notes": "Written by flow 05 only."
+        },
+        {
+          "internalName": "EscalationDecisionNote",
+          "displayName": "Escalation decision",
+          "type": "Note",
+          "required": false,
+          "flowManaged": true,
+          "notes": "Written by flow 05: who decided, when, and their comments."
         },
         {
           "internalName": "TargetResolutionDate",
@@ -373,14 +415,15 @@
       "listTitle": "Change Requests",
       "url": "Lists/ChangeRequests",
       "template": "GenericList",
-      "listDescription": "Baseline change control: scope, budget or timeline variance requests for the Steering Committee. Target of the hub's Submit Change Request link. No flow acts on it yet.",
+      "listDescription": "Baseline change control: scope, budget or timeline variance requests. Target of the hub's Submit Change Request link. Flow 04 runs the PMO review and, over tolerance, the Steering Committee decision.",
       "fields": [
         {
           "internalName": "CRReference",
           "displayName": "CR reference",
           "type": "Text",
           "required": false,
-          "notes": "e.g. CR-042. Allocated by the PMO."
+          "flowManaged": true,
+          "notes": "Allocated by flow 04 as CR-nnn from the item ID when left blank."
         },
         {
           "internalName": "Workstream",
@@ -412,7 +455,7 @@
           "internalName": "Justification",
           "displayName": "Justification",
           "type": "Note",
-          "required": false
+          "required": true
         },
         {
           "internalName": "ImpactSummary",
@@ -421,10 +464,25 @@
           "required": false
         },
         {
+          "internalName": "BudgetImpact",
+          "displayName": "Budget impact (GBP)",
+          "type": "Number",
+          "required": false,
+          "notes": "Net change to the approved budget; negative for a saving. Over CRBudgetTolerance goes to the Steering Committee."
+        },
+        {
+          "internalName": "ScheduleImpactDays",
+          "displayName": "Schedule impact (days)",
+          "type": "Number",
+          "required": false,
+          "notes": "Days the baseline end date moves. Over CRScheduleToleranceDays goes to the Steering Committee."
+        },
+        {
           "internalName": "RequestedBy",
           "displayName": "Requested by",
           "type": "Person",
-          "required": false
+          "required": false,
+          "notes": "Who gets the outcome email. Blank means the person who created the item."
         },
         {
           "internalName": "Status",
@@ -433,12 +491,17 @@
           "required": true,
           "choices": [
             "Submitted",
-            "Under review",
+            "Under review - PMO",
+            "Under review - Steering Committee",
             "Approved",
             "Rejected",
+            "Returned to requester",
+            "Decision overdue",
             "Withdrawn"
           ],
-          "default": "Submitted"
+          "default": "Submitted",
+          "hideOnNewForm": true,
+          "notes": "Set by flow 04. The requester can set Withdrawn. The PMO sets the outcome by hand for a Decision overdue request decided outside the flow."
         },
         {
           "internalName": "SteeringCommitteeDate",
@@ -448,10 +511,34 @@
           "format": "DateOnly"
         },
         {
+          "internalName": "DecisionRoute",
+          "displayName": "Decision route",
+          "type": "Text",
+          "required": false,
+          "flowManaged": true,
+          "notes": "Written by flow 04: PMO (within tolerance) or Steering Committee."
+        },
+        {
+          "internalName": "DecidedBy",
+          "displayName": "Decided by",
+          "type": "Text",
+          "required": false,
+          "flowManaged": true
+        },
+        {
+          "internalName": "DecisionDate",
+          "displayName": "Decision date",
+          "type": "DateTime",
+          "required": false,
+          "flowManaged": true
+        },
+        {
           "internalName": "DecisionNote",
           "displayName": "Decision note",
           "type": "Note",
-          "required": false
+          "required": false,
+          "flowManaged": true,
+          "notes": "Written by flow 04: approvers' comments at each stage."
         }
       ]
     },

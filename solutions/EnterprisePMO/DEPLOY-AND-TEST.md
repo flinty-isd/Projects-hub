@@ -39,14 +39,17 @@ repeats the same steps from the same deployment kit (check its
 ## 3. Import the solution
 
 1. Under the **named PMO flow owner** (no service account, D-03), create
-   connections for SharePoint, Microsoft Teams and Office 365 Outlook.
+   connections for SharePoint, Microsoft Teams, Office 365 Outlook and
+   Approvals.
 2. Import `EnterprisePMO_<version>.zip` (Solutions > Import solution) and bind
-   the three connection references.
+   the four connection references.
 3. Open the solution's **Environment variables** and set `PMOSiteUrl`,
-   `PMOOwnerEmail`, the four Teams IDs and, if you want copies,
-   `SupportMailboxEmail`. Leave `DigestEnabled` and `EarlyWarningEnabled` at
-   No for now.
-4. Turn on 03a and 03b first, then 01 and 02.
+   `PMOOwnerEmail`, the four Teams IDs, the approvers (`CRPMOApproverEmails`,
+   `CRSteerCoApproverEmails`, `EscalationApproverEmails`), the change
+   tolerances and, if you want copies, `SupportMailboxEmail`. Leave
+   `DigestEnabled`, `EarlyWarningEnabled`, `CRApprovalsEnabled` and
+   `EscalationAlertsEnabled` at No for now.
+4. Turn on 03a and 03b first, then 05, 04, 01 and 02.
 
 ## 4. Tests
 
@@ -70,6 +73,15 @@ Run each test and record the result (pass / fail, run ID).
 | T14 | Run 02 again | No new rows (one per workstream per week) |
 | T15 | Delete this week's rows. Push one item twice (T2–T3) and create 3 risks in one workstream. Set `EarlyWarningEnabled` = Yes and run 02 | Score ≥ 2 for that workstream. Advisory card posted with the reason. *Advisory posted* = Yes |
 | T16 | Break a flow (e.g. a wrong `PMOSiteUrl`) and run it | *Flow failed* email to `PMOOwnerEmail` with the failed step |
+| T18 | Set `CRApprovalsEnabled` = Yes. New Timeline CR, schedule impact 5 days, budget 0 | CR-nnn allocated, Status *Under review - PMO*, route PMO. Approve: Status Approved, *Decided by* and note filled in, a *Decision Made* item in the Action and Decision Tracker (forum PMO, Completed), requester emailed |
+| T19 | New Scope CR | PMO approval, then Status *Under review - Steering Committee* and a second approval. Reject at the Steering Committee: Rejected, decision logged with forum Steering Committee |
+| T20 | New Budget CR over `CRBudgetTolerance`; the PMO rejects | *Returned to requester*, no decision logged, requester and PMO emailed |
+| T21 | New CR; the requester sets Withdrawn before the PMO responds, then the PMO approves | Status stays Withdrawn, no decision logged |
+| T22 | CR approval left unanswered (for the test, shorten the timeout in a dev copy) | *Decision overdue*, requester and PMO emailed |
+| T23 | Tick *Request Executive Board escalation* on a RAID item, with a reason | Within 5 min *Escalation status* = Requested, and the approver gets the request with the details. Only one approval is sent, even though 03a also runs |
+| T24 | Approve T23 with `EscalationAlertsEnabled` = Yes | *Escalated to Executive Board* = Yes, status Approved, decision note filled in, card in the Steering Committee channel, submitter and owner emailed. The item shows in *Executive escalations* on the hub |
+| T25 | Request on another item; decline | Status Declined, the tick cleared, no flag set. Tick again: a new approval is sent |
+| T26 | Hub section 5 | The open CRs and the escalation requests show, with outcome badges |
 | T17 | Hub page | Each panel shows its view, and overdue dates show red with *overdue*. Comments are off. The page works on a phone |
 
 ## 5. Run checks (BAU)
@@ -86,6 +98,13 @@ Run each test and record the result (pass / fail, run ID).
   History, and resubmit the run.
 - **Early warning failed part-way**: resubmit the run. Workstreams that
   already have a snapshot this week are skipped.
+- **Change request stuck**: a request with *Decision overdue* is decided at
+  the next Steering Committee. The PMO sets Status, *Decided by* and
+  *Decision note* by hand and adds the *Decision Made* item. Requests created
+  while `CRApprovalsEnabled` was No are never picked up: raise them again.
+- **Escalation request stuck in Requested** (its run failed after the
+  claim): set *Escalation status* back to *Not requested*. If the box is
+  still ticked, flow 05 picks it up again on the next edit.
 - **Churn tracker failed**: the next edit of the item retries it, because the
   tracked values weren't updated. For a date push that failed, the push is
   still detected on the next edit as long as the date stays later.

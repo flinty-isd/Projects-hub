@@ -162,6 +162,8 @@
               "table": "Master RAID Log",
               "id": "@triggerBody()?['ID']",
               "item/Title": "@triggerBody()?['Title']",
+              "item/RAIDType/Value": "@triggerBody()?['RAIDType']?['Value']",
+              "item/Workstream/Id": "@triggerBody()?['Workstream']?['Id']",
               "item/Status/Value": "@triggerBody()?['Status']?['Value']",
               "item/TrackedDueDate": "@{coalesce(triggerBody()?['TargetResolutionDate'], 'none')}",
               "item/TrackedStatus": "@{coalesce(triggerBody()?['Status']?['Value'], '')}",

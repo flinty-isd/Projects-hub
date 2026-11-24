@@ -12,14 +12,17 @@
         Flow-managed columns are hidden from the new and edit forms; columns
         marked indexed get an index (needed for the flows' filters once a list
         passes 5,000 items)
-      * formats the RAG columns as status pills and the RAID target date and
-        action due date as overdue / due-soon badges
+      * formats the RAG columns as status pills, the RAID target date and
+        action due date as overdue / due-soon badges, and change request and
+        escalation status as outcome badges
       * adds the dashboard views (Executive escalations, Pending board
-        decisions, Next 30 days, PIDs and charters)
+        decisions, Next 30 days, PIDs and charters, Open change requests,
+        Escalation requests)
       * creates and publishes the hub page: welcome text and Quick Links;
         Power BI (2/3) with the PMO commentary (1/3); RAID escalations and
         board decisions side by side; calendar, documents and the leadership
-        People web part in three columns. Comments are off.
+        People web part in three columns; open change requests and escalation
+        requests side by side. Comments are off.
 
     Standard lists, views, web parts and JSON column formatting only: no
     custom script. Safe to re-run: existing lists, columns and views are left
@@ -63,6 +66,7 @@ function Get-FieldXml($f, $listIds) {
     $name = $f.internalName
     $attrs = "Name=`"$name`" StaticName=`"$name`" DisplayName=`"$(Escape-Xml $f.displayName)`" Required=`"$(if ($f.required) {'TRUE'} else {'FALSE'})`""
     if ($f.flowManaged) { $attrs += ' ShowInNewForm="FALSE" ShowInEditForm="FALSE"' }
+    elseif ($f.hideOnNewForm) { $attrs += ' ShowInNewForm="FALSE"' }
     if ($f.notes) { $attrs += " Description=`"$(Escape-Xml $f.notes)`"" }
     $default = if ($null -ne $f.default) { "<Default>$(Escape-Xml ([string] $f.default))</Default>" } else { '' }
     switch ($f.type) {
@@ -150,6 +154,11 @@ if ($page -and -not $RefreshPage) {
     Add-PnPPageSection -Page $name -SectionTemplate TwoColumnLeft -Order 2 -Connection $conn | Out-Null  # Power BI 2/3, commentary 1/3
     Add-PnPPageSection -Page $name -SectionTemplate TwoColumn     -Order 3 -Connection $conn | Out-Null  # escalations, decisions
     Add-PnPPageSection -Page $name -SectionTemplate ThreeColumn   -Order 4 -Connection $conn | Out-Null  # cadence, artefacts, people
+    # Sections 5 and up (change requests, escalation requests): two panels to a row.
+    $last = ($dash.views | Measure-Object -Property section -Maximum).Maximum
+    for ($s = 5; $s -le $last; $s++) {
+        Add-PnPPageSection -Page $name -SectionTemplate TwoColumn -Order $s -Connection $conn | Out-Null
+    }
 
     # Section 1: welcome and Quick Links (links are added by hand: see the list printed below).
     Add-PnPPageTextPart -Page $name -Section 1 -Column 1 -Text $dash.page.welcome -Connection $conn | Out-Null
@@ -162,7 +171,7 @@ if ($page -and -not $RefreshPage) {
     Add-PnPPageTextPart -Page $name -Section 2 -Column 1 -Text $dash.page.powerBiNote -Connection $conn | Out-Null
     Add-PnPPageTextPart -Page $name -Section 2 -Column 2 -Text $dash.page.commentary -Connection $conn | Out-Null
 
-    # Sections 3 and 4: the dashboard views.
+    # Sections 3 and up: the dashboard views.
     foreach ($v in $dash.views) {
         $target = $views[$v.key]
         Add-PnPPageTextPart -Page $name -Section $v.section -Column $v.column -Text "<h3>$($v.heading)</h3>" -Connection $conn | Out-Null

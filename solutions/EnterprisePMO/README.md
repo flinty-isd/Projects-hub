@@ -9,9 +9,14 @@ SharePoint Online & Power Automate* and has three parts:
    governance calendar and the key documents.
 2. **List formatting**: RAG status pills, and overdue / due-soon badges on due
    dates.
-3. **Four flows**: a daily digest to the Steering Committee, a weekly
-   predictive early warning, and a date-churn tracker on each of the two
-   lists that hold due dates.
+3. **Six flows**: a daily digest to the Steering Committee, a weekly
+   predictive early warning, a date-churn tracker on each of the two lists
+   that hold due dates, change request approval, and risk and issue
+   escalation requests.
+4. **A Copilot prompt pack** ([`copilot/COPILOT-PROMPTS.md`](copilot/COPILOT-PROMPTS.md))
+   for rebuilding all of it by hand with Copilot. It includes a Copilot
+   Studio agent that lets people report a risk from Teams, and prompts for
+   running the hub.
 
 | # | Flow | Trigger | What it does |
 |---|------|---------|--------------|
@@ -19,6 +24,8 @@ SharePoint Online & Power Automate* and has three parts:
 | 02 | [Predictive early warning](powerautomate/flows/02-Predictive-Early-Warning.json) | Mondays 06:00 UK | For each active workstream it scores three indicators: net risk velocity (RVEL-HIGH), action burn-down (ABD-SLO) and date churn (CHURN-CRIT). It writes a weekly PMO Trend Snapshots row with a plain-English reason. When the score reaches the threshold it posts an advisory card. Cards are off until `EarlyWarningEnabled` = Yes; the snapshots are written either way |
 | 03a | [RAID date churn tracker](powerautomate/flows/03a-RAID-Date-Churn.json) | Master RAID Log item created or changed | When a target date moves later, it logs the push and counts it. It keeps the original baseline date and stamps *Closed on* |
 | 03b | [Action date churn tracker](powerautomate/flows/03b-Action-Date-Churn.json) | Action and Decision Tracker item created or changed | The same for due dates. It stamps *Completed on* |
+| 04 | [Change request approval](powerautomate/flows/04-Change-Request-Approval.json) | New Change Requests item | Allocates CR-nnn. The PMO reviews it (14 days). Within tolerance, that review is the decision; scope changes and anything over the budget or schedule tolerance go to the Steering Committee (21 days). It records the outcome, logs the decision in the Action and Decision Tracker and emails the requester. Off until `CRApprovalsEnabled` = Yes |
+| 05 | [Risk and issue escalation request](powerautomate/flows/05-Risk-Escalation-Request.json) | *Request Executive Board escalation* ticked on a RAID item | The Head of PMO approves within 3 days. If approved, the item is flagged *Escalated to Executive Board* and posted to the Steering Committee channel straight away (the post is off until `EscalationAlertsEnabled` = Yes). If declined or not decided, the request is cleared so it can be asked again |
 
 Process diagrams are in [`diagrams/pmo-flows.md`](diagrams/pmo-flows.md).
 
@@ -28,9 +35,11 @@ Process diagrams are in [`diagrams/pmo-flows.md`](diagrams/pmo-flows.md).
 EnterprisePMO/
 ├── powerautomate/flows/   flow definitions (Workflow Definition Language JSON)
 ├── sharepoint/            list-schema.json (10 lists and libraries), dashboard.json (page and views),
-│                          rag-format.json and due-date-format.json (column formatting)
+│                          rag-format.json, due-date-format.json, status-format.json (column formatting)
 ├── provisioning/          Provision-PMOHub.ps1: lists, columns, formatting, views and the hub page
 ├── diagrams/              Mermaid process diagrams
+├── copilot/               COPILOT-PROMPTS.md: build-it-with-Copilot prompts, risk agent, running prompts
+├── tools/                 build_copilot_prompts.py: regenerates the prompt pack from the schema
 ├── DEPLOY-AND-TEST.md     step-by-step deployment and test script
 └── solution-config.json   solution name, version, publisher, environment variables
 ```
@@ -47,9 +56,9 @@ creates them from `sharepoint/list-schema.json`.
 | List | Purpose | Written by |
 |------|---------|------------|
 | PMO Workstreams | One row per workstream: code, sponsor, lead, Active, Overall/Schedule/Budget/Scope RAG | PMO |
-| Master RAID Log | Risks, assumptions, issues and dependencies. *Escalated to Executive Board* puts an item on the hub and, once overdue, in the digest | Everyone; flow 03a writes the tracking columns |
+| Master RAID Log | Risks, assumptions, issues and dependencies. *Escalated to Executive Board* puts an item on the hub and, once overdue, in the digest. Anyone can tick *Request Executive Board escalation*; flow 05 gets it decided | Everyone; flows 03a and 05 write the tracking and escalation columns |
 | Action and Decision Tracker | Actions and decisions. *Decision forum* says who owns each one | Everyone; flow 03b writes the tracking columns |
-| Change Requests | Baseline change control (CR-nnn). Target of the *Submit Change Request* quick link | Everyone |
+| Change Requests | Baseline change control (CR-nnn), with budget and schedule impact. Target of the *Submit Change Request* quick link | Everyone; flow 04 writes the reference, status and decision |
 | PMO Governance Calendar | Steering Committee gates, PMO working groups, Scope Control Board, with submission deadlines (Events template) | PMO |
 | Portfolio Document Repository | PIDs, baseline charters, stage-gate submissions, closure reports | PMO and workstreams |
 | Governance Framework and SOPs | Frameworks, stage-gate guidance, templates, SOPs | PMO |
@@ -65,6 +74,7 @@ creates them from `sharepoint/list-schema.json`.
 | 2. Portfolio health | 2/3 + 1/3 | Power BI report (RAG scorecard, slippage trend, early-warning heatmap); PMO executive commentary |
 | 3. Escalations | 1/2 + 1/2 | Master RAID Log: *Executive escalations*; Action and Decision Tracker: *Pending board decisions* |
 | 4. Cadence and artefacts | 1/3 × 3 | Calendar: *Next 30 days*; documents: *PIDs and charters*; People: PMO leadership contacts |
+| 5. Requests in flight | 1/2 + 1/2 | Change Requests: *Open change requests*; Master RAID Log: *Escalation requests* |
 
 The script builds the page and its views. A few things can only be set by
 hand in the page editor, and the script prints the list at the end:
@@ -96,6 +106,7 @@ lists each change.
 | Card JSON with sample rows | Facts built from the query results, capped at `DigestMaxItems`, with a "...and N more" line | The sample rows were fixed text. The cap keeps the card under the Teams size limit |
 | Overdue = due before `utcNow()` midnight UTC | Before the start of today, UK time | Date-only columns are stored as local midnight, so in summer time an item due today would show as overdue |
 | Theme tokens `var(--sp-color-status-*)` in formatting | Fixed colours, matching the governance badges, and words always shown | Column formatting doesn't reliably resolve those tokens. A pill that loses its colour silently is worse than fixed colours |
+| *Submit Risk / Issue Escalation* "with auto-flagging enabled" | People request an escalation on the RAID form; the Head of PMO approves it (flow 05), and approval sets the flag and alerts the Steering Committee | A new-form link can't set a field. A self-service flag would let anyone put any item in front of the Board. The approval keeps the Board's list for items the PMO stands behind, and still takes 3 days or less |
 | Run under `svc-pmo-automation@` | Named flow owner | Policy D-03 allows no service or shared accounts (see the [deployment plan](../POWER-PLATFORM-DEPLOYMENT.md#identities)). Failure alerts go to a shared mailbox instead |
 | Digest daily, 07:00 UTC | Weekdays, 07:00 UK time | Nobody acts on a weekend digest, and 07:00 UTC is 08:00 in summer |
 | Board decisions view `DecisionOwner eq [Current User / Executive Board]` | *Decision forum* = Executive Board | A view can't filter on "current user or the Board". The forum makes ownership explicit. The view shows Board actions as well as decisions, which matches the digest |
@@ -110,11 +121,6 @@ Not built (needs a decision or a licence):
   this repo. It should read PMO Workstreams, PMO Trend Snapshots and Master
   RAID Log. Viewers need Power BI Pro/PPU, or the workspace on Premium/Fabric
   capacity.
-- **"Auto-flagging" on the Submit Risk / Issue link.** A new-form link can't
-  set a field. The link's description tells people to tick *Escalated to
-  Executive Board*.
-- **Change Requests workflow.** The list exists, but no approval flow runs on
-  it yet.
 
 ## Environment variables
 
@@ -123,7 +129,7 @@ Not built (needs a decision or a licence):
 | `PMOSiteUrl` | all | set after import |
 | `PMOOwnerEmail` | all: failure alerts, digest-not-posted | set after import (shared mailbox) |
 | `SupportMailboxEmail` | all: optional copy of failure emails | empty |
-| `SteerCoTeamId`, `SteerCoChannelId` | 01 | set after import |
+| `SteerCoTeamId`, `SteerCoChannelId` | 01, 05 | set after import |
 | `DigestEnabled` | 01 | No |
 | `DigestMaxItems` | 01 | 20 |
 | `RiskAdvisoryTeamId`, `RiskAdvisoryChannelId` | 02 | set after import |
@@ -132,21 +138,29 @@ Not built (needs a decision or a licence):
 | `RiskVelocityThreshold` | 02 | 2 |
 | `BurnDownThresholdPercent`, `BurnDownMinActionsDue` | 02 | 75, 3 |
 | `ChurnThreshold`, `ChurnWindowDays` | 02, 03a, 03b | 2, 14 |
+| `CRApprovalsEnabled` | 04 | No |
+| `CRPMOApproverEmails`, `CRSteerCoApproverEmails` | 04 | set after import |
+| `CRBudgetTolerance`, `CRScheduleToleranceDays` | 04 | 25000 (GBP), 10 days: set to the programme's agreed tolerances |
+| `EscalationApproverEmails` | 05 | set after import (Head of PMO and a deputy) |
+| `EscalationAlertsEnabled` | 05 (Teams post only) | No |
 
 ## Building and validating
 
 ```
 python solutions/SharePointGovernance/tools/validate_flows.py --root solutions/EnterprisePMO
 python solutions/SharePointGovernance/tools/validate_dashboard.py --root solutions/EnterprisePMO
+python solutions/EnterprisePMO/tools/build_copilot_prompts.py --check
 python solutions/SharePointGovernance/tools/build_kit.py --root solutions/EnterprisePMO --out dist
 ```
 
-CI (`.github/workflows/pmo-flows.yml`) runs all three on every change under
-this folder or the shared tools. It uploads the unmanaged solution
+CI (`.github/workflows/pmo-flows.yml`) runs all four on every change under
+this folder or the shared tools. After changing the list schema or the
+thresholds, run `build_copilot_prompts.py` without `--check` to regenerate
+the prompt pack. It uploads the unmanaged solution
 `EnterprisePMO_<version>.zip` and the deployment kit.
 
-The connectors are SharePoint, Microsoft Teams and Office 365 Outlook, all
-standard. List reads page up to 100,000 rows, which needs the flow owner's
+The connectors are SharePoint, Microsoft Teams, Office 365 Outlook and
+Approvals, all standard. List reads page up to 100,000 rows, which needs the flow owner's
 Power Automate Premium licence. Without it, Power Automate stops at 5,000.
 
 **Not yet tried against a real tenant.** Neither the flows nor the

@@ -24,6 +24,8 @@ jobs:
         run: python solutions/SharePointGovernance/tools/validate_flows.py --root solutions/EnterprisePMO
       - name: Validate the hub views and formatters against the list schema
         run: python solutions/SharePointGovernance/tools/validate_dashboard.py --root solutions/EnterprisePMO
+      - name: Check the Copilot prompt pack matches the list schema
+        run: python solutions/EnterprisePMO/tools/build_copilot_prompts.py --check
       - name: Build the solution package and the deployment kit
         run: python solutions/SharePointGovernance/tools/build_kit.py --root solutions/EnterprisePMO --out dist
       - name: Upload solution package
