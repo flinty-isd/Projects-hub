@@ -1,0 +1,96 @@
+{
+  "$comment": "Settings for SharePointGovernance/tools/build_solution.py --root solutions/EnterprisePMO. Bump 'version' for every release you import.",
+  "uniqueName": "EnterprisePMO",
+  "displayName": "Enterprise PMO Governance Hub",
+  "description": "Daily executive overdue digest, weekly predictive early warning and RAID / action date churn tracking for the Enterprise PMO hub site.",
+  "version": "1.0.0.0",
+  "kitInclude": ["README.md", "DEPLOY-AND-TEST.md", "solution-config.json", "powerautomate", "provisioning", "sharepoint", "diagrams"],
+  "publisher": {
+    "uniqueName": "HPUKIT",
+    "displayName": "HPUK IT",
+    "prefix": "spg",
+    "optionValuePrefix": 46310
+  },
+  "environmentVariables": {
+    "PMOSiteUrl": {
+      "displayName": "PMO site URL",
+      "description": "Full URL of the Enterprise PMO site that holds the PMO lists and the hub page, e.g. https://{tenant}.sharepoint.com/sites/EnterprisePMO. No trailing slash."
+    },
+    "PMOOwnerEmail": {
+      "displayName": "PMO support mailbox email",
+      "description": "Shared mailbox or distribution list that gets every PMO flow's Flow failed alert and the digest-not-posted email. Never a person's own address."
+    },
+    "SupportMailboxEmail": {
+      "displayName": "Support copy mailbox email",
+      "description": "Optional second address copied on every failure email (e.g. the IT support or Communications shared mailbox). Empty means no copy.",
+      "default": ""
+    },
+    "SteerCoTeamId": {
+      "displayName": "Steering Committee team ID",
+      "description": "Teams team (group) ID of the team holding the Executive PMO Steering Committee channel. Flow 01 posts the daily digest there. The flow owner must be a member."
+    },
+    "SteerCoChannelId": {
+      "displayName": "Steering Committee channel ID",
+      "description": "Channel ID (19:...@thread.tacv2) of the Executive PMO Steering Committee channel."
+    },
+    "DigestEnabled": {
+      "displayName": "Daily digest enabled",
+      "description": "Master switch for flow 01. No (the default) means it reads nothing and posts nothing. Set to Yes once the channel IDs are set and a test card has been checked.",
+      "default": false
+    },
+    "DigestMaxItems": {
+      "displayName": "Digest items per section",
+      "description": "Most overdue items listed in each digest section (oldest first); the card says how many more there are. Keeps the card under the Teams size limit. Default 20.",
+      "default": 20
+    },
+    "RiskAdvisoryTeamId": {
+      "displayName": "Risk advisory team ID",
+      "description": "Teams team (group) ID of the team holding the PMO Risk Advisory channel. Flow 02 posts early-warning cards there. The flow owner must be a member."
+    },
+    "RiskAdvisoryChannelId": {
+      "displayName": "Risk advisory channel ID",
+      "description": "Channel ID of the PMO Risk Advisory channel."
+    },
+    "EarlyWarningEnabled": {
+      "displayName": "Early warning cards enabled",
+      "description": "Lets flow 02 post advisory cards to Teams. No (the default) still writes the weekly PMO Trend Snapshots, so thresholds can be tuned on real data before anyone is alerted.",
+      "default": false
+    },
+    "EarlyWarningThreshold": {
+      "displayName": "Early warning score threshold",
+      "description": "Score (0 to 3, one point per indicator) at which flow 02 posts an advisory. Default 2.",
+      "default": 2
+    },
+    "RiskVelocityThreshold": {
+      "displayName": "Risk velocity threshold (RVEL-HIGH)",
+      "description": "Net new risks and issues in 7 days (opened minus closed) that scores RVEL-HIGH. Default 2.",
+      "default": 2
+    },
+    "BurnDownThresholdPercent": {
+      "displayName": "Burn-down threshold % (ABD-SLO)",
+      "description": "Action burn-down ratio below this percentage scores ABD-SLO. Default 75 (ratio 0.75).",
+      "default": 75
+    },
+    "BurnDownMinActionsDue": {
+      "displayName": "Burn-down minimum actions due",
+      "description": "ABD-SLO only scores when at least this many open actions are due in the next 10 days. Default 3.",
+      "default": 3
+    },
+    "ChurnThreshold": {
+      "displayName": "Date churn threshold (CHURN-CRIT)",
+      "description": "Number of times one item's date must be pushed later within the churn window to score CHURN-CRIT. Default 2.",
+      "default": 2
+    },
+    "ChurnWindowDays": {
+      "displayName": "Date churn window (days)",
+      "description": "Look-back window for date churn, used by flows 02, 03a and 03b. Default 14.",
+      "default": 14
+    }
+  },
+  "connectionReferenceTag": "pmo",
+  "connectionReferences": {
+    "shared_sharepointonline": "SharePoint (PMO)",
+    "shared_office365": "Office 365 Outlook (PMO)",
+    "shared_teams": "Microsoft Teams (PMO)"
+  }
+}

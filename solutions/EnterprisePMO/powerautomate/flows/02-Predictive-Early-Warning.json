@@ -1,0 +1,723 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "PMO 02 - Predictive early warning",
+  "description": "Mondays at 06:00 UK time. For every active workstream, works out net risk velocity (risks and issues opened minus closed in 7 days), the action burn-down ratio (actions closed in 7 days / opened in 7 days + due in the next 10 days) and date churn (from the PMO Date Push Log), scores one point for each indicator over its threshold (RVEL-HIGH, ABD-SLO, CHURN-CRIT) and writes one PMO Trend Snapshots row with the metrics and a plain-English reason. When the score reaches EarlyWarningThreshold (default 2) and EarlyWarningEnabled is Yes it posts an advisory card to the PMO Risk Advisory channel. A re-run in the same week skips workstreams that already have a snapshot. Notify only: changes no RAID or action item.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_teams": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "PMOSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/EnterprisePMO"
+    },
+    "PMOOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{pmo-shared-mailbox}@{domain}"
+    },
+    "SupportMailboxEmail": {
+      "type": "String",
+      "defaultValue": ""
+    },
+    "RiskAdvisoryTeamId": {
+      "type": "String",
+      "defaultValue": ""
+    },
+    "RiskAdvisoryChannelId": {
+      "type": "String",
+      "defaultValue": ""
+    },
+    "EarlyWarningEnabled": {
+      "type": "Bool",
+      "defaultValue": false
+    },
+    "EarlyWarningThreshold": {
+      "type": "Int",
+      "defaultValue": 2
+    },
+    "RiskVelocityThreshold": {
+      "type": "Int",
+      "defaultValue": 2
+    },
+    "BurnDownThresholdPercent": {
+      "type": "Int",
+      "defaultValue": 75
+    },
+    "BurnDownMinActionsDue": {
+      "type": "Int",
+      "defaultValue": 3
+    },
+    "ChurnThreshold": {
+      "type": "Int",
+      "defaultValue": 2
+    },
+    "ChurnWindowDays": {
+      "type": "Int",
+      "defaultValue": 14
+    }
+  },
+  "triggers": {
+    "Weekly_Monday_0600_UK": {
+      "type": "Recurrence",
+      "recurrence": {
+        "frequency": "Week",
+        "interval": 1,
+        "timeZone": "GMT Standard Time",
+        "schedule": {
+          "hours": [
+            6
+          ],
+          "minutes": [
+            0
+          ],
+          "weekDays": [
+            "Monday"
+          ]
+        }
+      },
+      "runtimeConfiguration": {
+        "concurrency": {
+          "runs": 1
+        }
+      }
+    }
+  },
+  "actions": {
+    "Scope_Main": {
+      "type": "Scope",
+      "actions": {
+        "Compose_window": {
+          "type": "Compose",
+          "inputs": {
+            "now": "@utcNow()",
+            "minus7d": "@addDays(utcNow(), -7)",
+            "minusChurn": "@addDays(utcNow(), mul(-1, parameters('ChurnWindowDays')))",
+            "minus6d": "@addDays(utcNow(), -6)",
+            "plus10d": "@addDays(utcNow(), 10)",
+            "todayStart": "@convertToUtc(formatDateTime(convertFromUtc(utcNow(), 'GMT Standard Time'), 'yyyy-MM-ddT00:00:00'), 'GMT Standard Time')",
+            "snapshotDate": "@formatDateTime(convertFromUtc(utcNow(), 'GMT Standard Time'), 'yyyy-MM-dd')"
+          },
+          "runAfter": {}
+        },
+        "Get_workstreams": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('PMOSiteUrl')",
+              "table": "PMO Workstreams",
+              "$filter": "Active eq 1",
+              "$top": 5000
+            }
+          },
+          "runAfter": {
+            "Compose_window": [
+              "Succeeded"
+            ]
+          },
+          "runtimeConfiguration": {
+            "paginationPolicy": {
+              "minimumItemCount": 100000
+            }
+          }
+        },
+        "Get_raid_items": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('PMOSiteUrl')",
+              "table": "Master RAID Log",
+              "$filter": "(RAIDType eq 'Risk' or RAIDType eq 'Issue') and (Status ne 'Closed' or ClosedDate ge '@{outputs('Compose_window')?['minus7d']}')",
+              "$top": 5000
+            }
+          },
+          "runAfter": {
+            "Compose_window": [
+              "Succeeded"
+            ]
+          },
+          "runtimeConfiguration": {
+            "paginationPolicy": {
+              "minimumItemCount": 100000
+            }
+          }
+        },
+        "Get_action_items": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('PMOSiteUrl')",
+              "table": "Action and Decision Tracker",
+              "$filter": "Status ne 'Completed' or CompletedDate ge '@{outputs('Compose_window')?['minus7d']}'",
+              "$top": 5000
+            }
+          },
+          "runAfter": {
+            "Compose_window": [
+              "Succeeded"
+            ]
+          },
+          "runtimeConfiguration": {
+            "paginationPolicy": {
+              "minimumItemCount": 100000
+            }
+          }
+        },
+        "Get_recent_pushes": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('PMOSiteUrl')",
+              "table": "PMO Date Push Log",
+              "$filter": "Created ge '@{outputs('Compose_window')?['minusChurn']}'",
+              "$top": 5000
+            }
+          },
+          "runAfter": {
+            "Compose_window": [
+              "Succeeded"
+            ]
+          },
+          "runtimeConfiguration": {
+            "paginationPolicy": {
+              "minimumItemCount": 100000
+            }
+          }
+        },
+        "Get_recent_snapshots": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('PMOSiteUrl')",
+              "table": "PMO Trend Snapshots",
+              "$filter": "SnapshotDate ge '@{outputs('Compose_window')?['minus6d']}'",
+              "$top": 5000
+            }
+          },
+          "runAfter": {
+            "Compose_window": [
+              "Succeeded"
+            ]
+          },
+          "runtimeConfiguration": {
+            "paginationPolicy": {
+              "minimumItemCount": 100000
+            }
+          }
+        },
+        "For_each_workstream": {
+          "type": "Foreach",
+          "foreach": "@body('Get_workstreams')?['value']",
+          "actions": {
+            "Filter_raid": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Get_raid_items')?['value']",
+                "where": "@equals(item()?['Workstream']?['Id'], items('For_each_workstream')?['ID'])"
+              },
+              "runAfter": {}
+            },
+            "Filter_new_risks": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Filter_raid')",
+                "where": "@greaterOrEquals(ticks(item()?['Created']), ticks(outputs('Compose_window')?['minus7d']))"
+              },
+              "runAfter": {
+                "Filter_raid": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_closed_risks": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Filter_raid')",
+                "where": "@and(equals(item()?['Status']?['Value'], 'Closed'), greaterOrEquals(ticks(coalesce(item()?['ClosedDate'], '1900-01-01T00:00:00Z')), ticks(outputs('Compose_window')?['minus7d'])))"
+              },
+              "runAfter": {
+                "Filter_new_risks": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_open_red": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Filter_raid')",
+                "where": "@and(not(equals(item()?['Status']?['Value'], 'Closed')), equals(item()?['RAGRating']?['Value'], 'Red'))"
+              },
+              "runAfter": {
+                "Filter_closed_risks": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_open_amber": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Filter_raid')",
+                "where": "@and(not(equals(item()?['Status']?['Value'], 'Closed')), equals(item()?['RAGRating']?['Value'], 'Amber'))"
+              },
+              "runAfter": {
+                "Filter_open_red": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_actions": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Get_action_items')?['value']",
+                "where": "@equals(item()?['Workstream']?['Id'], items('For_each_workstream')?['ID'])"
+              },
+              "runAfter": {
+                "Filter_open_amber": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_actions_opened": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Filter_actions')",
+                "where": "@greaterOrEquals(ticks(item()?['Created']), ticks(outputs('Compose_window')?['minus7d']))"
+              },
+              "runAfter": {
+                "Filter_actions": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_actions_closed": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Filter_actions')",
+                "where": "@and(equals(item()?['Status']?['Value'], 'Completed'), greaterOrEquals(ticks(coalesce(item()?['CompletedDate'], '1900-01-01T00:00:00Z')), ticks(outputs('Compose_window')?['minus7d'])))"
+              },
+              "runAfter": {
+                "Filter_actions_opened": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_actions_due": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Filter_actions')",
+                "where": "@and(not(equals(item()?['Status']?['Value'], 'Completed')), not(empty(item()?['DueDate'])), greaterOrEquals(ticks(coalesce(item()?['DueDate'], '1900-01-01T00:00:00Z')), ticks(outputs('Compose_window')?['todayStart'])), lessOrEquals(ticks(coalesce(item()?['DueDate'], '1900-01-01T00:00:00Z')), ticks(outputs('Compose_window')?['plus10d'])))"
+              },
+              "runAfter": {
+                "Filter_actions_closed": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_pushes": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Get_recent_pushes')?['value']",
+                "where": "@equals(item()?['Workstream']?['Id'], items('For_each_workstream')?['ID'])"
+              },
+              "runAfter": {
+                "Filter_actions_due": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_churned": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Filter_pushes')",
+                "where": "@greaterOrEquals(item()?['PushesInWindow'], parameters('ChurnThreshold'))"
+              },
+              "runAfter": {
+                "Filter_pushes": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Compose_metrics": {
+              "type": "Compose",
+              "inputs": {
+                "newRisks": "@length(body('Filter_new_risks'))",
+                "closedRisks": "@length(body('Filter_closed_risks'))",
+                "velocity": "@sub(length(body('Filter_new_risks')), length(body('Filter_closed_risks')))",
+                "openRed": "@length(body('Filter_open_red'))",
+                "openAmber": "@length(body('Filter_open_amber'))",
+                "opened": "@length(body('Filter_actions_opened'))",
+                "closed": "@length(body('Filter_actions_closed'))",
+                "due": "@length(body('Filter_actions_due'))",
+                "ratio": "@if(equals(add(length(body('Filter_actions_opened')), length(body('Filter_actions_due'))), 0), 1, div(float(length(body('Filter_actions_closed'))), float(add(length(body('Filter_actions_opened')), length(body('Filter_actions_due'))))))",
+                "pushes": "@length(body('Filter_pushes'))",
+                "churnAlerts": "@length(body('Filter_churned'))"
+              },
+              "runAfter": {
+                "Filter_churned": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Compose_flags": {
+              "type": "Compose",
+              "inputs": {
+                "rvel": "@greaterOrEquals(outputs('Compose_metrics')?['velocity'], parameters('RiskVelocityThreshold'))",
+                "abd": "@and(less(outputs('Compose_metrics')?['ratio'], div(float(parameters('BurnDownThresholdPercent')), 100)), greaterOrEquals(outputs('Compose_metrics')?['due'], parameters('BurnDownMinActionsDue')))",
+                "churn": "@greater(outputs('Compose_metrics')?['churnAlerts'], 0)"
+              },
+              "runAfter": {
+                "Compose_metrics": [
+                  "Succeeded"
+                ]
+              },
+              "description": "RVEL-HIGH: net new risks and issues in 7 days at or above RiskVelocityThreshold. ABD-SLO: actions closed in 7 days / (opened in 7 days + due in next 10 days) below BurnDownThresholdPercent, with at least BurnDownMinActionsDue due. CHURN-CRIT: an item's date pushed ChurnThreshold times within the churn window."
+            },
+            "Compose_score": {
+              "type": "Compose",
+              "inputs": "@add(add(if(outputs('Compose_flags')?['rvel'], 1, 0), if(outputs('Compose_flags')?['abd'], 1, 0)), if(outputs('Compose_flags')?['churn'], 1, 0))",
+              "runAfter": {
+                "Compose_flags": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Compose_codes": {
+              "type": "Compose",
+              "inputs": "@{trim(concat(if(outputs('Compose_flags')?['rvel'], 'RVEL-HIGH ', ''), if(outputs('Compose_flags')?['abd'], 'ABD-SLO ', ''), if(outputs('Compose_flags')?['churn'], 'CHURN-CRIT', '')))}",
+              "runAfter": {
+                "Compose_score": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Compose_narrative": {
+              "type": "Compose",
+              "inputs": "@{if(equals(outputs('Compose_score'), 0), 'No warning indicators triggered.', trim(concat(if(outputs('Compose_flags')?['rvel'], concat('[HIGH RISK VELOCITY] Net growth of +', string(outputs('Compose_metrics')?['velocity']), ' risks/issues in 7 days (', string(outputs('Compose_metrics')?['newRisks']), ' new, ', string(outputs('Compose_metrics')?['closedRisks']), ' closed). '), ''), if(outputs('Compose_flags')?['abd'], concat('[ACTION BOTTLENECK] Burn-down ratio ', formatNumber(outputs('Compose_metrics')?['ratio'], '0.00'), ' with ', string(outputs('Compose_metrics')?['due']), ' actions due in 10 days (', string(outputs('Compose_metrics')?['closed']), ' closed, ', string(outputs('Compose_metrics')?['opened']), ' opened in 7 days). '), ''), if(outputs('Compose_flags')?['churn'], concat('[FORECAST INSTABILITY] ', string(outputs('Compose_metrics')?['churnAlerts']), ' date push(es) reached the churn threshold of ', string(parameters('ChurnThreshold')), ' on one item; ', string(outputs('Compose_metrics')?['pushes']), ' date pushes in total in the window.'), ''))))}",
+              "runAfter": {
+                "Compose_codes": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_existing_snapshot": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Get_recent_snapshots')?['value']",
+                "where": "@equals(item()?['Workstream']?['Id'], items('For_each_workstream')?['ID'])"
+              },
+              "runAfter": {
+                "Compose_narrative": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Condition_No_snapshot_this_week": {
+              "type": "If",
+              "description": "One snapshot per workstream per week: a re-run skips workstreams already done.",
+              "expression": {
+                "equals": [
+                  "@empty(body('Filter_existing_snapshot'))",
+                  true
+                ]
+              },
+              "actions": {
+                "Create_snapshot": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "PostItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('PMOSiteUrl')",
+                      "table": "PMO Trend Snapshots",
+                      "item/Title": "@{concat(coalesce(items('For_each_workstream')?['WorkstreamCode'], items('For_each_workstream')?['Title']), '_', outputs('Compose_window')?['snapshotDate'])}",
+                      "item/SnapshotDate": "@outputs('Compose_window')?['now']",
+                      "item/Workstream/Id": "@items('For_each_workstream')?['ID']",
+                      "item/OpenRedCount": "@outputs('Compose_metrics')?['openRed']",
+                      "item/OpenAmberCount": "@outputs('Compose_metrics')?['openAmber']",
+                      "item/NewRisksLast7Days": "@outputs('Compose_metrics')?['newRisks']",
+                      "item/ClosedRisksLast7Days": "@outputs('Compose_metrics')?['closedRisks']",
+                      "item/NetRiskVelocity": "@outputs('Compose_metrics')?['velocity']",
+                      "item/ActionsDueNext10Days": "@outputs('Compose_metrics')?['due']",
+                      "item/ActionsClosedLast7Days": "@outputs('Compose_metrics')?['closed']",
+                      "item/ActionsOpenedLast7Days": "@outputs('Compose_metrics')?['opened']",
+                      "item/BurnDownRatio": "@outputs('Compose_metrics')?['ratio']",
+                      "item/DateChurnCount14d": "@outputs('Compose_metrics')?['pushes']",
+                      "item/ChurnAlerts14d": "@outputs('Compose_metrics')?['churnAlerts']",
+                      "item/EarlyWarningScore": "@outputs('Compose_score')",
+                      "item/WarningCodes": "@{outputs('Compose_codes')}",
+                      "item/WarningReason": "@{outputs('Compose_narrative')}",
+                      "item/AdvisoryPosted": false
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Condition_Warning": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "greaterOrEquals": [
+                          "@outputs('Compose_score')",
+                          "@parameters('EarlyWarningThreshold')"
+                        ]
+                      },
+                      {
+                        "equals": [
+                          "@parameters('EarlyWarningEnabled')",
+                          true
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Compose_warning_card": {
+                      "type": "Compose",
+                      "inputs": {
+                        "$schema": "http://adaptivecards.io/schemas/adaptivecard.json",
+                        "type": "AdaptiveCard",
+                        "version": "1.4",
+                        "body": [
+                          {
+                            "type": "Container",
+                            "style": "warning",
+                            "bleed": true,
+                            "items": [
+                              {
+                                "type": "TextBlock",
+                                "text": "PREDICTIVE RISK ADVISORY",
+                                "weight": "Bolder",
+                                "color": "Warning",
+                                "size": "Small"
+                              },
+                              {
+                                "type": "TextBlock",
+                                "text": "Workstream velocity and churn warning",
+                                "weight": "Bolder",
+                                "size": "Medium",
+                                "spacing": "None"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "FactSet",
+                            "spacing": "Medium",
+                            "facts": [
+                              {
+                                "title": "Workstream",
+                                "value": "@{items('For_each_workstream')?['Title']}"
+                              },
+                              {
+                                "title": "Early warning score",
+                                "value": "@{outputs('Compose_score')} / 3 (@{outputs('Compose_codes')})"
+                              },
+                              {
+                                "title": "Detection date",
+                                "value": "@{outputs('Compose_window')?['snapshotDate']}"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "TextBlock",
+                            "text": "Why this was flagged",
+                            "weight": "Bolder",
+                            "size": "Small",
+                            "separator": true
+                          },
+                          {
+                            "type": "TextBlock",
+                            "text": "@{outputs('Compose_narrative')}",
+                            "wrap": true
+                          }
+                        ],
+                        "actions": [
+                          {
+                            "type": "Action.OpenUrl",
+                            "title": "Open PMO Governance Hub",
+                            "url": "@{concat(parameters('PMOSiteUrl'), '/SitePages/Portfolio-Governance-Hub.aspx')}"
+                          }
+                        ]
+                      },
+                      "runAfter": {}
+                    },
+                    "Post_warning_card": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_teams",
+                          "operationId": "PostCardToConversation",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+                        },
+                        "parameters": {
+                          "poster": "Flow bot",
+                          "location": "Channel",
+                          "body/recipient/groupId": "@parameters('RiskAdvisoryTeamId')",
+                          "body/recipient/channelId": "@parameters('RiskAdvisoryChannelId')",
+                          "body/messageBody": "@{string(outputs('Compose_warning_card'))}"
+                        },
+                        "retryPolicy": {
+                          "type": "none"
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_warning_card": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Mark_advisory_posted": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PatchItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('PMOSiteUrl')",
+                          "table": "PMO Trend Snapshots",
+                          "id": "@body('Create_snapshot')?['ID']",
+                          "item/Title": "@body('Create_snapshot')?['Title']",
+                          "item/SnapshotDate": "@body('Create_snapshot')?['SnapshotDate']",
+                          "item/Workstream/Id": "@items('For_each_workstream')?['ID']",
+                          "item/AdvisoryPosted": true
+                        }
+                      },
+                      "runAfter": {
+                        "Post_warning_card": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  },
+                  "runAfter": {
+                    "Create_snapshot": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Filter_existing_snapshot": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "Get_workstreams": [
+              "Succeeded"
+            ],
+            "Get_raid_items": [
+              "Succeeded"
+            ],
+            "Get_action_items": [
+              "Succeeded"
+            ],
+            "Get_recent_pushes": [
+              "Succeeded"
+            ],
+            "Get_recent_snapshots": [
+              "Succeeded"
+            ]
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 1
+            }
+          }
+        }
+      },
+      "runAfter": {}
+    },
+    "Catch_run_failed": {
+      "type": "Scope",
+      "description": "Run-level failure alert: any error in Scope_Main that no step handled.",
+      "actions": {
+        "Select_failed_steps": {
+          "type": "Select",
+          "inputs": {
+            "from": "@result('Scope_Main')",
+            "select": "@concat('<li><b>', item()?['name'], '</b>: ', item()?['status'], ' ', coalesce(item()?['error']?['code'], item()?['outputs']?['statusCode'], ''), ' ', coalesce(item()?['error']?['message'], ''), '</li>')"
+          },
+          "runAfter": {}
+        },
+        "Alert_run_failed": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@{concat(parameters('PMOOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
+              "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
+              "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error it did not handle, so some of its work may not have been done. Nothing has been retried.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a> (started @{workflow()?['run']?['startTime']})</p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Open the run, find the failed step and its raw output, fix the cause, then resubmit the run. See Stopping and recovery in the EnterprisePMO deployment guide.</p>",
+              "emailMessage/Importance": "High"
+            }
+          },
+          "runAfter": {
+            "Select_failed_steps": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Scope_Main": [
+          "Failed",
+          "TimedOut"
+        ]
+      }
+    }
+  }
+}

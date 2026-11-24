@@ -1,0 +1,38 @@
+name: PMO flows
+
+on:
+  pull_request:
+    paths:
+      - "solutions/EnterprisePMO/**"
+      - "solutions/SharePointGovernance/tools/**"
+  push:
+    branches: [main]
+    paths:
+      - "solutions/EnterprisePMO/**"
+      - "solutions/SharePointGovernance/tools/**"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate flow definitions against the list schema
+        run: python solutions/SharePointGovernance/tools/validate_flows.py --root solutions/EnterprisePMO
+      - name: Validate the hub views and formatters against the list schema
+        run: python solutions/SharePointGovernance/tools/validate_dashboard.py --root solutions/EnterprisePMO
+      - name: Build the solution package and the deployment kit
+        run: python solutions/SharePointGovernance/tools/build_kit.py --root solutions/EnterprisePMO --out dist
+      - name: Upload solution package
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnterprisePMO-solution
+          path: dist/EnterprisePMO_*.zip
+      - name: Upload deployment kit
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnterprisePMO-DeploymentKit
+          path: dist/EnterprisePMO-DeploymentKit_*.zip

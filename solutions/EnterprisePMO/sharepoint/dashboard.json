@@ -1,0 +1,173 @@
+{
+  "$comment": "Read by provisioning/Provision-PMOHub.ps1 and checked by tools/validate_dashboard.py --root solutions/EnterprisePMO. Views are added to the lists; the hub page shows each in a List web part. {SiteUrl} is replaced with the PMO site URL.",
+  "page": {
+    "name": "Portfolio-Governance-Hub",
+    "title": "Enterprise PMO & Portfolio Governance Hub",
+    "welcome": "<h1>Enterprise PMO &amp; Governance Hub</h1><h2>Strategic alignment, risk assurance and data-driven execution</h2><p>The control centre for the enterprise transformation programme: initiative health, overdue escalations, the decisions the Executive Board owes, and early warnings across every workstream. Each panel below is a live view of a PMO list; open it to work the items.</p>",
+    "commentary": "<h3>PMO executive commentary</h3><p><em>Updated by the PMO before each Steering Committee. Edit this text part directly; keep it to what the Board must know or do.</em></p><p><strong>Current governance focus:</strong> [portfolio RAG split from the scorecard, e.g. x% Green / y% Amber / z% Red] and [the headline focus this period].</p><p><strong>Primary escalations:</strong></p><ul><li>[Workstream]: [issue, impact and the intervention needed]</li><li>[Workstream]: [issue, impact and the intervention needed]</li></ul><p><strong>Required executive actions:</strong></p><ol><li>Review and decide [CR reference] before [forum and date].</li><li>Sign off the pending decisions in the panel below.</li></ol>",
+    "powerBiNote": "<p><em>Power BI: Portfolio RAG scorecard, milestone slippage trend and early-warning heatmap from the PMO Enterprise Analytics workspace. Pick the report in this web part's settings. Viewers need a Power BI licence or the workspace on Premium/Fabric capacity.</em></p>",
+    "quickLinks": [
+      {
+        "title": "Submit Change Request",
+        "url": "{SiteUrl}/Lists/ChangeRequests/NewForm.aspx",
+        "icon": "PageAdd",
+        "audience": "All",
+        "description": "Raise a formal scope, budget or timeline baseline variance request"
+      },
+      {
+        "title": "Governance Framework & SOPs",
+        "url": "{SiteUrl}/GovernanceFramework",
+        "icon": "Library",
+        "audience": "Project Managers",
+        "description": "Delivery frameworks, stage-gate guidelines and PMO templates"
+      },
+      {
+        "title": "Steering Committee Calendar & Submissions",
+        "url": "{SiteUrl}/Lists/GovernanceCalendar",
+        "icon": "Calendar",
+        "audience": "All",
+        "description": "Upcoming decision gates and submission deadlines"
+      },
+      {
+        "title": "Submit Risk / Issue Escalation",
+        "url": "{SiteUrl}/Lists/MasterRAIDLog/NewForm.aspx",
+        "icon": "Warning",
+        "audience": "All",
+        "description": "Log a critical blocker or high-impact risk; tick Escalated to Executive Board to put it in front of the Board"
+      },
+      {
+        "title": "Portfolio Document Repository",
+        "url": "{SiteUrl}/PortfolioDocuments",
+        "icon": "FabricFolder",
+        "audience": "All",
+        "description": "Approved charters, PIDs and sign-off artefacts"
+      }
+    ],
+    "people": {
+      "title": "PMO leadership & governance contacts",
+      "roles": [
+        "Portfolio Director (accountable executive)",
+        "Head of PMO Delivery (operations and escalations)",
+        "Lead Governance Specialist (baseline and change control)"
+      ]
+    }
+  },
+  "formatters": [
+    {
+      "file": "rag-format.json",
+      "columns": [
+        [
+          "Master RAID Log",
+          "RAGRating"
+        ],
+        [
+          "PMO Workstreams",
+          "OverallRAG"
+        ],
+        [
+          "PMO Workstreams",
+          "ScheduleRAG"
+        ],
+        [
+          "PMO Workstreams",
+          "BudgetRAG"
+        ],
+        [
+          "PMO Workstreams",
+          "ScopeRAG"
+        ]
+      ]
+    },
+    {
+      "file": "due-date-format.json",
+      "columns": [
+        [
+          "Master RAID Log",
+          "TargetResolutionDate"
+        ],
+        [
+          "Action and Decision Tracker",
+          "DueDate"
+        ]
+      ],
+      "requiresInView": [
+        "Status"
+      ]
+    }
+  ],
+  "views": [
+    {
+      "key": "escalations",
+      "list": "Master RAID Log",
+      "title": "Executive escalations",
+      "heading": "Active executive escalations (RAID)",
+      "query": "<Where><And><In><FieldRef Name=\"RAIDType\"/><Values><Value Type=\"Choice\">Risk</Value><Value Type=\"Choice\">Issue</Value></Values></In><And><Eq><FieldRef Name=\"EscalatedToExecutiveBoard\"/><Value Type=\"Boolean\">1</Value></Eq><Neq><FieldRef Name=\"Status\"/><Value Type=\"Choice\">Closed</Value></Neq></And></And></Where><OrderBy><FieldRef Name=\"TargetResolutionDate\"/></OrderBy>",
+      "fields": [
+        "ID",
+        "Workstream",
+        "LinkTitle",
+        "RAIDType",
+        "RAGRating",
+        "Owner",
+        "TargetResolutionDate",
+        "Status"
+      ],
+      "section": 3,
+      "column": 1,
+      "rowLimit": 30
+    },
+    {
+      "key": "decisions",
+      "list": "Action and Decision Tracker",
+      "title": "Pending board decisions",
+      "heading": "Pending Executive Board actions and decisions",
+      "query": "<Where><And><Neq><FieldRef Name=\"Status\"/><Value Type=\"Choice\">Completed</Value></Neq><Eq><FieldRef Name=\"DecisionForum\"/><Value Type=\"Choice\">Executive Board</Value></Eq></And></Where><OrderBy><FieldRef Name=\"DueDate\"/></OrderBy>",
+      "fields": [
+        "ID",
+        "Workstream",
+        "LinkTitle",
+        "Category",
+        "DueDate",
+        "AssignedOwner",
+        "Status"
+      ],
+      "section": 3,
+      "column": 2,
+      "rowLimit": 30
+    },
+    {
+      "key": "calendar",
+      "list": "PMO Governance Calendar",
+      "title": "Next 30 days",
+      "heading": "Governance cadence: next 30 days",
+      "query": "<Where><And><Geq><FieldRef Name=\"EventDate\"/><Value Type=\"DateTime\"><Today/></Value></Geq><Leq><FieldRef Name=\"EventDate\"/><Value Type=\"DateTime\"><Today OffsetDays=\"30\"/></Value></Leq></And></Where><OrderBy><FieldRef Name=\"EventDate\"/></OrderBy>",
+      "fields": [
+        "LinkTitle",
+        "EventDate",
+        "GovernanceForum",
+        "SubmissionDeadline"
+      ],
+      "section": 4,
+      "column": 1,
+      "rowLimit": 15
+    },
+    {
+      "key": "documents",
+      "list": "Portfolio Document Repository",
+      "title": "PIDs and charters",
+      "heading": "Latest PIDs and baseline charters",
+      "query": "<Where><In><FieldRef Name=\"DocumentType\"/><Values><Value Type=\"Choice\">Project Initiation Document (PID)</Value><Value Type=\"Choice\">Approved Baseline Charter</Value></Values></In></Where><OrderBy><FieldRef Name=\"Modified\" Ascending=\"FALSE\"/></OrderBy>",
+      "fields": [
+        "DocIcon",
+        "LinkFilename",
+        "DocumentType",
+        "Workstream",
+        "Modified"
+      ],
+      "section": 4,
+      "column": 2,
+      "rowLimit": 10,
+      "isDocumentLibrary": true
+    }
+  ]
+}
