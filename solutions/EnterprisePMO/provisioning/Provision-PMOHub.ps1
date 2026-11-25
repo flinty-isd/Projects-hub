@@ -48,7 +48,10 @@ param(
     # UPNs for the People web part, in the order of dashboard.json page.people.roles.
     [string[]] $LeadershipContacts = @(),
     [switch] $RefreshViews,
-    [switch] $RefreshPage
+    [switch] $RefreshPage,
+    # Upload pages/*.html (PMO Hub Guide, Governance Reference) to Site Pages as SharePoint HTML pages.
+    # Needs "Allow HTML files" on in the Site Pages library's file types (see DEPLOY-AND-TEST.md).
+    [switch] $UploadHtmlPages
 )
 
 $ErrorActionPreference = 'Stop'
@@ -193,6 +196,21 @@ if ($page -and -not $RefreshPage) {
 
     Set-PnPPage -Identity $name -CommentsEnabled:$false -Publish -Connection $conn | Out-Null
     Write-Output "  + $name.aspx published"
+}
+
+# --- HTML pages ---------------------------------------------------------------------
+if ($UploadHtmlPages) {
+    $tmp = Join-Path ([IO.Path]::GetTempPath()) ("pmo-pages-" + [guid]::NewGuid())
+    New-Item -ItemType Directory -Path $tmp | Out-Null
+    foreach ($file in Get-ChildItem (Join-Path $root 'pages') -Filter *.html) {
+        # Links in the generated pages use {SiteUrl}; point them at this site.
+        $html = (Get-Content $file.FullName -Raw) -replace '\{SiteUrl\}', $SiteUrl
+        $out = Join-Path $tmp $file.Name
+        [IO.File]::WriteAllText($out, $html, (New-Object System.Text.UTF8Encoding $false))
+        Add-PnPFile -Path $out -Folder 'SitePages' -Connection $conn | Out-Null
+        Write-Output "  + SitePages/$($file.Name) uploaded"
+    }
+    Remove-Item $tmp -Recurse -Force
 }
 
 Write-Output ''

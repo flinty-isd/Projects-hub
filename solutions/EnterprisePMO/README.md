@@ -37,9 +37,11 @@ EnterprisePMO/
 ├── sharepoint/            list-schema.json (10 lists and libraries), dashboard.json (page and views),
 │                          rag-format.json, due-date-format.json, status-format.json (column formatting)
 ├── provisioning/          Provision-PMOHub.ps1: lists, columns, formatting, views and the hub page
+├── pages/                 SharePoint HTML pages: PMO-Hub-Guide.html, PMO-Governance-Reference.html
 ├── diagrams/              Mermaid process diagrams
 ├── copilot/               COPILOT-PROMPTS.md: build-it-with-Copilot prompts, risk agent, running prompts
-├── tools/                 build_copilot_prompts.py: regenerates the prompt pack from the schema
+├── tools/                 build_copilot_prompts.py and build_pages.py: regenerate the prompt pack and
+│                          the HTML pages from the schema and config
 ├── DEPLOY-AND-TEST.md     step-by-step deployment and test script
 └── solution-config.json   solution name, version, publisher, environment variables
 ```
@@ -88,6 +90,38 @@ hand in the page editor, and the script prints the list at the end:
 against the list schema. It also checks that every view showing a formatted
 due date includes Status: the badge reads Status, and SharePoint ignores
 `[$Status]` when the column isn't in the view.
+
+## HTML pages
+
+SharePoint Online can now host HTML files in a site's **Site Pages** library as
+pages, once a site owner turns on *Allow HTML files* in that library's file
+types. Two such pages come with the solution, in `pages/`:
+
+| Page | For | Covers |
+|---|---|---|
+| `PMO-Hub-Guide.html` | Everyone | How to report a risk or issue, ask for Executive Board escalation and raise a change request; what happens next, and when; the RAG ratings and badges; date churn |
+| `PMO-Governance-Reference.html` | The PMO and approvers | Tolerances and approval times, the early-warning indicators and thresholds, schedules, switches, lists, and what to do when something is stuck |
+
+**What these pages can't do.** HTML pages render in a sandboxed iframe that
+can't call SharePoint or any other API, so they can't show live list data. The
+live panels stay on `Portfolio-Governance-Hub.aspx`, which is built from list
+web parts.
+
+**How the pages are built.**
+- Static: inline CSS, light and dark themes, phone layout. No JavaScript and
+  no external fonts, images or scripts, so nothing depends on what the sandbox
+  allows. That also keeps them clear of the no-custom-script rule.
+- `tools/build_pages.py` generates them from `solution-config.json` and the
+  list schema, so the thresholds, tolerances and timings they quote are the
+  ones the flows use. CI fails if they are out of date.
+- Links are written as `{SiteUrl}`. `Provision-PMOHub.ps1 -UploadHtmlPages`
+  fills in the site URL as it uploads the pages.
+- The hub's Quick Links include *How to use the PMO hub*, which opens the
+  guide.
+
+This is a new SharePoint feature, and so far it's described by roadmap item
+569208 and third-party write-ups. Neither page has been uploaded to a tenant
+yet, so check tests T27–T28 before announcing the pages.
 
 ## Changes from the blueprint
 
@@ -150,13 +184,14 @@ Not built (needs a decision or a licence):
 python solutions/SharePointGovernance/tools/validate_flows.py --root solutions/EnterprisePMO
 python solutions/SharePointGovernance/tools/validate_dashboard.py --root solutions/EnterprisePMO
 python solutions/EnterprisePMO/tools/build_copilot_prompts.py --check
+python solutions/EnterprisePMO/tools/build_pages.py --check
 python solutions/SharePointGovernance/tools/build_kit.py --root solutions/EnterprisePMO --out dist
 ```
 
-CI (`.github/workflows/pmo-flows.yml`) runs all four on every change under
-this folder or the shared tools. After changing the list schema or the
-thresholds, run `build_copilot_prompts.py` without `--check` to regenerate
-the prompt pack. It uploads the unmanaged solution
+CI (`.github/workflows/pmo-flows.yml`) runs all five on every change under
+this folder or the shared tools. After changing the list schema, the
+thresholds or the version, run `build_copilot_prompts.py` and `build_pages.py`
+without `--check` to regenerate the prompt pack and the HTML pages. It uploads the unmanaged solution
 `EnterprisePMO_<version>.zip` and the deployment kit.
 
 The connectors are SharePoint, Microsoft Teams, Office 365 Outlook and

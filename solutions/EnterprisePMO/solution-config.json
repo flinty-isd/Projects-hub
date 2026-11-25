@@ -3,7 +3,7 @@
   "uniqueName": "EnterprisePMO",
   "displayName": "Enterprise PMO Governance Hub",
   "description": "Daily executive overdue digest, weekly predictive early warning, RAID / action date churn tracking, change request approval and risk escalation requests for the Enterprise PMO hub site.",
-  "version": "1.1.0.0",
+  "version": "1.2.0.0",
   "kitInclude": [
     "README.md",
     "DEPLOY-AND-TEST.md",
@@ -11,6 +11,7 @@
     "powerautomate",
     "provisioning",
     "sharepoint",
+    "pages",
     "diagrams",
     "copilot",
     "tools"

@@ -41,6 +41,13 @@
         "icon": "FabricFolder",
         "audience": "All",
         "description": "Approved charters, PIDs and sign-off artefacts"
+      },
+      {
+        "title": "How to use the PMO hub",
+        "url": "{SiteUrl}/SitePages/PMO-Hub-Guide.html",
+        "icon": "Help",
+        "audience": "All",
+        "description": "Report a risk, ask for Board escalation, raise a change request, and what the badges mean"
       }
     ],
     "people": {

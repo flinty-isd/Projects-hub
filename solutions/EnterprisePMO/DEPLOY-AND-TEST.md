@@ -20,13 +20,19 @@ repeats the same steps from the same deployment kit (check its
    Check: all 10 lists and libraries exist and versioning is on. *Tracked date
    (flow)* and *Tracked status (flow)* don't appear on the new or edit forms.
    *RAG rating* shows a coloured pill.
-3. Finish the page by hand, following the steps the script prints (Quick
+3. **HTML pages.** In the **Site Pages** library: *Settings > Library settings
+   > File types* (or *Library settings > More library settings*), turn on
+   **Allow HTML files**. Then re-run the script with `-UploadHtmlPages`. It
+   uploads `PMO-Hub-Guide.html` and `PMO-Governance-Reference.html` with their
+   links pointed at this site. Without the setting, the upload works but the
+   files download instead of opening as pages.
+4. Finish the page by hand, following the steps the script prints (Quick
    Links, Power BI, commentary, People). Then make it the home page.
-4. **Permissions.** Give the flow owner Edit on the site. Make PMO Trend
+5. **Permissions.** Give the flow owner Edit on the site. Make PMO Trend
    Snapshots, PMO Date Push Log and PMO Digest History **read-only** for
    everyone else: break inheritance, grant Read to members and Edit to the
    flow owner only. They are the audit trail.
-5. Add at least two rows to *PMO Workstreams* (Active = Yes).
+6. Add at least two rows to *PMO Workstreams* (Active = Yes).
 
 ## 2. Teams
 
@@ -82,6 +88,8 @@ Run each test and record the result (pass / fail, run ID).
 | T24 | Approve T23 with `EscalationAlertsEnabled` = Yes | *Escalated to Executive Board* = Yes, status Approved, decision note filled in, card in the Steering Committee channel, submitter and owner emailed. The item shows in *Executive escalations* on the hub |
 | T25 | Request on another item; decline | Status Declined, the tick cleared, no flag set. Tick again: a new approval is sent |
 | T26 | Hub section 5 | The open CRs and the escalation requests show, with outcome badges |
+| T27 | Open `SitePages/PMO-Hub-Guide.html` and the *How to use the PMO hub* quick link | It opens as a page, not a download. Select *Report a risk or issue*: the RAID new-item form opens. If links do nothing (the sandbox blocks top navigation), set `LINK_TARGET = "_blank"` in `tools/build_pages.py`, regenerate and re-upload |
+| T28 | Both HTML pages on a phone, and with dark mode on | Readable, no sideways scrolling, badges show their words |
 | T17 | Hub page | Each panel shows its view, and overdue dates show red with *overdue*. Comments are off. The page works on a phone |
 
 ## 5. Run checks (BAU)
