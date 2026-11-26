@@ -1,0 +1,2230 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HPUK IT Enterprise Governance &amp; Security Portal</title>
+  <style>
+    /* =====================================================================
+       HPUK SHAREPOINT UI DESIGN SYSTEM v1.3 (WCAG 2.1 AA VERIFIED TOKENS)
+       ===================================================================== */
+    :root {
+      --hpuk-navy: #002E6D;
+      --hpuk-navy-hover: #00245A;
+      --hpuk-navy-dark: #001D47;
+      --hpuk-sky: #009BDE;
+      --hpuk-info-text: #005E86;
+      --hpuk-warn-fill: #F2A900;
+      --hpuk-warn-text: #8A5A00;
+      --hpuk-success: #107C10;
+      --hpuk-error: #C4314B;
+      --hpuk-border: #8A94A6;
+      --hpuk-divider: #D9DEE7;
+      --hpuk-subtle: #F2F4F7;
+      --hpuk-text: #323130;
+      --hpuk-muted: #6B6B6B;
+      --hpuk-white: #FFFFFF;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: var(--hpuk-white);
+      color: var(--hpuk-text);
+      line-height: 1.45;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    a { color: var(--hpuk-navy); text-decoration: underline; }
+    a:hover { color: var(--hpuk-sky); }
+
+    .container {
+      max-width: 1340px;
+      margin: 0 auto;
+      padding: 0 20px;
+      width: 100%;
+    }
+
+    /* =====================================================================
+       ZONE 1: WHITE BRAND HEADER + SEA BLUE NAVIGATION BAR
+       ===================================================================== */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0, 46, 109, 0.08);
+    }
+
+    .brand-bar {
+      background-color: var(--hpuk-white);
+      border-bottom: 1px solid var(--hpuk-divider);
+      padding: 10px 0;
+    }
+
+    .brand-bar-inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    /* Official Hutchison Ports United Kingdom Positive Lockup */
+    .hpuk-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      user-select: none;
+    }
+
+    .hpuk-logo-mark {
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+      display: block;
+    }
+
+    .hpuk-logo-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .hpuk-logo-row1 {
+      display: flex;
+      align-items: baseline;
+      letter-spacing: 0.01em;
+    }
+
+    .logo-hutchison {
+      font-size: 17px;
+      font-weight: 900;
+      color: var(--hpuk-navy);
+    }
+
+    .logo-ports {
+      font-size: 17px;
+      font-weight: 400;
+      color: var(--hpuk-navy);
+      margin-left: 2px;
+    }
+
+    .logo-uk-sub {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--hpuk-navy);
+      margin-top: 3px;
+      text-transform: uppercase;
+    }
+
+    .divider-v {
+      width: 1px;
+      height: 32px;
+      background-color: var(--hpuk-divider);
+    }
+
+    .site-title-group h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--hpuk-navy);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .site-title-group p {
+      font-size: 11px;
+      color: var(--hpuk-muted);
+      margin-top: 2px;
+    }
+
+    .badge-t07 {
+      background-color: var(--hpuk-navy);
+      color: var(--hpuk-white);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .mode-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      border: 1px solid var(--hpuk-border);
+      background-color: var(--hpuk-subtle);
+      color: var(--hpuk-info-text);
+    }
+
+    .mode-pill.csv-loaded {
+      background-color: #E6F4EA;
+      color: var(--hpuk-success);
+      border-color: var(--hpuk-success);
+    }
+
+    .brand-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .port-switcher {
+      display: inline-flex;
+      flex-wrap: wrap;
+      background-color: var(--hpuk-subtle);
+      padding: 3px;
+      border-radius: 4px;
+      border: 1px solid var(--hpuk-border);
+      gap: 2px;
+    }
+
+    .port-btn {
+      background: transparent;
+      border: none;
+      color: var(--hpuk-text);
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 9px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .port-btn:hover { background-color: var(--hpuk-divider); }
+    .port-btn.active { background-color: var(--hpuk-navy); color: var(--hpuk-white); }
+
+    /* Navigation Bar (Sea Blue + Sky Blue Accent) */
+    .nav-wrapper {
+      background-color: var(--hpuk-navy);
+      border-bottom: 3px solid var(--hpuk-sky);
+    }
+
+    .nav-bar {
+      display: flex;
+      overflow-x: auto;
+      gap: 2px;
+    }
+
+    .nav-tab {
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: #E2E8F0;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 10px 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-tab:hover { color: var(--hpuk-white); background-color: rgba(255, 255, 255, 0.08); }
+    .nav-tab.active {
+      color: var(--hpuk-white);
+      border-bottom-color: var(--hpuk-sky);
+      background-color: rgba(255, 255, 255, 0.14);
+    }
+
+    .nav-count {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      background-color: var(--hpuk-navy-dark);
+      color: #93C5FD;
+    }
+
+    .nav-tab.active .nav-count {
+      background-color: var(--hpuk-white);
+      color: var(--hpuk-navy);
+    }
+
+    /* =====================================================================
+       ZONE 2: HERO BANNER (PAGE 33 PLAIN THEMED STANDARD)
+       ===================================================================== */
+    .hero-banner {
+      background-color: var(--hpuk-navy);
+      color: var(--hpuk-white);
+      border-bottom: 2px solid var(--hpuk-border);
+      padding: 20px 0;
+    }
+
+    .hero-inner {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .hero-kicker {
+      color: #93C5FD;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+
+    .hero-title { font-size: 22px; font-weight: 700; margin-bottom: 5px; }
+    .hero-desc { font-size: 12px; color: #E2E8F0; max-width: 780px; }
+
+    .hero-stat-box {
+      background-color: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 10px 16px;
+      border-radius: 6px;
+      min-width: 230px;
+    }
+
+    .hero-stat-label { font-size: 10px; font-weight: 700; color: #93C5FD; text-transform: uppercase; }
+    .hero-stat-val { font-size: 15px; font-weight: 700; margin-top: 2px; }
+    .hero-stat-sub { font-size: 11px; color: #CBD5E1; margin-top: 2px; }
+
+    /* Search & Action Strip */
+    .search-strip {
+      background-color: var(--hpuk-subtle);
+      border: 1px solid var(--hpuk-border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 240px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-family: Arial, sans-serif;
+      border: 1px solid var(--hpuk-border);
+      border-radius: 4px;
+      background-color: var(--hpuk-white);
+      color: var(--hpuk-text);
+    }
+
+    .search-input:focus { outline: 2px solid var(--hpuk-sky); border-color: var(--hpuk-navy); }
+
+    .scope-badge {
+      background-color: var(--hpuk-white);
+      border: 1px solid var(--hpuk-border);
+      color: var(--hpuk-navy);
+      font-weight: 700;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 4px;
+    }
+
+    /* Main Workspace */
+    main { flex: 1; padding: 18px 0 36px; }
+
+    /* Buttons */
+    .btn {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+
+    .btn-primary { background-color: var(--hpuk-navy); color: var(--hpuk-white); }
+    .btn-primary:hover { background-color: var(--hpuk-navy-hover); }
+
+    .btn-secondary { background-color: var(--hpuk-white); color: var(--hpuk-navy); border-color: var(--hpuk-navy); }
+    .btn-secondary:hover { background-color: var(--hpuk-subtle); }
+
+    .btn-subtle { background-color: var(--hpuk-subtle); color: var(--hpuk-text); border-color: var(--hpuk-border); }
+    .btn-subtle:hover { background-color: var(--hpuk-divider); }
+
+    .btn-danger { background-color: var(--hpuk-error); color: var(--hpuk-white); }
+
+    .btn-link {
+      background: none;
+      border: none;
+      color: var(--hpuk-navy);
+      text-decoration: underline;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0;
+    }
+    .btn-link:hover { color: var(--hpuk-sky); }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .kpi-card {
+      background-color: var(--hpuk-white);
+      border: 1px solid var(--hpuk-border);
+      border-radius: 6px;
+      padding: 14px;
+    }
+
+    .kpi-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--hpuk-muted); letter-spacing: 0.04em; }
+    .kpi-value { font-size: 26px; font-weight: 700; margin: 4px 0; color: var(--hpuk-navy); }
+    .kpi-sub { font-size: 11px; font-weight: 700; color: var(--hpuk-info-text); }
+
+    .text-navy { color: var(--hpuk-navy); }
+    .text-green { color: var(--hpuk-success); }
+    .text-red { color: var(--hpuk-error); }
+    .text-amber { color: var(--hpuk-warn-text); }
+    .text-info { color: var(--hpuk-info-text); }
+    .text-muted { color: var(--hpuk-muted); }
+
+    /* Panels & Two-Column Grid */
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 540px) { .two-col { grid-template-columns: 1fr; } }
+
+    .panel {
+      background-color: var(--hpuk-white);
+      border: 1px solid var(--hpuk-border);
+      border-radius: 6px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .panel-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--hpuk-divider);
+    }
+
+    .panel-title { font-size: 14px; font-weight: 700; color: var(--hpuk-navy); text-transform: uppercase; }
+    .panel-sub { font-size: 11px; color: var(--hpuk-muted); margin-top: 2px; }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Filter Pill Bar */
+    .filter-bar-inline {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background-color: var(--hpuk-subtle);
+      border: 1px solid var(--hpuk-divider);
+      border-radius: 5px;
+      padding: 9px 12px;
+      margin-bottom: 14px;
+    }
+
+    .pill-group {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      background-color: var(--hpuk-white);
+      padding: 3px;
+      border-radius: 4px;
+      border: 1px solid var(--hpuk-border);
+    }
+
+    .filter-pill-btn {
+      background: transparent;
+      border: none;
+      color: var(--hpuk-text);
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .filter-pill-btn:hover { background-color: var(--hpuk-subtle); }
+    .filter-pill-btn.active { background-color: var(--hpuk-navy); color: var(--hpuk-white); }
+    .filter-pill-btn.active-warn { background-color: var(--hpuk-error); color: var(--hpuk-white); }
+    .filter-pill-btn.active-ok { background-color: var(--hpuk-success); color: var(--hpuk-white); }
+
+    .toggle-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--hpuk-text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* Queue Items */
+    .queue-item {
+      background-color: var(--hpuk-subtle);
+      border-left: 4px solid var(--hpuk-error);
+      padding: 10px 12px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .queue-item.warn { border-left-color: var(--hpuk-warn-text); }
+    .queue-item-title { font-size: 12px; font-weight: 700; color: var(--hpuk-navy); }
+    .queue-item-meta { font-size: 11px; color: var(--hpuk-muted); margin-top: 2px; }
+
+    /* 5x5 Heatmap */
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 4px;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .hm-header {
+      background-color: var(--hpuk-subtle);
+      color: var(--hpuk-navy);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 6px 2px;
+      border-radius: 3px;
+      border: 1px solid var(--hpuk-divider);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hm-cell {
+      border: 1px solid var(--hpuk-border);
+      border-radius: 4px;
+      padding: 8px 4px;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+    }
+
+    .hm-cell.low { background-color: #E6F4EA; color: var(--hpuk-success); }
+    .hm-cell.med { background-color: #FEF7E0; color: var(--hpuk-warn-text); }
+    .hm-cell.high { background-color: #FCE8EC; color: var(--hpuk-error); }
+    .hm-cell.selected { outline: 3px solid var(--hpuk-navy); border-color: var(--hpuk-navy); }
+
+    .hm-badge {
+      font-size: 9px;
+      background-color: var(--hpuk-white);
+      padding: 1px 6px;
+      border-radius: 8px;
+      margin-top: 2px;
+      border: 1px solid rgba(0,0,0,0.12);
+    }
+
+    /* 4-Stage Control Loop */
+    .loop-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .loop-card {
+      padding: 12px;
+      border-radius: 4px;
+      border-left: 4px solid var(--hpuk-navy);
+      background-color: var(--hpuk-subtle);
+      border-top: 1px solid var(--hpuk-divider);
+      border-right: 1px solid var(--hpuk-divider);
+      border-bottom: 1px solid var(--hpuk-divider);
+    }
+    .loop-card.detect { border-left-color: var(--hpuk-sky); }
+    .loop-card.correct { border-left-color: var(--hpuk-warn-fill); }
+    .loop-card.improve { border-left-color: var(--hpuk-success); }
+    .loop-step { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--hpuk-navy); }
+    .loop-head { font-size: 12px; font-weight: 700; margin: 4px 0; }
+    .loop-body { font-size: 11px; color: var(--hpuk-muted); }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--hpuk-navy);
+      color: var(--hpuk-white);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 10px 11px;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 9px 11px;
+      border-bottom: 1px solid var(--hpuk-divider);
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background-color: var(--hpuk-subtle); }
+    tbody tr:hover { background-color: #EBF5FB; }
+    tbody tr.clickable { cursor: pointer; }
+
+    .mono { font-family: Consolas, Monaco, monospace; font-weight: 700; }
+
+    /* Semantic Pills (WCAG 2.1 AA) */
+    .pill {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .pill-green { background-color: #E6F4EA; color: var(--hpuk-success); border: 1px solid #B7DFC1; }
+    .pill-red { background-color: #FCE8EC; color: var(--hpuk-error); border: 1px solid #F5B5C2; }
+    .pill-amber { background-color: #FEF7E0; color: var(--hpuk-warn-text); border: 1px solid #F9D978; }
+    .pill-blue { background-color: #E5F4FB; color: var(--hpuk-info-text); border: 1px solid #A6DCF5; }
+    .pill-grey { background-color: var(--hpuk-subtle); color: var(--hpuk-text); border: 1px solid var(--hpuk-border); }
+
+    /* Drop Zone */
+    .drop-zone {
+      border: 2px dashed var(--hpuk-border);
+      background-color: var(--hpuk-subtle);
+      border-radius: 6px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 14px;
+      transition: background-color 0.15s, border-color 0.15s;
+    }
+    .drop-zone.dragover {
+      background-color: #E5F4FB;
+      border-color: var(--hpuk-navy);
+    }
+
+    /* Modal & Toast */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 29, 71, 0.72);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 200;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .modal-box {
+      background-color: var(--hpuk-white);
+      border: 2px solid var(--hpuk-navy);
+      border-radius: 6px;
+      max-width: 760px;
+      width: 100%;
+      max-height: 88vh;
+      overflow-y: auto;
+      padding: 20px;
+      box-shadow: 0 20px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: var(--hpuk-navy);
+      color: var(--hpuk-white);
+      border-left: 4px solid var(--hpuk-sky);
+      padding: 11px 16px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.25);
+      display: none;
+      z-index: 300;
+    }
+
+    /* Zone 5: Footer */
+    footer {
+      background-color: var(--hpuk-navy);
+      color: #CBD5E1;
+      border-top: 3px solid var(--hpuk-sky);
+      padding: 14px 0;
+      font-size: 11px;
+      margin-top: auto;
+    }
+
+    .footer-inner {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+  
+    /* ---- Snapshot & data freshness (added to match the Asset Management portal) ---- */
+    .snap-strip { background:#F4F6F9; border-bottom:1px solid #D0D7E2; padding:8px 24px; font-family:Arial, "Segoe UI", sans-serif; }
+    .snap-inner { max-width:1440px; margin:0 auto; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; font-size:12px; }
+    .snap-left, .snap-right { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .snap-pill { display:inline-flex; align-items:center; font-size:11px; font-weight:700; padding:3px 9px; border-radius:4px; letter-spacing:.3px; border:1px solid; }
+    .snap-sample { background:#FFF8E1; color:#7A4F01; border-color:#F6D58E; }
+    .snap-saved { background:#E6F4EA; color:#1E6B34; border-color:#A3D9B1; }
+    .snap-live, .snap-flow { background:#E5F4FB; color:#00577D; border-color:#90CDF4; }
+    .snap-ts { color:#4A5568; }
+    .snap-ts strong { color:#002E6D; }
+    .snap-summary { color:#5F6B7A; font-weight:700; }
+    .snap-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border:1px solid; border-radius:4px; font:600 13px Arial, "Segoe UI", sans-serif; cursor:pointer; white-space:nowrap; }
+    .snap-btn:focus-visible { outline:3px solid #009BDE; outline-offset:2px; }
+    .snap-btn-sky { background:#E5F4FB; color:#00577D; border-color:#90CDF4; }
+    .snap-btn-sky:hover { background:#CBE7FC; }
+    .snap-btn-plain { background:#FFFFFF; color:#002E6D; border-color:#D0D7E2; padding:4px 9px; font-size:11px; }
+    .snap-btn-plain:hover { background:#F4F6F9; }
+    @media (max-width:640px) { .snap-strip { padding:8px 16px; } }
+  </style>
+</head>
+<body>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- ZONE 1: WHITE BRAND HEADER + SEA BLUE NAVIGATION -->
+  <header class="site-header">
+    <div class="brand-bar">
+      <div class="container brand-bar-inner">
+        <div class="brand-left">
+          <!-- Official Hutchison Ports United Kingdom Positive Lockup -->
+          <div class="hpuk-logo" role="img" aria-label="Hutchison Ports United Kingdom">
+            <svg class="hpuk-logo-mark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <polygon points="0,0 100,0 100,32 0,72" fill="#009BDE" />
+              <polygon points="0,86 100,46 100,100 0,100" fill="#002E6D" />
+            </svg>
+            <div class="hpuk-logo-text">
+              <div class="hpuk-logo-row1">
+                <span class="logo-hutchison">HUTCHISON</span><span class="logo-ports">PORTS</span>
+              </div>
+              <div class="logo-uk-sub">UNITED KINGDOM</div>
+            </div>
+          </div>
+
+          <div class="divider-v"></div>
+
+          <div class="site-title-group">
+            <h1>
+              IT Enterprise Governance &amp; Security Portal
+              <span class="badge-t07">Template T07</span>
+              <span class="mode-pill" id="globalModePill">Sample + CSV Ready</span>
+            </h1>
+            <p>Port of Felixstowe · London Thamesport · Harwich International · OPP-00035050</p>
+          </div>
+        </div>
+
+        <div class="brand-right">
+          <div class="port-switcher" id="portSwitcher" role="group" aria-label="Filter by UK Port">
+            <button class="port-btn active" data-port="ALL">All Ports</button>
+            <button class="port-btn" data-port="FELIXSTOWE">Felixstowe</button>
+            <button class="port-btn" data-port="THAMESPORT">Thamesport</button>
+            <button class="port-btn" data-port="HARWICH">Harwich</button>
+            <button class="port-btn" data-port="CORPORATE">Corporate</button>
+          </div>
+          <button class="btn btn-primary" id="btnCsvManager">+ Load CSVs</button>
+          <button class="btn btn-secondary" id="btnDiagnostics">Diagnostics</button>
+          <button type="button" class="snap-btn snap-btn-sky" id="btnSaveSnapshotHtml" title="Download this HTML page with your current figures and Last Updated timestamp baked in for SharePoint SiteAssets">Save Snapshot HTML</button>
+        </div>
+      </div>
+    </div>
+
+
+  <!-- DATA FRESHNESS & LAST UPDATED STRIP (snapshot) -->
+  <div class="snap-strip" role="region" aria-label="Data freshness and last updated status">
+    <div class="snap-inner">
+      <div class="snap-left">
+        <span id="snapModePill" class="snap-pill snap-sample">SAMPLE PREVIEW DATA</span>
+        <span class="snap-ts" id="snapLastUpdated"><strong>Last Updated:</strong> Initial sample baseline</span>
+        <span class="snap-ts" id="snapSource"><strong>Source:</strong> Built-in sample data</span>
+      </div>
+      <div class="snap-right">
+        <span class="snap-summary" id="snapSummary"></span>
+        <button type="button" class="snap-btn snap-btn-plain" id="snapReset" title="Clear data saved in this browser and restore the built-in sample">Reset to Sample</button>
+      </div>
+    </div>
+  </div>
+
+    <div class="nav-wrapper">
+      <div class="container">
+        <nav class="nav-bar" id="navTabs" aria-label="Governance Registers">
+          <button class="nav-tab active" data-tab="hub">Governance Hub</button>
+          <button class="nav-tab" data-tab="sites">Site Register <span class="nav-count" id="cnt-sites">0</span></button>
+          <button class="nav-tab" data-tab="compliance">Compliance <span class="nav-count" id="cnt-compliance">0</span></button>
+          <button class="nav-tab" data-tab="risks">Risks <span class="nav-count" id="cnt-risks">0</span></button>
+          <button class="nav-tab" data-tab="exceptions">Exceptions <span class="nav-count" id="cnt-exceptions">0</span></button>
+          <button class="nav-tab" data-tab="decisions">Decisions &amp; Actions <span class="nav-count" id="cnt-decisions">0</span></button>
+          <button class="nav-tab" data-tab="runlog">RunLog (SecGov) <span class="nav-count" id="cnt-runlog">0</span></button>
+          <button class="nav-tab" data-tab="sam">SAM Permissions (CSV) <span class="nav-count" id="cnt-sam">0</span></button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- ZONE 2: HERO BANNER -->
+  <section class="hero-banner">
+    <div class="container hero-inner">
+      <div>
+        <div class="hero-kicker" id="heroKicker">HPUK SharePoint UI Design System v1.3 · WCAG 2.1 AA Compliant</div>
+        <h2 class="hero-title" id="heroTitle">IT Governance &amp; Security Assurance Hub</h2>
+        <p class="hero-desc" id="heroDesc">
+          Executive overview across SharePoint Online governance registers and SharePoint Advanced Management (SAM) permissions exports. Supports All-Sites visibility to surface non-compliant and legacy URLs alongside compliant HPUK sites.
+        </p>
+      </div>
+      <div class="hero-stat-box">
+        <div class="hero-stat-label">Active Overview Scope</div>
+        <div class="hero-stat-val" id="heroStatVal">Loading...</div>
+        <div class="hero-stat-sub" id="heroStatSub">Click "+ Load CSVs" to refresh from exports</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEARCH STRIP -->
+  <div class="container">
+    <div class="search-strip">
+      <input
+        type="text"
+        id="searchInput"
+        class="search-input"
+        placeholder="Search across sites, URLs, owners, controls, risks, exceptions, decisions, or SAM reports..."
+        aria-label="Search governance portal"
+      />
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span style="font-size:11px; font-weight:700; color:var(--hpuk-muted);">PORT SCOPE:</span>
+        <span class="scope-badge" id="activeScopeLabel">All UK Ports &amp; Corporate</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ZONE 3 & 4: MAIN WORKSPACE -->
+  <main class="container" id="mainContent"></main>
+
+  <!-- MODAL -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-box">
+      <div class="panel-header">
+        <h3 class="panel-title" id="modalTitle">Details</h3>
+        <button class="btn btn-secondary" id="btnCloseModal">Close</button>
+      </div>
+      <div id="modalBody" style="font-size:12px; line-height:1.5;"></div>
+    </div>
+  </div>
+
+  <!-- ZONE 5: FOOTER WITH REVERSED WHITE LOGO -->
+  <footer>
+    <div class="container footer-inner">
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <div class="hpuk-logo" role="img" aria-label="Hutchison Ports United Kingdom">
+          <svg style="width:26px; height:26px;" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <polygon points="0,0 100,0 100,32 0,72" fill="#009BDE" />
+            <polygon points="0,86 100,46 100,100 0,100" fill="#FFFFFF" />
+          </svg>
+          <div class="hpuk-logo-text">
+            <div class="hpuk-logo-row1">
+              <span class="logo-hutchison" style="font-size:12px; color:#FFFFFF;">HUTCHISON</span><span class="logo-ports" style="font-size:12px; color:#FFFFFF;">PORTS</span>
+            </div>
+            <div class="logo-uk-sub" style="font-size:7.5px; color:#FFFFFF; margin-top:2px;">UNITED KINGDOM</div>
+          </div>
+        </div>
+        <span style="opacity:0.4;">|</span>
+        <span>Port of Felixstowe · London Thamesport · Harwich International</span>
+      </div>
+      <div>HPUK SharePoint Online Governance · OPP-00035050 · Design System v1.3 · WCAG 2.1 AA</div>
+    </div>
+  </footer>
+
+  <!-- EMBEDDED SNAPSHOT STORAGE (written by "Save Snapshot HTML") -->
+  <script id="embedded-snapshot" type="application/json">null</script>
+
+  <!-- SNAPSHOT ENGINE: same behaviour as the Asset Management portal -->
+  <script>
+    window.HPUKSnapshot = function (cfg) {
+      "use strict";
+      var labels = cfg.labels || { sample: "SAMPLE PREVIEW DATA", saved: "SAVED EXTRACT DATA", live: "LIVE SITEASSETS CSV", flow: "SHAREPOINT LIST SNAPSHOT" };
+      var sampleMeta = { mode: "sample", lastUpdated: "Initial sample baseline (nothing loaded yet)", source: cfg.sampleSource };
+      var meta = JSON.parse(JSON.stringify(sampleMeta));
+      var api = {};
+
+      function fmt(d) {
+        try {
+          var parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", day: "2-digit", month: "short", year: "numeric",
+            hour: "2-digit", minute: "2-digit", hour12: false, timeZoneName: "short" }).formatToParts(d);
+          var p = {}; parts.forEach(function (x) { p[x.type] = x.value; });
+          return p.day + " " + p.month + " " + p.year + ", " + p.hour + ":" + p.minute + " " + (p.timeZoneName || "UK");
+        } catch (e) { return d.toISOString().replace("T", " ").substring(0, 16) + " UTC"; }
+      }
+      function esc(v) { return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+      function toast(msg) { try { (cfg.toast || function (m) { console.log(m); })(msg); } catch (e) {} }
+      function readJson(key) { try { var raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } }
+
+      function readEmbedded() {
+        try {
+          var el = document.getElementById("embedded-snapshot");
+          if (!el || !el.textContent || el.textContent.trim() === "null") return null;
+          var snap = JSON.parse(el.textContent);
+          return snap && snap.data ? snap : null;
+        } catch (e) { console.warn("Embedded snapshot parse skipped:", e); return null; }
+      }
+
+      function persist() {
+        try {
+          if (cfg.storeData === false) localStorage.setItem(cfg.storageKey, JSON.stringify({ meta: meta }));
+          else localStorage.setItem(cfg.storageKey, JSON.stringify({ data: cfg.getData(), meta: meta }));
+        } catch (e) { console.warn("Unable to save to localStorage:", e); }
+      }
+
+      api.render = function () {
+        var pill = document.getElementById("snapModePill");
+        if (!pill) return;
+        var mode = labels[meta.mode] ? meta.mode : "saved";
+        pill.className = "snap-pill snap-" + mode;
+        pill.textContent = labels[mode] + (meta.loadedFrom === "embedded" ? " · PUBLISHED SNAPSHOT" : "");
+        document.getElementById("snapLastUpdated").innerHTML = "<strong>Last Updated:</strong> " + esc(meta.lastUpdated);
+        document.getElementById("snapSource").innerHTML = "<strong>Source:</strong> " + esc(meta.source || cfg.sampleSource);
+        try { document.getElementById("snapSummary").textContent = cfg.summary ? cfg.summary() : ""; } catch (e) {}
+      };
+
+      // 1. embedded snapshot, 2. browser-saved data, 3. built-in sample (left as is)
+      api.load = function () {
+        var snap = readEmbedded(), from = "embedded";
+        if (!snap) {
+          from = "browser";
+          if (cfg.storeData === false) {
+            if (cfg.loadLocal) cfg.loadLocal();
+            snap = readJson(cfg.storageKey);
+          } else {
+            snap = readJson(cfg.storageKey);
+            if (snap && !snap.data) snap = null;
+          }
+        }
+        if (snap) {
+          try {
+            if (snap.data) cfg.applyData(snap.data);
+            if (snap.meta && snap.meta.lastUpdated) meta = snap.meta;
+            meta.loadedFrom = from;
+          } catch (e) { console.warn("Saved data skipped:", e); meta = JSON.parse(JSON.stringify(sampleMeta)); }
+        }
+        api.render();
+      };
+
+      // Call after anything changes the data: stamps Last Updated and saves to this browser.
+      api.changed = function (source, mode) {
+        meta.mode = mode || "saved";
+        meta.lastUpdated = fmt(new Date());
+        if (source) meta.source = source;
+        meta.loadedFrom = "browser";
+        persist();
+        api.render();
+      };
+
+      api.reset = function () {
+        try { localStorage.removeItem(cfg.storageKey); } catch (e) {}
+        if (cfg.reset) cfg.reset();
+        meta = JSON.parse(JSON.stringify(sampleMeta));
+        meta.lastUpdated = "Initial sample baseline (reset at " + fmt(new Date()) + ")";
+        api.render();
+        toast("Cleared data saved in this browser and restored the sample baseline.");
+      };
+
+      // Clone the page, write the current data into #embedded-snapshot, download it.
+      api.save = function () {
+        var clone = document.documentElement.cloneNode(true);
+        var node = clone.querySelector("#embedded-snapshot");
+        var payload = {
+          data: cfg.getData(),
+          meta: { mode: (meta.mode === "live" || meta.mode === "flow") ? meta.mode : "saved",
+                  lastUpdated: meta.mode === "sample" ? fmt(new Date()) : meta.lastUpdated,
+                  source: meta.source || cfg.sampleSource,
+                  savedAt: fmt(new Date()) }
+        };
+        // Escape every "<" so a closing script tag inside the data cannot end this block early.
+        if (node) node.textContent = JSON.stringify(payload).replace(/</g, "\\u003c");
+        var html = "<!DOCTYPE html>\n" + clone.outerHTML;
+        var blob = new Blob([html], { type: "text/html;charset=utf-8;" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url; a.download = cfg.fileName;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        var mb = blob.size / 1048576;
+        toast("Downloaded " + cfg.fileName + " (" + mb.toFixed(1) + " MB) with saved figures & timestamp!" +
+              (mb > 9.5 ? " Warning: SharePoint HTML pages are limited to 10 MB." : ""));
+      };
+
+      document.addEventListener("click", function (e) {
+        if (e.target.closest("#btnSaveSnapshotHtml")) api.save();
+        else if (e.target.closest("#snapReset")) api.reset();
+      });
+      return api;
+    };
+  </script>
+
+  <script>
+    (function () {
+      "use strict";
+
+      /* ===================================================================
+         1. SEEDED DEFAULT DATA (REPLACED INSTANTLY WHEN CSVs ARE LOADED)
+         =================================================================== */
+      var STORAGE_KEY = "hpuk_gov_portal_v2_data";
+
+      var PORT_NAMES = {
+        ALL: "All UK Ports & Corporate",
+        FELIXSTOWE: "Port of Felixstowe",
+        THAMESPORT: "London Thamesport",
+        HARWICH: "Harwich International",
+        CORPORATE: "HPUK Corporate & PMO"
+      };
+
+      var HERO_COPY = {
+        hub: {
+          title: "IT Governance & Security Assurance Hub",
+          desc: "Executive overview across SharePoint Online governance registers and SAM permissions exports. Defaults to All-Sites visibility so non-compliant and legacy URLs are never hidden."
+        },
+        sites: {
+          title: "SharePoint Site Register Overview",
+          desc: "Monitor dual-ownership (primary + secondary owner), sensitivity labels, external sharing posture, and hpuk- naming standard compliance."
+        },
+        compliance: {
+          title: "Governance Compliance Controls",
+          desc: "Assurance tracking across ISO 27001, Cyber Essentials Plus, NIS Regulations, Port Security Regulations, and M365 AI / Copilot safeguards."
+        },
+        risks: {
+          title: "Governance Risks & 5×5 Exposure Matrix",
+          desc: "Likelihood × Impact risk scoring with interactive heatmap filtering and treatment tracking."
+        },
+        exceptions: {
+          title: "Governance Exceptions & 90-Day Waivers",
+          desc: "Time-bound policy exceptions approved by InfoSec / Design Authority with expiry tracking."
+        },
+        decisions: {
+          title: "Governance Decisions & Action Tracker",
+          desc: "Control Board decisions (Design Authority / Governance Board) and active remediation actions."
+        },
+        runlog: {
+          title: "SecGov Automation RunLog",
+          desc: "Guardrail G-10 verification log for Azure Automation runbooks and Power Automate governance flows."
+        },
+        sam: {
+          title: "SAM Organization-Wide Permissions & URL Compliance (CSV)",
+          desc: "Import SharePoint Advanced Management (SAM) permissions CSVs (Dutch or English headers). Defaults to All Sites so legacy and non-compliant URLs are surfaced alongside compliant HPUK sites."
+        }
+      };
+
+      function getDefaultData() {
+        return {
+          sites: [
+            { title: "Port Security Plans", url: "https://hphneu.sharepoint.com/sites/hpuk-pof-sec-plans", port: "FELIXSTOWE", dept: "Police & Security", primaryOwner: "Stuart List", secondaryOwner: "", sensitivity: "Not set", externalSharing: "Not confirmed", status: "Orphaned - owner inactive", _raw: {} },
+            { title: "Autonomous Trucks", url: "https://hphneu.sharepoint.com/sites/hpuk-pof-ops-autonomoustrucks", port: "FELIXSTOWE", dept: "Operations", primaryOwner: "Mark Evans", secondaryOwner: "Carl Sharman", sensitivity: "Confidential", externalSharing: "ExistingExternalUserSharingOnly", status: "Active", _raw: {} },
+            { title: "Authorised Economic Operator", url: "https://hphneu.sharepoint.com/teams/AEO-Compliance", port: "CORPORATE", dept: "Customs & Compliance", primaryOwner: "Andy Corder", secondaryOwner: "", sensitivity: "Confidential", externalSharing: "Disabled", status: "Active", _raw: {} },
+            { title: "IT & Operations Comms", url: "https://hphneu.sharepoint.com/sites/hpuk-ldn-it-comms", port: "CORPORATE", dept: "IT", primaryOwner: "David Flint", secondaryOwner: "Sarah Jenkins", sensitivity: "General", externalSharing: "Not confirmed", status: "Active", _raw: {} },
+            { title: "Harwich Berth Planning", url: "https://hphneu.sharepoint.com/sites/hpuk-har-ops-berthplanning", port: "HARWICH", dept: "Operations", primaryOwner: "John Cadman", secondaryOwner: "Gareth Barbier", sensitivity: "Internal", externalSharing: "Disabled", status: "Active", _raw: {} },
+            { title: "Thamesport Haulier EDI", url: "https://hphneu.sharepoint.com/teams/ThamesportEDI", port: "THAMESPORT", dept: "Infrastructure", primaryOwner: "Pete Simmons", secondaryOwner: "", sensitivity: "Confidential", externalSharing: "ExternalUserSharingOnly", status: "Active", _raw: {} },
+            { title: "Crane Maintenance Engineering", url: "https://hphneu.sharepoint.com/sites/hpuk-pof-eng-cranes", port: "FELIXSTOWE", dept: "Engineering", primaryOwner: "Phil Spaul", secondaryOwner: "Mark Evans", sensitivity: "Internal", externalSharing: "Disabled", status: "Active", _raw: {} },
+            { title: "Payroll Team Workspace", url: "https://hphneu.sharepoint.com/sites/hpuk-pof-finance-payroll", port: "FELIXSTOWE", dept: "Finance", primaryOwner: "Jane Albins", secondaryOwner: "Rob Johnson", sensitivity: "Highly Confidential", externalSharing: "Disabled", status: "Active", _raw: {} }
+          ],
+          compliance: [
+            { id: "CTRL-ISO-01", title: "Entra ID Group-Based Access (No Individual Permissions)", framework: "ISO 27001", owner: "Carl Sharman", status: "Compliant", lastAssessed: "2026-11-10", port: "ALL", evidence: "RB-9 Daily Permission Scan verified across estate.", _raw: {} },
+            { id: "CTRL-ISO-08", title: "Automated 90-Day Guest Access Expiry & Revocation", framework: "ISO 27001", owner: "David Flint", status: "Compliant", lastAssessed: "2026-11-18", port: "ALL", evidence: "Flow 02 time-bound guest expiry active.", _raw: {} },
+            { id: "CTRL-CEP-03", title: "Quayside Crane Terminal Firmware & Patch Conformance", framework: "Cyber Essentials Plus", owner: "Mark Evans", status: "Non-Compliant", lastAssessed: "2026-11-15", port: "FELIXSTOWE", evidence: "Pending scheduled Berth 9 maintenance window.", _raw: {} },
+            { id: "CTRL-NIS-04", title: "NCSC Critical National Infrastructure Telemetry Feed", framework: "NIS Regulations", owner: "Ian Lowe", status: "Compliant", lastAssessed: "2026-11-01", port: "ALL", evidence: "Microsoft Sentinel SIEM alerts verified.", _raw: {} },
+            { id: "CTRL-COP-01", title: "Restricted Content Discovery (RCD) on Sensitive Sites", framework: "M365 AI Governance", owner: "Carl Sharman", status: "Compliant", lastAssessed: "2026-11-20", port: "ALL", evidence: "RB-12 Runbook validated RCD on 14 restricted sites.", _raw: {} },
+            { id: "CTRL-PSR-02", title: "ISPS Port Facility Logical & Physical Segregation", framework: "Port Security Regs", owner: "John Cadman", status: "Compliant", lastAssessed: "2026-10-22", port: "HARWICH", evidence: "Annual DfT / Port Security audit passed.", _raw: {} }
+          ],
+          risks: [
+            { ref: "RSK-048", title: "Out-of-Hours Security Response Void on Quayside SCADA", category: "Cyber Resilience", owner: "Ian Lowe", likelihood: 4, impact: 5, treatment: "Mitigate", status: "Open", port: "FELIXSTOWE", _raw: {} },
+            { ref: "RSK-051", title: "Legacy Inherited Permissions Exposing Data to Copilot", category: "AI & Oversharing", owner: "Carl Sharman", likelihood: 4, impact: 4, treatment: "Mitigate", status: "Open", port: "ALL", _raw: {} },
+            { ref: "RSK-039", title: "Third-Party EDI Customs Brokerage API Interruption", category: "Operational", owner: "Sarah Jenkins", likelihood: 3, impact: 4, treatment: "Transfer", status: "Open", port: "THAMESPORT", _raw: {} },
+            { ref: "RSK-027", title: "Unlabelled Working Documents Uploaded Without Sensitivity Tag", category: "Information Gov", owner: "David Flint", likelihood: 2, impact: 3, treatment: "Mitigate", status: "Open", port: "ALL", _raw: {} },
+            { ref: "RSK-015", title: "Harwich Ferry Check-in Kiosk Hardware Aging", category: "Infrastructure", owner: "John Cadman", likelihood: 1, impact: 4, treatment: "Accept", status: "Open", port: "HARWICH", _raw: {} }
+          ],
+          exceptions: [
+            { id: "EXC-104", title: "ZPMC Vendor Diagnostic Account Exception (Crane 21)", policyRef: "POL-001", requestedBy: "Mark Evans", approver: "Ian Lowe (CISO)", status: "Active", expiryDate: "2026-12-08", port: "FELIXSTOWE", rationale: "Temporary telemetry during Berth 9 upgrade.", _raw: {} },
+            { id: "EXC-102", title: "Stena Line Ro-Ro EDI Direct IP Whitelist (Legacy AS2)", policyRef: "POL-005", requestedBy: "John Cadman", approver: "Design Authority", status: "Active", expiryDate: "2026-12-20", port: "HARWICH", rationale: "Legacy AS2 link awaiting modern API cutover.", _raw: {} },
+            { id: "EXC-098", title: "External Civil Engineering Drafting Folder Sharing", policyRef: "POL-002", requestedBy: "David Flint", approver: "Design Authority", status: "Expired", expiryDate: "2026-11-10", port: "FELIXSTOWE", rationale: "Joint venture drafting collaboration.", _raw: {} }
+          ],
+          decisions: [
+            { ref: "DL-GSA-08", title: "Adopt SharePoint Advanced Management (SAM) for site reviews", decidedBy: "Control Board", date: "2026-11-19", status: "Approved", port: "ALL", _raw: {} },
+            { ref: "DL-002", title: "Blanket G-08 exception for migrated /teams/ sites", decidedBy: "Control Board", date: "2026-11-19", status: "Approved", port: "ALL", _raw: {} },
+            { ref: "DL-005", title: "Enforce D-03 Named Identity on all Power Automate governance flows", decidedBy: "Design Authority", date: "2026-10-14", status: "Approved", port: "ALL", _raw: {} }
+          ],
+          actions: [
+            { id: "ACT-0841", title: "Broken Permission Inheritance in PMO Financial Approvals", severity: "Critical", owner: "David Flint", dueDate: "2026-11-28", status: "Open", port: "CORPORATE", action: "Re-inherit parent permissions & map to Entra Security Group.", _raw: {} },
+            { id: "ACT-0839", title: "Elevated Edit Rights for ZPMC Crane Support Contractors", severity: "High", owner: "Mark Evans", dueDate: "2026-12-04", status: "Open", port: "FELIXSTOWE", action: "Downscope to Read-Only with JIT access.", _raw: {} },
+            { id: "ACT-0835", title: "Haulier OCR Subsite Missing RCD Copilot Exclusion", severity: "Medium", owner: "Sarah Jenkins", dueDate: "2026-12-10", status: "In Progress", port: "THAMESPORT", action: "Apply Restricted Content Discovery flag via RB-12.", _raw: {} },
+            { id: "ACT-0820", title: "Orphaned External Actuary Guest Account Active Post-Review", severity: "High", owner: "Pete Simmons", dueDate: "2026-11-15", status: "Overdue", port: "FELIXSTOWE", action: "Auto-revocation triggered under G-11 rule.", _raw: {} }
+          ],
+          runlog: [
+            { id: "RUN-2026-1125", job: "Set-SiteGovernanceBaseline.ps1", target: "hpuk-pof-eng-cranes", result: "Success", timestamp: "2026-11-25 06:02", owner: "IT Ops Runbook", port: "FELIXSTOWE", _raw: {} },
+            { id: "RUN-2026-1124", job: "RB-12 RCD & Label Audit", target: "Tenant-wide (14 restricted)", result: "Success", timestamp: "2026-11-24 06:00", owner: "IT Ops Runbook", port: "ALL", _raw: {} },
+            { id: "RUN-2026-1123", job: "Flow 03 Site Provisioning", target: "hpuk-har-ops-berthplanning", result: "403 Grant Missing", timestamp: "2026-11-23 14:18", owner: "SharePoint Service Owner", port: "HARWICH", _raw: {} }
+          ],
+          sam: [
+            { name: "ICT Leden", url: "https://hphneu.sharepoint.com/sites/ICT-Leden", template: "Team site", admin: "ECT - AS-A_SPO-Adm", external: "FALSE", privacy: "Private", sensitivity: "Not set", users: 2640, guests: 0, externalLinks: 0, _raw: {} },
+            { name: "Digitale Werkplek", url: "https://hphneu.sharepoint.com/sites/DigitaleWerkplek", template: "Team site", admin: "ECT - AS-A_SPO-Adm", external: "FALSE", privacy: "Private", sensitivity: "Internal", users: 2638, guests: 0, externalLinks: 0, _raw: {} },
+            { name: "HPUK Felixstowe Operations Hub", url: "https://hphneu.sharepoint.com/sites/hpuk-pof-ops-hub", template: "Communication site", admin: "Carl Sharman", external: "FALSE", privacy: "Public", sensitivity: "Internal", users: 842, guests: 0, externalLinks: 0, _raw: {} },
+            { name: "Port Facility Security Plan", url: "https://hphneu.sharepoint.com/teams/PortFacilitySecurityPlan", template: "Team site", admin: "Stuart List", external: "TRUE", privacy: "Private", sensitivity: "Not set", users: 164, guests: 6, externalLinks: 3, _raw: {} },
+            { name: "Autonomous Trucks Programme", url: "https://hphneu.sharepoint.com/sites/hpuk-pof-ops-autonomoustrucks", template: "Team site", admin: "Mark Evans", external: "TRUE", privacy: "Private", sensitivity: "Confidential", users: 118, guests: 12, externalLinks: 2, _raw: {} },
+            { name: "Harwich Berth Planning", url: "https://hphneu.sharepoint.com/sites/hpuk-har-ops-berthplanning", template: "Team site", admin: "John Cadman", external: "FALSE", privacy: "Private", sensitivity: "Internal", users: 44, guests: 0, externalLinks: 0, _raw: {} },
+            { name: "Thamesport Legacy EDI Archive", url: "https://hphneu.sharepoint.com/sites/ThamesportEDI_Old", template: "Team site", admin: "Pete Simmons", external: "TRUE", privacy: "Private", sensitivity: "Not set", users: 215, guests: 9, externalLinks: 4, _raw: {} }
+          ]
+        };
+      }
+
+      var data = getDefaultData();
+      var meta = {
+        sites:      { source: "Sample data", loadedAt: null, columns: [] },
+        compliance: { source: "Sample data", loadedAt: null, columns: [] },
+        risks:      { source: "Sample data", loadedAt: null, columns: [] },
+        exceptions: { source: "Sample data", loadedAt: null, columns: [] },
+        decisions:  { source: "Sample data", loadedAt: null, columns: [] },
+        actions:    { source: "Sample data", loadedAt: null, columns: [] },
+        runlog:     { source: "Sample data", loadedAt: null, columns: [] },
+        sam:        { source: "Sample data", loadedAt: null, columns: [] }
+      };
+
+      var ui = {
+        tab: "hub",
+        port: "ALL",
+        query: "",
+        riskCell: null,
+        siteFilter: "ALL", // ALL | NO_SECOND_OWNER | EXTERNAL | NO_LABEL | NON_COMPLIANT_URL
+        samComplianceFilter: "ALL", // ALL (default!) | COMPLIANT | NON_COMPLIANT
+        samHighExposureOnly: false,
+        samExternalOnly: false,
+        samHideOtherTenant: false
+      };
+
+      /* ===================================================================
+         2. URL NAMING COMPLIANCE EVALUATOR (hpuk-<loc>- STANDARD)
+         =================================================================== */
+      // Compliant standard: URL path contains /sites/hpuk- or /sites/hpuk-(pof|har|ltp|ldn)-
+      function evaluateUrlCompliance(url, admin) {
+        var u = String(url || "").toLowerCase();
+        var a = String(admin || "").toLowerCase();
+
+        // Check if clearly another Hutchison entity on the shared hphneu tenant (e.g., ECT)
+        var isOtherTenant = a.indexOf("ect -") !== -1 || a.indexOf("ect_") !== -1 || u.indexOf("/sites/ect") !== -1;
+
+        // Standard HPUK naming convention: hpuk-pof-*, hpuk-har-*, hpuk-ltp-*, hpuk-ldn-*, or hpuk-*
+        var strictMatch = /\/sites\/hpuk-(pof|har|ltp|ldn)-[a-z0-9-]+/.test(u);
+        var generalHpukMatch = /\/sites\/hpuk-[a-z0-9-]+/.test(u) || /\/sites\/hpuk(\/|$)/.test(u);
+
+        if (strictMatch) {
+          return { code: "COMPLIANT", label: "Compliant (hpuk-loc)", pill: "pill-green", isCompliant: true, isOtherTenant: false };
+        }
+        if (generalHpukMatch) {
+          return { code: "COMPLIANT", label: "Compliant (hpuk-)", pill: "pill-green", isCompliant: true, isOtherTenant: false };
+        }
+        if (isOtherTenant) {
+          return { code: "NON_COMPLIANT", label: "Shared Tenant (ECT/Other)", pill: "pill-grey", isCompliant: false, isOtherTenant: true };
+        }
+        if (u.indexOf("/teams/") !== -1) {
+          return { code: "NON_COMPLIANT", label: "Legacy /teams/ (G-08)", pill: "pill-amber", isCompliant: false, isOtherTenant: false };
+        }
+        return { code: "NON_COMPLIANT", label: "Non-Compliant URL", pill: "pill-red", isCompliant: false, isOtherTenant: false };
+      }
+
+      function inferPortFromText(text) {
+        var t = String(text || "").toLowerCase();
+        if (t.indexOf("pof") !== -1 || t.indexOf("felixstowe") !== -1) return "FELIXSTOWE";
+        if (t.indexOf("ltp") !== -1 || t.indexOf("thamesport") !== -1) return "THAMESPORT";
+        if (t.indexOf("har") !== -1 || t.indexOf("harwich") !== -1) return "HARWICH";
+        if (t.indexOf("ldn") !== -1 || t.indexOf("corporate") !== -1 || t.indexOf("pmo") !== -1) return "CORPORATE";
+        return "ALL";
+      }
+
+      /* ===================================================================
+         3. PERSISTENCE (LOCALSTORAGE)
+         =================================================================== */
+      function saveToStorage() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: data, meta: meta }));
+        } catch (e) { /* Ignore quota errors on very large CSVs */ }
+        if (typeof snap !== "undefined" && snap) snap.changed(snapSources());
+      }
+
+      function loadFromStorage() {
+        try {
+          var saved = localStorage.getItem(STORAGE_KEY);
+          if (!saved) return;
+          var parsed = JSON.parse(saved);
+          if (parsed && parsed.data && parsed.meta) {
+            Object.keys(data).forEach(function (k) {
+              if (Array.isArray(parsed.data[k])) data[k] = parsed.data[k];
+              if (parsed.meta[k]) meta[k] = parsed.meta[k];
+            });
+          }
+        } catch (e) { /* Ignore corrupted storage */ }
+      }
+
+      /* ===================================================================
+         4. RFC-4180 RESILIENT CSV PARSER (COMMAS, SEMICOLONS, QUOTES, BOM)
+         =================================================================== */
+      function parseCsv(text) {
+        var clean = String(text || "").replace(/^\uFEFF/, "");
+        var firstLine = clean.split(/\r?\n/)[0] || "";
+        var commaCount = (firstLine.match(/,/g) || []).length;
+        var semiCount = (firstLine.match(/;/g) || []).length;
+        var delim = semiCount > commaCount ? ";" : ",";
+
+        var rows = [];
+        var row = [];
+        var cell = "";
+        var inQuotes = false;
+
+        for (var i = 0; i < clean.length; i++) {
+          var ch = clean[i];
+          var next = clean[i + 1];
+
+          if (inQuotes) {
+            if (ch === '"' && next === '"') {
+              cell += '"';
+              i++;
+            } else if (ch === '"') {
+              inQuotes = false;
+            } else {
+              cell += ch;
+            }
+          } else {
+            if (ch === '"') {
+              inQuotes = true;
+            } else if (ch === delim) {
+              row.push(cell.trim());
+              cell = "";
+            } else if (ch === "\r" && next === "\n") {
+              row.push(cell.trim());
+              if (row.some(function (c) { return c !== ""; })) rows.push(row);
+              row = [];
+              cell = "";
+              i++;
+            } else if (ch === "\n" || ch === "\r") {
+              row.push(cell.trim());
+              if (row.some(function (c) { return c !== ""; })) rows.push(row);
+              row = [];
+              cell = "";
+            } else {
+              cell += ch;
+            }
+          }
+        }
+        row.push(cell.trim());
+        if (row.some(function (c) { return c !== ""; })) rows.push(row);
+
+        if (rows.length < 2) return { headers: [], objects: [] };
+        var headers = rows[0];
+        var objects = rows.slice(1).map(function (r) {
+          var obj = {};
+          headers.forEach(function (h, idx) {
+            obj[h] = r[idx] !== undefined ? r[idx] : "";
+          });
+          return obj;
+        });
+        return { headers: headers, objects: objects };
+      }
+
+      function pick(obj, candidates) {
+        var keys = Object.keys(obj);
+        for (var i = 0; i < candidates.length; i++) {
+          var target = candidates[i].toLowerCase();
+          for (var j = 0; j < keys.length; j++) {
+            var k = keys[j].toLowerCase().trim();
+            if (k === target || k.indexOf(target) === 0) {
+              var val = obj[keys[j]];
+              if (val !== undefined && val !== null && String(val).trim() !== "") return String(val).trim();
+            }
+          }
+        }
+        return "";
+      }
+
+      function detectRegisterType(filename, headers) {
+        var fn = String(filename || "").toLowerCase();
+        var hStr = headers.map(function (h) { return h.toLowerCase(); }).join("|");
+
+        if (fn.indexOf("permission") !== -1 || hStr.indexOf("sitenaam") !== -1 || hStr.indexOf("number of") !== -1 || hStr.indexOf("guest use") !== -1 || hStr.indexOf("extern del") !== -1) return "sam";
+        if (fn.indexOf("site_register") !== -1 || fn.indexOf("site register") !== -1 || hStr.indexOf("secondary owner") !== -1 || hStr.indexOf("primary owner") !== -1) return "sites";
+        if (fn.indexOf("compliance") !== -1 || hStr.indexOf("framework") !== -1 || hStr.indexOf("controlid") !== -1) return "compliance";
+        if (fn.indexOf("risk") !== -1 || (hStr.indexOf("likelihood") !== -1 && hStr.indexOf("impact") !== -1)) return "risks";
+        if (fn.indexOf("exception") !== -1 || hStr.indexOf("expiry") !== -1 || hStr.indexOf("waiver") !== -1) return "exceptions";
+        if (fn.indexOf("decision") !== -1 || hStr.indexOf("decided by") !== -1) return "decisions";
+        if (fn.indexOf("action") !== -1 || fn.indexOf("finding") !== -1 || hStr.indexOf("remediation") !== -1) return "actions";
+        if (fn.indexOf("runlog") !== -1 || hStr.indexOf("runbook") !== -1) return "runlog";
+        return null;
+      }
+
+      function mapCsvToRegister(registerKey, csvText, filename) {
+        var parsed = parseCsv(csvText);
+        if (parsed.objects.length === 0) {
+          showToast("No data rows found in " + filename);
+          return false;
+        }
+
+        var rows = parsed.objects;
+        var nowStr = new Date().toLocaleString("en-GB", { hour12: false });
+
+        if (registerKey === "sam") {
+          data.sam = rows.map(function (r) {
+            var url = pick(r, ["site-url", "site url", "url"]);
+            var name = pick(r, ["sitenaam", "site name", "title", "site"]) || url || "Unnamed Site";
+            return {
+              name: name,
+              url: url,
+              template: pick(r, ["sitesjablo", "site template", "template"]) || "Site",
+              admin: pick(r, ["primaire", "primary admin", "primary owner", "owner", "e-mailadr"]) || "Unassigned",
+              external: pick(r, ["extern del", "external sharing", "external"]) || "FALSE",
+              privacy: pick(r, ["siteprivac", "privacy", "site privacy"]) || "",
+              sensitivity: pick(r, ["vertrouwe", "sensitivity", "label"]) || "Not set",
+              users: parseInt(pick(r, ["number o", "permissioned users", "users", "count"]).replace(/,/g, ""), 10) || 0,
+              guests: parseInt(pick(r, ["guest use", "guests", "guest"]).replace(/,/g, ""), 10) || 0,
+              externalLinks: parseInt(pick(r, ["external p", "external links", "anyone"]).replace(/,/g, ""), 10) || 0,
+              _raw: r
+            };
+          });
+        } else if (registerKey === "sites") {
+          data.sites = rows.map(function (r) {
+            var url = pick(r, ["site url", "url", "site-url", "siteurl"]);
+            var title = pick(r, ["title", "site name", "sitenaam", "site"]) || url || "Untitled Site";
+            var portRaw = pick(r, ["port", "location", "terminal"]);
+            return {
+              title: title,
+              url: url,
+              port: portRaw ? inferPortFromText(portRaw) : inferPortFromText(url + " " + title),
+              dept: pick(r, ["department", "dept", "function"]) || "General",
+              primaryOwner: pick(r, ["primary owner", "primaryowner", "owner", "site owner"]) || "Unassigned",
+              secondaryOwner: pick(r, ["secondary owner", "secondaryowner", "backup owner"]),
+              sensitivity: pick(r, ["sensitivity", "sensitivity label", "label"]) || "Not set",
+              externalSharing: pick(r, ["external sharing", "externalsharing", "sharing"]) || "Not confirmed",
+              status: pick(r, ["status", "site status", "state"]) || "Active",
+              _raw: r
+            };
+          });
+        } else if (registerKey === "compliance") {
+          data.compliance = rows.map(function (r, idx) {
+            return {
+              id: pick(r, ["control id", "controlid", "id", "ref"]) || ("CTRL-" + (idx + 1)),
+              title: pick(r, ["title", "control", "description", "name"]) || "Control",
+              framework: pick(r, ["framework", "standard", "category"]) || "HPUK Standard",
+              owner: pick(r, ["owner", "ownername", "assigned"]) || "Unassigned",
+              status: pick(r, ["status", "compliance status", "state"]) || "Compliant",
+              lastAssessed: pick(r, ["last assessed", "lastassessed", "assessed", "modified", "date"]) || "—",
+              port: inferPortFromText(pick(r, ["port", "location", "site"])),
+              evidence: pick(r, ["evidence", "notes", "comments"]) || "Imported from CSV.",
+              _raw: r
+            };
+          });
+        } else if (registerKey === "risks") {
+          data.risks = rows.map(function (r, idx) {
+            return {
+              ref: pick(r, ["risk ref", "riskref", "ref", "id"]) || ("RSK-" + (idx + 1)),
+              title: pick(r, ["title", "risk", "risk title", "description"]) || "Risk",
+              category: pick(r, ["category", "domain", "type"]) || "Governance",
+              owner: pick(r, ["owner", "risk owner", "ownername"]) || "Unassigned",
+              likelihood: Math.min(5, Math.max(1, parseInt(pick(r, ["likelihood", "prob", "l"]), 10) || 3)),
+              impact: Math.min(5, Math.max(1, parseInt(pick(r, ["impact", "sev", "i"]), 10) || 3)),
+              treatment: pick(r, ["treatment", "response", "mitigation"]) || "Mitigate",
+              status: pick(r, ["status", "state"]) || "Open",
+              port: inferPortFromText(pick(r, ["port", "location"])),
+              _raw: r
+            };
+          });
+        } else if (registerKey === "exceptions") {
+          data.exceptions = rows.map(function (r, idx) {
+            return {
+              id: pick(r, ["exception id", "waiver id", "id", "ref"]) || ("EXC-" + (idx + 1)),
+              title: pick(r, ["title", "exception", "description"]) || "Exception",
+              policyRef: pick(r, ["policy", "policyref", "standard"]) || "POL-001",
+              requestedBy: pick(r, ["requested by", "requester", "owner"]) || "—",
+              approver: pick(r, ["approver", "approved by"]) || "Design Authority",
+              status: pick(r, ["status", "state"]) || "Active",
+              expiryDate: pick(r, ["expiry", "expirydate", "end date", "review date"]) || "—",
+              port: inferPortFromText(pick(r, ["port", "location"])),
+              rationale: pick(r, ["rationale", "justification", "notes"]) || "Imported from CSV.",
+              _raw: r
+            };
+          });
+        } else if (registerKey === "decisions") {
+          data.decisions = rows.map(function (r, idx) {
+            return {
+              ref: pick(r, ["ref", "decision id", "id"]) || ("DL-" + (idx + 1)),
+              title: pick(r, ["title", "decision", "description"]) || "Decision",
+              decidedBy: pick(r, ["decided by", "approver", "board", "owner"]) || "Control Board",
+              date: pick(r, ["date", "decision date", "created"]) || "—",
+              status: pick(r, ["status", "outcome"]) || "Approved",
+              port: inferPortFromText(pick(r, ["port", "location"])),
+              _raw: r
+            };
+          });
+        } else if (registerKey === "actions") {
+          data.actions = rows.map(function (r, idx) {
+            return {
+              id: pick(r, ["id", "action id", "finding id", "ref"]) || ("ACT-" + (idx + 1)),
+              title: pick(r, ["title", "action", "finding", "description"]) || "Action Item",
+              severity: pick(r, ["severity", "priority", "risk"]) || "Medium",
+              owner: pick(r, ["owner", "assigned to", "action owner"]) || "Unassigned",
+              dueDate: pick(r, ["due date", "duedate", "target date"]) || "—",
+              status: pick(r, ["status", "state"]) || "Open",
+              port: inferPortFromText(pick(r, ["port", "location"])),
+              action: pick(r, ["remediation", "notes", "next step", "comments"]) || "Imported from CSV.",
+              _raw: r
+            };
+          });
+        } else if (registerKey === "runlog") {
+          data.runlog = rows.map(function (r, idx) {
+            return {
+              id: pick(r, ["id", "run id", "ref"]) || ("RUN-" + (idx + 1)),
+              job: pick(r, ["job", "runbook", "flow", "title"]) || "Automation Job",
+              target: pick(r, ["target", "site", "scope"]) || "Tenant",
+              result: pick(r, ["result", "status", "outcome"]) || "Success",
+              timestamp: pick(r, ["timestamp", "date", "created", "run date"]) || "—",
+              owner: pick(r, ["owner", "run by", "identity"]) || "Automation",
+              port: inferPortFromText(pick(r, ["port", "target"])),
+              _raw: r
+            };
+          });
+        }
+
+        meta[registerKey] = {
+          source: filename,
+          loadedAt: nowStr,
+          columns: parsed.headers
+        };
+        saveToStorage();
+        showToast("Loaded " + rows.length + " rows into " + registerKey.toUpperCase() + " from " + filename);
+        render();
+        return true;
+      }
+
+      /* ===================================================================
+         5. HELPERS: ESCAPING, FILTERING, CSV EXPORT, TOAST, MODAL
+         =================================================================== */
+      function esc(str) {
+        return String(str == null ? "" : str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function showToast(msg) {
+        var el = document.getElementById("toast");
+        el.textContent = "✓  " + msg;
+        el.style.display = "block";
+        clearTimeout(el._t);
+        el._t = setTimeout(function () { el.style.display = "none"; }, 3600);
+      }
+
+      function openModal(title, html) {
+        document.getElementById("modalTitle").textContent = title;
+        document.getElementById("modalBody").innerHTML = html;
+        document.getElementById("modalBackdrop").classList.add("open");
+      }
+
+      function closeModal() {
+        document.getElementById("modalBackdrop").classList.remove("open");
+      }
+
+      function matchesCommon(item) {
+        var portOk = ui.port === "ALL" || !item.port || item.port === "ALL" || item.port === ui.port;
+        if (!portOk) return false;
+        var q = ui.query.trim().toLowerCase();
+        if (!q) return true;
+        return JSON.stringify(item).toLowerCase().indexOf(q) !== -1;
+      }
+
+      function exportCsv(filename, headers, rowsArray) {
+        var escapeCell = function (v) {
+          var s = String(v == null ? "" : v);
+          if (s.indexOf(",") !== -1 || s.indexOf('"') !== -1 || s.indexOf("\n") !== -1) {
+            return '"' + s.replace(/"/g, '""') + '"';
+          }
+          return s;
+        };
+        var lines = [headers.map(escapeCell).join(",")];
+        rowsArray.forEach(function (r) { lines.push(r.map(escapeCell).join(",")); });
+        var blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("Exported " + rowsArray.length + " rows to " + filename);
+      }
+
+      function triggerSingleCsvUpload(registerKey) {
+        var inp = document.createElement("input");
+        inp.type = "file";
+        inp.accept = ".csv,text/csv";
+        inp.onchange = function (e) {
+          var file = e.target.files[0];
+          if (!file) return;
+          var reader = new FileReader();
+          reader.onload = function (ev) {
+            mapCsvToRegister(registerKey, ev.target.result, file.name);
+          };
+          reader.readAsText(file);
+        };
+        inp.click();
+      }
+
+      function resetRegister(registerKey) {
+        var def = getDefaultData();
+        data[registerKey] = def[registerKey];
+        meta[registerKey] = { source: "Sample data", loadedAt: null, columns: [] };
+        saveToStorage();
+        showToast("Reset " + registerKey.toUpperCase() + " to sample data");
+        render();
+      }
+
+      function renderRawInspector(rawObj) {
+        var keys = Object.keys(rawObj || {});
+        if (keys.length === 0) return '<p class="text-muted" style="margin-top:10px;">Built-in sample record (load a CSV to inspect raw SharePoint/SAM columns).</p>';
+        var html = '<div style="margin-top:12px;"><strong style="color:var(--hpuk-navy);">Raw CSV Columns (' + keys.length + ')</strong><div class="table-wrap" style="margin-top:6px;"><table><thead><tr><th>Column Header</th><th>Value</th></tr></thead><tbody>';
+        keys.forEach(function (k) {
+          html += '<tr><td class="mono">' + esc(k) + '</td><td>' + esc(rawObj[k]) + '</td></tr>';
+        });
+        html += '</tbody></table></div></div>';
+        return html;
+      }
+
+      /* ===================================================================
+         6. RENDERING VIEWS
+         =================================================================== */
+      function updateHeaderCounts() {
+        document.getElementById("cnt-sites").textContent = data.sites.length;
+        document.getElementById("cnt-compliance").textContent = data.compliance.length;
+        document.getElementById("cnt-risks").textContent = data.risks.length;
+        document.getElementById("cnt-exceptions").textContent = data.exceptions.length;
+        document.getElementById("cnt-decisions").textContent = data.decisions.length + data.actions.length;
+        document.getElementById("cnt-runlog").textContent = data.runlog.length;
+        document.getElementById("cnt-sam").textContent = data.sam.length;
+
+        var loadedRegs = Object.keys(meta).filter(function (k) { return meta[k].loadedAt !== null; });
+        var modePill = document.getElementById("globalModePill");
+        if (loadedRegs.length > 0) {
+          modePill.textContent = "CSV Loaded (" + loadedRegs.length + "/8)";
+          modePill.className = "mode-pill csv-loaded";
+        } else {
+          modePill.textContent = "Sample + CSV Ready";
+          modePill.className = "mode-pill";
+        }
+
+        var copy = HERO_COPY[ui.tab] || HERO_COPY.hub;
+        document.getElementById("heroTitle").textContent = copy.title;
+        document.getElementById("heroDesc").textContent = copy.desc;
+
+        var nonCompSam = data.sam.filter(function (s) { return !evaluateUrlCompliance(s.url, s.admin).isCompliant; }).length;
+        document.getElementById("heroStatVal").textContent = data.sites.length + " Register · " + data.sam.length + " SAM Sites";
+        document.getElementById("heroStatSub").textContent = nonCompSam + " non-compliant / legacy URLs visible in SAM";
+      }
+
+      function renderHub() {
+        var openActions = data.actions.filter(function (a) { return a.status !== "Closed"; });
+        var highRisks = data.risks.filter(function (r) { return r.likelihood * r.impact >= 15; });
+        var compliantControls = data.compliance.filter(function (c) { return c.status.toLowerCase() === "compliant"; }).length;
+        var compPct = data.compliance.length ? Math.round((compliantControls / data.compliance.length) * 100) : 100;
+        var noSecondOwner = data.sites.filter(function (s) { return !s.secondaryOwner; }).length;
+        var samNonComp = data.sam.filter(function (s) { return !evaluateUrlCompliance(s.url, s.admin).isCompliant; }).length;
+        var samHighExp = data.sam.filter(function (s) { return s.users >= 100; }).length;
+
+        var html = '<div class="kpi-grid">';
+        html += '<div class="kpi-card"><div class="kpi-label">Control Assurance</div><div class="kpi-value text-green">' + compPct + '%</div><div class="kpi-sub">' + compliantControls + ' of ' + data.compliance.length + ' controls compliant</div></div>';
+        html += '<div class="kpi-card"><div class="kpi-label">Sites Missing 2nd Owner</div><div class="kpi-value text-amber">' + noSecondOwner + '</div><div class="kpi-sub">Out of ' + data.sites.length + ' Site Register sites</div></div>';
+        html += '<div class="kpi-card"><div class="kpi-label">Open Governance Actions</div><div class="kpi-value text-red">' + openActions.length + '</div><div class="kpi-sub">Remediation &amp; audit queue</div></div>';
+        html += '<div class="kpi-card"><div class="kpi-label">High IT Risks (≥15)</div><div class="kpi-value text-red">' + highRisks.length + '</div><div class="kpi-sub">Out of ' + data.risks.length + ' active risks</div></div>';
+        html += '<div class="kpi-card"><div class="kpi-label">SAM Non-Compliant URLs</div><div class="kpi-value text-amber">' + samNonComp + '</div><div class="kpi-sub">' + samHighExp + ' sites with ≥100 users</div></div>';
+        html += '</div>';
+
+        html += '<div class="two-col">';
+
+        // Left: Urgent Attention Queue
+        html += '<div class="panel"><div class="panel-header"><div><div class="panel-title">Urgent Attention Queue</div><div class="panel-sub">High-priority actions, non-compliant controls &amp; orphaned sites</div></div><span class="pill pill-red">Action Required</span></div>';
+        openActions.slice(0, 4).forEach(function (a, idx) {
+          html += '<div class="queue-item"><div><div class="queue-item-title">' + esc(a.id) + ': ' + esc(a.title) + '</div><div class="queue-item-meta">Owner: <strong>' + esc(a.owner) + '</strong> · Due: <strong class="text-red">' + esc(a.dueDate) + '</strong> · Status: ' + esc(a.status) + '</div></div><button class="btn btn-primary" data-inspect-action="' + idx + '">Update</button></div>';
+        });
+        data.compliance.filter(function (c) { return c.status.toLowerCase() !== "compliant"; }).slice(0, 2).forEach(function (c) {
+          html += '<div class="queue-item warn"><div><div class="queue-item-title">' + esc(c.id) + ': ' + esc(c.title) + '</div><div class="queue-item-meta">Framework: <strong>' + esc(c.framework) + '</strong> · Owner: ' + esc(c.owner) + '</div></div><button class="btn btn-secondary" data-goto="compliance">Inspect</button></div>';
+        });
+        html += '</div>';
+
+        // Right: 5x5 IT Risk Heatmap
+        html += '<div class="panel"><div class="panel-header"><div><div class="panel-title">5×5 IT Risk Heatmap Matrix</div><div class="panel-sub">Click any cell to filter Governance Risks by Likelihood × Impact</div></div>';
+        if (ui.riskCell) html += '<button class="btn-link" id="btnClearHeatmap">Clear Filter</button>';
+        html += '</div>';
+        html += '<div class="heatmap-grid"><div class="hm-header">L \\ I</div>';
+        for (var i = 1; i <= 5; i++) html += '<div class="hm-header">Imp ' + i + '</div>';
+        for (var l = 5; l >= 1; l--) {
+          html += '<div class="hm-header">Like ' + l + '</div>';
+          for (var im = 1; im <= 5; im++) {
+            var score = l * im;
+            var cnt = data.risks.filter(function (r) { return r.likelihood === l && r.impact === im; }).length;
+            var cls = score >= 15 ? "high" : score >= 8 ? "med" : "low";
+            var sel = ui.riskCell && ui.riskCell.l === l && ui.riskCell.i === im ? "selected" : "";
+            html += '<button class="hm-cell ' + cls + ' ' + sel + '" data-hm-l="' + l + '" data-hm-i="' + im + '"><span>' + score + '</span>' + (cnt > 0 ? '<span class="hm-badge">' + cnt + '</span>' : '') + '</button>';
+          }
+        }
+        html += '</div>';
+        if (ui.riskCell) {
+          html += '<div style="margin-top:10px; padding:8px 10px; background:#E5F4FB; border:1px solid var(--hpuk-sky); border-radius:4px; font-size:12px; display:flex; justify-content:space-between; align-items:center;"><span>Filtered: L' + ui.riskCell.l + ' × I' + ui.riskCell.i + '</span><button class="btn-link" data-goto="risks">Open in Risks Tab →</button></div>';
+        }
+        html += '</div></div>';
+
+        // 4-Stage Safeguard Loop
+        html += '<div class="panel"><div class="panel-header"><div><div class="panel-title">HPUK Governance &amp; Copilot Safeguard Loop</div><div class="panel-sub">Design System v1.3 · Pages 61–77</div></div><button class="btn btn-secondary" data-goto="sam">Open SAM Permissions (CSV) →</button></div>';
+        html += '<div class="loop-grid">';
+        html += '<div class="loop-card"><div class="loop-step">1. Prevent</div><div class="loop-head">Group-Based Access &amp; Naming</div><div class="loop-body">Enforce hpuk-&lt;loc&gt;- URLs, disable Anyone-links tenant-wide, and apply sensitivity labels at site creation.</div></div>';
+        html += '<div class="loop-card detect"><div class="loop-step text-info">2. Detect</div><div class="loop-head">SAM Permissions &amp; RCD Audits</div><div class="loop-body">Import SAM CSV exports to spot oversharing (≥100 users), legacy /teams/ URLs, and missing RCD tags.</div></div>';
+        html += '<div class="loop-card correct"><div class="loop-step text-amber">3. Correct</div><div class="loop-head">90-Day Guest &amp; Owner Reviews</div><div class="loop-body">Flow 02 auto-reminds and expires external guests; monthly owner digests resolve single-owner sites.</div></div>';
+        html += '<div class="loop-card improve"><div class="loop-step text-green">4. Improve</div><div class="loop-head">Control Board Escalation</div><div class="loop-body">Track recurring exceptions and non-compliant legacy sites through the Governance Decisions register.</div></div>';
+        html += '</div></div>';
+
+        return html;
+      }
+
+      function renderRegisterToolbar(regKey, exportBtnId) {
+        var m = meta[regKey];
+        var srcBadge = m.loadedAt
+          ? '<span class="pill pill-green">CSV: ' + esc(m.source) + '</span>'
+          : '<span class="pill pill-grey">Sample Data</span>';
+        return '<div class="toolbar">' +
+          srcBadge +
+          '<button class="btn btn-primary" data-load-csv="' + regKey + '">Load CSV</button>' +
+          '<button class="btn btn-secondary" id="' + exportBtnId + '">Export Filtered CSV</button>' +
+          (m.loadedAt ? '<button class="btn btn-subtle" data-reset-reg="' + regKey + '">Reset</button>' : '') +
+        '</div>';
+      }
+
+      function renderSites() {
+        var rows = data.sites.filter(function (s) {
+          if (!matchesCommon(s)) return false;
+          if (ui.siteFilter === "NO_SECOND_OWNER") return !s.secondaryOwner;
+          if (ui.siteFilter === "EXTERNAL") return s.externalSharing && s.externalSharing.toLowerCase() !== "disabled";
+          if (ui.siteFilter === "NO_LABEL") return !s.sensitivity || s.sensitivity.toLowerCase() === "not set";
+          if (ui.siteFilter === "NON_COMPLIANT_URL") return !evaluateUrlCompliance(s.url, s.primaryOwner).isCompliant;
+          return true;
+        });
+
+        var nonCompCount = data.sites.filter(function (s) { return !evaluateUrlCompliance(s.url, s.primaryOwner).isCompliant; }).length;
+
+        var html = '<div class="panel"><div class="panel-header"><div><div class="panel-title">Site Register (' + rows.length + ' shown / ' + data.sites.length + ' total)</div><div class="panel-sub">Load your exported Site_Register.csv to inspect all live sites</div></div>' + renderRegisterToolbar("sites", "btnExportSites") + '</div>';
+
+        html += '<div class="filter-bar-inline"><div class="pill-group">';
+        html += '<button class="filter-pill-btn ' + (ui.siteFilter === "ALL" ? "active" : "") + '" data-site-filter="ALL">All Sites (' + data.sites.length + ')</button>';
+        html += '<button class="filter-pill-btn ' + (ui.siteFilter === "NON_COMPLIANT_URL" ? "active-warn" : "") + '" data-site-filter="NON_COMPLIANT_URL">Non-Compliant URLs (' + nonCompCount + ')</button>';
+        html += '<button class="filter-pill-btn ' + (ui.siteFilter === "NO_SECOND_OWNER" ? "active" : "") + '" data-site-filter="NO_SECOND_OWNER">Missing 2nd Owner</button>';
+        html += '<button class="filter-pill-btn ' + (ui.siteFilter === "EXTERNAL" ? "active" : "") + '" data-site-filter="EXTERNAL">External Sharing On</button>';
+        html += '<button class="filter-pill-btn ' + (ui.siteFilter === "NO_LABEL" ? "active" : "") + '" data-site-filter="NO_LABEL">No Sensitivity Label</button>';
+        html += '</div></div>';
+
+        html += '<div class="table-wrap"><table><thead><tr><th>Site Title &amp; URL</th><th>URL Compliance</th><th>Department</th><th>Primary Owner</th><th>Secondary Owner</th><th>Sensitivity</th><th>External Sharing</th><th>Status</th></tr></thead><tbody>';
+        if (rows.length === 0) {
+          html += '<tr><td colspan="8" class="text-muted">No sites match the current filter.</td></tr>';
+        } else {
+          rows.forEach(function (s) {
+            var comp = evaluateUrlCompliance(s.url, s.primaryOwner);
+            var origIdx = data.sites.indexOf(s);
+            var stPill = s.status.toLowerCase().indexOf("orphan") !== -1 ? "pill-red" : "pill-green";
+            html += '<tr class="clickable" data-inspect-row="sites:' + origIdx + '">';
+            html += '<td><strong class="text-navy">' + esc(s.title) + '</strong><br><span style="font-size:10px; color:var(--hpuk-muted); word-break:break-all;">' + esc(s.url) + '</span></td>';
+            html += '<td><span class="pill ' + comp.pill + '">' + esc(comp.label) + '</span></td>';
+            html += '<td>' + esc(s.dept) + '</td>';
+            html += '<td>' + esc(s.primaryOwner) + '</td>';
+            html += '<td>' + (s.secondaryOwner ? esc(s.secondaryOwner) : '<span class="pill pill-amber">None</span>') + '</td>';
+            html += '<td>' + (s.sensitivity.toLowerCase() === "not set" ? '<span class="pill pill-amber">Not set</span>' : '<span class="pill pill-blue">' + esc(s.sensitivity) + '</span>') + '</td>';
+            html += '<td>' + esc(s.externalSharing) + '</td>';
+            html += '<td><span class="pill ' + stPill + '">' + esc(s.status) + '</span></td>';
+            html += '</tr>';
+          });
+        }
+        html += '</tbody></table></div></div>';
+        return html;
+      }
+
+      function renderCompliance() {
+        var rows = data.compliance.filter(matchesCommon);
+        var html = '<div class="panel"><div class="panel-header"><div><div class="panel-title">Governance_Compliance (' + rows.length + ' records)</div><div class="panel-sub">Assurance controls across ISO 27001, Cyber Essentials Plus, NIS &amp; M365 AI</div></div>' + renderRegisterToolbar("compliance", "btnExportCompliance") + '</div>';
+        html += '<div class="table-wrap"><table><thead><tr><th>Control ID</th><th>Control &amp; Evidence</th><th>Framework</th><th>Owner</th><th>Last Assessed</th><th>Status</th></tr></thead><tbody>';
+        rows.forEach(function (c) {
+          var origIdx = data.compliance.indexOf(c);
+          var pill = c.status.toLowerCase() === "compliant" ? "pill-green" : "pill-red";
+          html += '<tr class="clickable" data-inspect-row="compliance:' + origIdx + '">';
+          html += '<td class="mono text-navy">' + esc(c.id) + '</td>';
+          html += '<td><strong class="text-navy">' + esc(c.title) + '</strong><br><span style="font-size:11px; color:var(--hpuk-muted);">' + esc(c.evidence) + '</span></td>';
+          html += '<td><strong>' + esc(c.framework) + '</strong></td>';
+          html += '<td>' + esc(c.owner) + '</td>';
+          html += '<td class="mono">' + esc(c.lastAssessed) + '</td>';
+          html += '<td><span class="pill ' + pill + '">' + esc(c.status) + '</span></td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table></div></div>';
+        return html;
+      }
+
+      function renderRisks() {
+        var rows = data.risks.filter(function (r) {
+          if (!matchesCommon(r)) return false;
+          if (ui.riskCell && (r.likelihood !== ui.riskCell.l || r.impact !== ui.riskCell.i)) return false;
+          return true;
+        });
+        var html = '<div class="panel"><div class="panel-header"><div><div class="panel-title">Governance Risks (' + rows.length + ' records)</div><div class="panel-sub">' + (ui.riskCell ? 'Filtered to Heatmap Cell L' + ui.riskCell.l + ' × I' + ui.riskCell.i + ' ' : 'All active IT &amp; governance risks') + (ui.riskCell ? '<button class="btn-link" id="btnClearHeatmap">Clear filter</button>' : '') + '</div></div>' + renderRegisterToolbar("risks", "btnExportRisks") + '</div>';
+        html += '<div class="table-wrap"><table><thead><tr><th>Ref</th><th>Risk Title</th><th>Category</th><th>Owner</th><th>L × I</th><th>Score</th><th>Treatment</th><th>Status</th></tr></thead><tbody>';
+        rows.forEach(function (r) {
+          var origIdx = data.risks.indexOf(r);
+          var score = r.likelihood * r.impact;
+          var pill = score >= 15 ? "pill-red" : score >= 8 ? "pill-amber" : "pill-green";
+          html += '<tr class="clickable" data-inspect-row="risks:' + origIdx + '">';
+          html += '<td class="mono text-navy">' + esc(r.ref) + '</td>';
+          html += '<td><strong class="text-navy">' + esc(r.title) + '</strong></td>';
+          html += '<td>' + esc(r.category) + '</td>';
+          html += '<td>' + esc(r.owner) + '</td>';
+          html += '<td class="mono">' + r.likelihood + ' × ' + r.impact + '</td>';
+          html += '<td><span class="pill ' + pill + '">' + score + '</span></td>';
+          html += '<td><strong>' + esc(r.treatment) + '</strong></td>';
+          html += '<td>' + esc(r.status) + '</td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table></div></div>';
+        return html;
+      }
+
+      function renderExceptions() {
+        var rows = data.exceptions.filter(matchesCommon);
+        var html = '<div class="panel"><div class="panel-header"><div><div class="panel-title">Governance Exceptions (' + rows.length + ' records)</div><div class="panel-sub">90-day time-bound security &amp; design waivers</div></div>' + renderRegisterToolbar("exceptions", "btnExportExceptions") + '</div>';
+        html += '<div class="table-wrap"><table><thead><tr><th>Waiver ID</th><th>Exception Title</th><th>Policy</th><th>Requester</th><th>Approver</th><th>Expiry</th><th>Status</th><th>Action</th></tr></thead><tbody>';
+        rows.forEach(function (e) {
+          var origIdx = data.exceptions.indexOf(e);
+          var pill = e.status.toLowerCase() === "expired" ? "pill-red" : "pill-green";
+          html += '<tr>';
+          html += '<td class="mono text-navy">' + esc(e.id) + '</td>';
+          html += '<td><strong class="text-navy">' + esc(e.title) + '</strong><br><span style="font-size:11px; color:var(--hpuk-muted);">' + esc(e.rationale) + '</span></td>';
+          html += '<td class="mono text-info">' + esc(e.policyRef) + '</td>';
+          html += '<td>' + esc(e.requestedBy) + '</td>';
+          html += '<td>' + esc(e.approver) + '</td>';
+          html += '<td class="mono">' + esc(e.expiryDate) + '</td>';
+          html += '<td><span class="pill ' + pill + '">' + esc(e.status) + '</span></td>';
+          html += '<td><button class="btn btn-secondary" data-inspect-exc="' + origIdx + '">Review</button></td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table></div></div>';
+        return html;
+      }
+
+      function renderDecisions() {
+        var decs = data.decisions.filter(matchesCommon);
+        var acts = data.actions.filter(matchesCommon);
+
+        var html = '<div class="panel"><div class="panel-header"><div><div class="panel-title">Governance Decisions (' + decs.length + ' records)</div><div class="panel-sub">Control Board &amp; Design Authority formal decisions</div></div>' + renderRegisterToolbar("decisions", "btnExportDecisions") + '</div>';
+        html += '<div class="table-wrap"><table><thead><tr><th>Ref</th><th>Decision</th><th>Decided By</th><th>Date</th><th>Status</th></tr></thead><tbody>';
+        decs.forEach(function (d) {
+          var origIdx = data.decisions.indexOf(d);
+          html += '<tr class="clickable" data-inspect-row="decisions:' + origIdx + '"><td class="mono text-navy">' + esc(d.ref) + '</td><td><strong class="text-navy">' + esc(d.title) + '</strong></td><td>' + esc(d.decidedBy) + '</td><td class="mono">' + esc(d.date) + '</td><td><span class="pill pill-green">' + esc(d.status) + '</span></td></tr>';
+        });
+        html += '</tbody></table></div></div>';
+
+        html += '<div class="panel"><div class="panel-header"><div><div class="panel-title">Governance Actions &amp; Audit Findings (' + acts.length + ' records)</div><div class="panel-sub">Open remediation tasks and audit follow-ups</div></div>' + renderRegisterToolbar("actions", "btnExportActions") + '</div>';
+        html += '<div class="table-wrap"><table><thead><tr><th>ID</th><th>Action / Finding</th><th>Severity</th><th>Owner</th><th>Due Date</th><th>Status</th><th>Update</th></tr></thead><tbody>';
+        acts.forEach(function (a) {
+          var origIdx = data.actions.indexOf(a);
+          var sevPill = a.severity === "Critical" ? "pill-red" : a.severity === "High" ? "pill-amber" : "pill-blue";
+          var stPill = a.status === "Closed" ? "pill-green" : a.status === "Overdue" ? "pill-red" : "pill-blue";
+          html += '<tr><td class="mono text-navy">' + esc(a.id) + '</td><td><strong class="text-navy">' + esc(a.title) + '</strong><br><span style="font-size:11px; color:var(--hpuk-muted);">' + esc(a.action) + '</span></td><td><span class="pill ' + sevPill + '">' + esc(a.severity) + '</span></td><td>' + esc(a.owner) + '</td><td class="mono">' + esc(a.dueDate) + '</td><td><span class="pill ' + stPill + '">' + esc(a.status) + '</span></td><td><button class="btn btn-primary" data-inspect-action="' + origIdx + '">Update</button></td></tr>';
+        });
+        html += '</tbody></table></div></div>';
+        return html;
+      }
+
+      function renderRunlog() {
+        var rows = data.runlog.filter(matchesCommon);
+        var html = '<div class="panel"><div class="panel-header"><div><div class="panel-title">SecGov-RunLog_Upload (' + rows.length + ' records)</div><div class="panel-sub">Guardrail G-10 verification evidence from Azure Automation &amp; Power Automate</div></div>' + renderRegisterToolbar("runlog", "btnExportRunlog") + '</div>';
+        html += '<div class="table-wrap"><table><thead><tr><th>Run ID</th><th>Job / Flow</th><th>Target</th><th>Owner</th><th>Timestamp</th><th>Result</th></tr></thead><tbody>';
+        rows.forEach(function (r) {
+          var origIdx = data.runlog.indexOf(r);
+          var ok = r.result.toLowerCase().indexOf("success") !== -1;
+          html += '<tr class="clickable" data-inspect-row="runlog:' + origIdx + '"><td class="mono text-navy">' + esc(r.id) + '</td><td><strong class="text-navy">' + esc(r.job) + '</strong></td><td>' + esc(r.target) + '</td><td>' + esc(r.owner) + '</td><td class="mono">' + esc(r.timestamp) + '</td><td><span class="pill ' + (ok ? "pill-green" : "pill-red") + '">' + esc(r.result) + '</span></td></tr>';
+        });
+        html += '</tbody></table></div></div>';
+        return html;
+      }
+
+      function renderSam() {
+        var allSam = data.sam;
+        var compliantCount = 0;
+        var nonCompliantCount = 0;
+        var highExpCount = 0;
+        var extCount = 0;
+        var totalGuests = 0;
+
+        allSam.forEach(function (s) {
+          var comp = evaluateUrlCompliance(s.url, s.admin);
+          if (comp.isCompliant) compliantCount++; else nonCompliantCount++;
+          if (s.users >= 100) highExpCount++;
+          if (String(s.external).toUpperCase() === "TRUE" || s.guests > 0) extCount++;
+          totalGuests += (s.guests || 0);
+        });
+
+        var rows = allSam.filter(function (s) {
+          var comp = evaluateUrlCompliance(s.url, s.admin);
+          if (ui.samComplianceFilter === "COMPLIANT" && !comp.isCompliant) return false;
+          if (ui.samComplianceFilter === "NON_COMPLIANT" && comp.isCompliant) return false;
+          if (ui.samHideOtherTenant && comp.isOtherTenant) return false;
+          if (ui.samHighExposureOnly && s.users < 100) return false;
+          if (ui.samExternalOnly && String(s.external).toUpperCase() !== "TRUE" && s.guests === 0) return false;
+
+          var q = ui.query.trim().toLowerCase();
+          if (q && JSON.stringify(s).toLowerCase().indexOf(q) === -1) return false;
+          return true;
+        }).sort(function (a, b) { return b.users - a.users; });
+
+        var html = '<div class="kpi-grid">';
+        html += '<div class="kpi-card"><div class="kpi-label">Total SAM Sites</div><div class="kpi-value text-navy">' + allSam.length.toLocaleString() + '</div><div class="kpi-sub">All sites visible by default</div></div>';
+        html += '<div class="kpi-card"><div class="kpi-label">Compliant (hpuk-)</div><div class="kpi-value text-green">' + compliantCount.toLocaleString() + '</div><div class="kpi-sub">Matches naming standard</div></div>';
+        html += '<div class="kpi-card"><div class="kpi-label">Non-Compliant / Legacy</div><div class="kpi-value text-red">' + nonCompliantCount.toLocaleString() + '</div><div class="kpi-sub">Legacy /teams/ or non-hpuk URLs</div></div>';
+        html += '<div class="kpi-card"><div class="kpi-label">High Exposure (≥100 Users)</div><div class="kpi-value text-amber">' + highExpCount.toLocaleString() + '</div><div class="kpi-sub">Oversharing review candidates</div></div>';
+        html += '<div class="kpi-card"><div class="kpi-label">External / Guests</div><div class="kpi-value text-info">' + extCount.toLocaleString() + ' sites</div><div class="kpi-sub">' + totalGuests.toLocaleString() + ' guest accounts total</div></div>';
+        html += '</div>';
+
+        html += '<div class="panel"><div class="panel-header"><div><div class="panel-title">SAM Permissions &amp; URL Compliance (' + rows.length + ' shown / ' + allSam.length + ' total)</div><div class="panel-sub">Supports Dutch &amp; English SAM CSV exports (auto-loads latest-permissions-report.csv if in SiteAssets)</div></div>' + renderRegisterToolbar("sam", "btnExportSam") + '</div>';
+
+        // 3-Way Compliance Pill Filter + Secondary Toggles
+        html += '<div class="filter-bar-inline">';
+        html += '<div class="pill-group" role="group" aria-label="URL Compliance Filter">';
+        html += '<button class="filter-pill-btn ' + (ui.samComplianceFilter === "ALL" ? "active" : "") + '" data-sam-comp="ALL">All Sites (' + allSam.length + ')</button>';
+        html += '<button class="filter-pill-btn ' + (ui.samComplianceFilter === "COMPLIANT" ? "active-ok" : "") + '" data-sam-comp="COMPLIANT">Compliant hpuk- (' + compliantCount + ')</button>';
+        html += '<button class="filter-pill-btn ' + (ui.samComplianceFilter === "NON_COMPLIANT" ? "active-warn" : "") + '" data-sam-comp="NON_COMPLIANT">Non-Compliant / Legacy (' + nonCompliantCount + ')</button>';
+        html += '</div>';
+
+        html += '<div class="toolbar">';
+        html += '<label class="toggle-check"><input type="checkbox" id="chkSamHighExp" ' + (ui.samHighExposureOnly ? "checked" : "") + ' /> High Exposure (≥100 users)</label>';
+        html += '<label class="toggle-check"><input type="checkbox" id="chkSamExt" ' + (ui.samExternalOnly ? "checked" : "") + ' /> External / Guests Only</label>';
+        html += '<label class="toggle-check"><input type="checkbox" id="chkSamHideOther" ' + (ui.samHideOtherTenant ? "checked" : "") + ' /> Hide ECT / Other Tenant</label>';
+        html += '</div></div>';
+
+        html += '<div class="table-wrap"><table><thead><tr><th>Site Name &amp; URL</th><th>URL Compliance</th><th>Template</th><th>External Sharing</th><th>Sensitivity</th><th>Users</th><th>Guests</th><th>Primary Admin</th></tr></thead><tbody>';
+        if (rows.length === 0) {
+          html += '<tr><td colspan="8" class="text-muted">No SAM sites match the active filters.</td></tr>';
+        } else {
+          rows.forEach(function (s) {
+            var origIdx = allSam.indexOf(s);
+            var comp = evaluateUrlCompliance(s.url, s.admin);
+            var userPill = s.users >= 1000 ? "pill-red" : s.users >= 100 ? "pill-amber" : "pill-green";
+            var extOn = String(s.external).toUpperCase() === "TRUE";
+            html += '<tr class="clickable" data-inspect-sam="' + origIdx + '">';
+            html += '<td><strong class="text-navy">' + esc(s.name) + '</strong><br><span style="font-size:10px; color:var(--hpuk-muted); word-break:break-all;">' + esc(s.url) + '</span></td>';
+            html += '<td><span class="pill ' + comp.pill + '">' + esc(comp.label) + '</span></td>';
+            html += '<td>' + esc(s.template) + '</td>';
+            html += '<td><span class="pill ' + (extOn ? "pill-amber" : "pill-blue") + '">' + esc(s.external) + '</span></td>';
+            html += '<td>' + (s.sensitivity.toLowerCase() === "not set" ? '<span class="pill pill-amber">Not set</span>' : esc(s.sensitivity)) + '</td>';
+            html += '<td><span class="pill ' + userPill + '">' + s.users.toLocaleString() + '</span></td>';
+            html += '<td class="mono">' + (s.guests || 0) + '</td>';
+            html += '<td>' + esc(s.admin) + '</td>';
+            html += '</tr>';
+          });
+        }
+        html += '</tbody></table></div></div>';
+        return html;
+      }
+
+      function render() {
+        updateHeaderCounts();
+        var main = document.getElementById("mainContent");
+        if (ui.tab === "hub") main.innerHTML = renderHub();
+        else if (ui.tab === "sites") main.innerHTML = renderSites();
+        else if (ui.tab === "compliance") main.innerHTML = renderCompliance();
+        else if (ui.tab === "risks") main.innerHTML = renderRisks();
+        else if (ui.tab === "exceptions") main.innerHTML = renderExceptions();
+        else if (ui.tab === "decisions") main.innerHTML = renderDecisions();
+        else if (ui.tab === "runlog") main.innerHTML = renderRunlog();
+        else if (ui.tab === "sam") main.innerHTML = renderSam();
+      }
+
+      /* ===================================================================
+         7. MODALS: CSV MANAGER, DIAGNOSTICS, SAM ASSESSMENT, ROW UPDATES
+         =================================================================== */
+      function openCsvManagerModal() {
+        var regs = [
+          { key: "sam", label: "SAM Permissions Report (CSV)" },
+          { key: "sites", label: "Site Register (Site_Register.csv)" },
+          { key: "compliance", label: "Governance_Compliance" },
+          { key: "risks", label: "Governance Risks" },
+          { key: "exceptions", label: "Governance Exceptions" },
+          { key: "decisions", label: "Governance Decisions" },
+          { key: "actions", label: "Governance Actions / Findings" },
+          { key: "runlog", label: "SecGov-RunLog_Upload" }
+        ];
+
+        var html = '<div class="drop-zone" id="bulkDropZone">';
+        html += '<strong style="color:var(--hpuk-navy); font-size:13px;">Drop one or more SharePoint / SAM CSV files here</strong>';
+        html += '<p style="font-size:11px; color:var(--hpuk-muted); margin:6px 0 10px;">Files are auto-matched by filename or column headers (Dutch &amp; English SAM headers supported).</p>';
+        html += '<label class="btn btn-primary" style="cursor:pointer;">Select Multiple CSV Files<input type="file" id="bulkFileInput" accept=".csv" multiple style="display:none;" /></label>';
+        html += '</div>';
+
+        html += '<div class="table-wrap"><table><thead><tr><th>Register</th><th>Current Source</th><th>Rows</th><th>Action</th></tr></thead><tbody>';
+        regs.forEach(function (r) {
+          var m = meta[r.key];
+          html += '<tr><td><strong>' + esc(r.label) + '</strong></td>';
+          html += '<td>' + (m.loadedAt ? '<span class="pill pill-green">' + esc(m.source) + '</span>' : '<span class="pill pill-grey">Sample data</span>') + '</td>';
+          html += '<td class="mono">' + data[r.key].length + '</td>';
+          html += '<td><button class="btn btn-secondary" data-load-csv="' + r.key + '">Load CSV</button> ' + (m.loadedAt ? '<button class="btn btn-subtle" data-reset-reg="' + r.key + '">Reset</button>' : '') + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+
+        openModal("CSV Data Manager (Auto-Match & Snapshot Loader)", html);
+
+        var handleFiles = function (fileList) {
+          Array.from(fileList).forEach(function (file) {
+            var reader = new FileReader();
+            reader.onload = function (ev) {
+              var parsed = parseCsv(ev.target.result);
+              var detected = detectRegisterType(file.name, parsed.headers) || "sam";
+              mapCsvToRegister(detected, ev.target.result, file.name);
+              openCsvManagerModal();
+            };
+            reader.readAsText(file);
+          });
+        };
+
+        var dz = document.getElementById("bulkDropZone");
+        dz.addEventListener("dragover", function (e) { e.preventDefault(); dz.classList.add("dragover"); });
+        dz.addEventListener("dragleave", function () { dz.classList.remove("dragover"); });
+        dz.addEventListener("drop", function (e) {
+          e.preventDefault();
+          dz.classList.remove("dragover");
+          handleFiles(e.dataTransfer.files);
+        });
+        document.getElementById("bulkFileInput").addEventListener("change", function (e) {
+          handleFiles(e.target.files);
+        });
+      }
+
+      function openDiagnosticsModal() {
+        var html = '<p style="margin-bottom:10px;">Overview of loaded CSV snapshots, row counts, and discovered columns across all 8 governance registers.</p>';
+        html += '<div class="table-wrap"><table><thead><tr><th>Register</th><th>Source</th><th>Rows</th><th>Loaded At</th><th>Discovered Columns</th></tr></thead><tbody>';
+        Object.keys(meta).forEach(function (k) {
+          var m = meta[k];
+          html += '<tr><td class="mono text-navy">' + esc(k) + '</td><td>' + esc(m.source) + '</td><td class="mono">' + data[k].length + '</td><td class="mono">' + esc(m.loadedAt || "—") + '</td><td style="font-size:10px;">' + esc(m.columns.slice(0, 8).join(", ") || "Default schema") + (m.columns.length > 8 ? " +" + (m.columns.length - 8) + " more" : "") + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        openModal("Data & CSV Diagnostics (Guardrail G-10)", html);
+      }
+
+      function openSamAssessmentModal(idx) {
+        var s = data.sam[idx];
+        if (!s) return;
+        var comp = evaluateUrlCompliance(s.url, s.admin);
+        var riskLevel = (s.users >= 1000 || (String(s.external).toUpperCase() === "TRUE" && s.sensitivity.toLowerCase() === "not set"))
+          ? "HIGH" : (s.users >= 100 || !comp.isCompliant) ? "MEDIUM" : "LOW";
+        var riskPill = riskLevel === "HIGH" ? "pill-red" : riskLevel === "MEDIUM" ? "pill-amber" : "pill-green";
+
+        var recs = [];
+        if (!comp.isCompliant && !comp.isOtherTenant) recs.push("Non-compliant URL naming: verify whether covered by Control Board blanket G-08 exception (/teams/) or schedule URL remediation.");
+        if (s.users >= 100) recs.push("High permissioned user count (" + s.users.toLocaleString() + "): trigger SAM Site Access Review and apply Restricted Content Discovery (RCD) if sensitive.");
+        if (String(s.external).toUpperCase() === "TRUE" || s.guests > 0) recs.push("External sharing / guests active (" + s.guests + " guests): verify 90-day guest expiry policy (Flow 02).");
+        if (s.sensitivity.toLowerCase() === "not set") recs.push("Missing Purview Sensitivity Label: assign Internal, Confidential, or Highly Confidential.");
+        if (recs.length === 0) recs.push("No immediate oversharing or naming remediation flags detected.");
+
+        var html = '<p style="margin-bottom:8px;"><strong class="text-navy" style="font-size:14px;">' + esc(s.name) + '</strong></p>';
+        html += '<p style="margin-bottom:10px; word-break:break-all; color:var(--hpuk-muted);">' + esc(s.url) + '</p>';
+        html += '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">';
+        html += '<span class="pill ' + comp.pill + '">' + esc(comp.label) + '</span>';
+        html += '<span class="pill ' + riskPill + '">Oversharing Risk: ' + riskLevel + '</span>';
+        html += '<span class="pill pill-blue">Users: ' + s.users.toLocaleString() + '</span>';
+        html += '<span class="pill pill-grey">Guests: ' + (s.guests || 0) + '</span>';
+        html += '</div>';
+        html += '<div style="background:var(--hpuk-subtle); border-left:4px solid var(--hpuk-navy); padding:10px 12px; border-radius:4px; margin-bottom:10px;"><strong>Recommended Governance Actions:</strong><ul style="margin:6px 0 0 18px;">' + recs.map(function (r) { return '<li>' + esc(r) + '</li>'; }).join("") + '</ul></div>';
+        html += renderRawInspector(s._raw);
+
+        openModal("SAM Site Exposure & Compliance Assessment", html);
+      }
+
+      /* ===================================================================
+         8. EVENT LISTENERS
+         =================================================================== */
+      document.getElementById("navTabs").addEventListener("click", function (e) {
+        var btn = e.target.closest(".nav-tab");
+        if (!btn) return;
+        ui.tab = btn.dataset.tab;
+        document.querySelectorAll(".nav-tab").forEach(function (t) { t.classList.toggle("active", t === btn); });
+        render();
+      });
+
+      document.getElementById("portSwitcher").addEventListener("click", function (e) {
+        var btn = e.target.closest(".port-btn");
+        if (!btn) return;
+        ui.port = btn.dataset.port;
+        document.querySelectorAll(".port-btn").forEach(function (b) { b.classList.toggle("active", b === btn); });
+        document.getElementById("activeScopeLabel").textContent = PORT_NAMES[ui.port];
+        render();
+      });
+
+      document.getElementById("searchInput").addEventListener("input", function (e) {
+        ui.query = e.target.value;
+        render();
+      });
+
+      document.getElementById("btnCsvManager").addEventListener("click", openCsvManagerModal);
+      document.getElementById("btnDiagnostics").addEventListener("click", openDiagnosticsModal);
+      document.getElementById("btnCloseModal").addEventListener("click", closeModal);
+      document.getElementById("modalBackdrop").addEventListener("click", function (e) {
+        if (e.target === this) closeModal();
+      });
+
+      // Delegated clicks inside Modal
+      document.getElementById("modalBody").addEventListener("click", function (e) {
+        var loadBtn = e.target.closest("[data-load-csv]");
+        if (loadBtn) { triggerSingleCsvUpload(loadBtn.dataset.loadCsv); return; }
+        var resetBtn = e.target.closest("[data-reset-reg]");
+        if (resetBtn) { resetRegister(resetBtn.dataset.resetReg); openCsvManagerModal(); return; }
+      });
+
+      // Delegated clicks inside Main Workspace
+      document.getElementById("mainContent").addEventListener("click", function (e) {
+        var t = e.target;
+
+        var gotoBtn = t.closest("[data-goto]");
+        if (gotoBtn) {
+          ui.tab = gotoBtn.dataset.goto;
+          document.querySelectorAll(".nav-tab").forEach(function (nt) { nt.classList.toggle("active", nt.dataset.tab === ui.tab); });
+          render();
+          return;
+        }
+
+        var loadBtn = t.closest("[data-load-csv]");
+        if (loadBtn) { triggerSingleCsvUpload(loadBtn.dataset.loadCsv); return; }
+
+        var resetBtn = t.closest("[data-reset-reg]");
+        if (resetBtn) { resetRegister(resetBtn.dataset.resetReg); return; }
+
+        var hmCell = t.closest("[data-hm-l]");
+        if (hmCell) {
+          var l = Number(hmCell.dataset.hmL);
+          var i = Number(hmCell.dataset.hmI);
+          ui.riskCell = (ui.riskCell && ui.riskCell.l === l && ui.riskCell.i === i) ? null : { l: l, i: i };
+          render();
+          return;
+        }
+
+        if (t.id === "btnClearHeatmap") { ui.riskCell = null; render(); return; }
+
+        var sf = t.closest("[data-site-filter]");
+        if (sf) { ui.siteFilter = sf.dataset.siteFilter; render(); return; }
+
+        var sc = t.closest("[data-sam-comp]");
+        if (sc) { ui.samComplianceFilter = sc.dataset.samComp; render(); return; }
+
+        var samRow = t.closest("[data-inspect-sam]");
+        if (samRow) { openSamAssessmentModal(Number(samRow.dataset.inspectSam)); return; }
+
+        var actBtn = t.closest("[data-inspect-action]");
+        if (actBtn) {
+          var idx = Number(actBtn.dataset.inspectAction);
+          var a = data.actions[idx];
+          if (!a) return;
+          openModal("Update Action: " + a.id,
+            '<p style="margin-bottom:6px;"><strong>' + esc(a.title) + '</strong></p>' +
+            '<p style="margin-bottom:10px;">Owner: ' + esc(a.owner) + ' · Due: ' + esc(a.dueDate) + '</p>' +
+            '<p style="margin-bottom:14px;"><strong>Remediation:</strong> ' + esc(a.action) + '</p>' +
+            '<div style="display:flex; gap:8px; justify-content:flex-end;">' +
+            '<button class="btn btn-secondary" id="btnActProg">Mark In Progress</button>' +
+            '<button class="btn btn-primary" id="btnActClose">Close Action</button></div>' +
+            renderRawInspector(a._raw)
+          );
+          document.getElementById("btnActProg").onclick = function () { a.status = "In Progress"; saveToStorage(); closeModal(); showToast(a.id + " marked In Progress"); render(); };
+          document.getElementById("btnActClose").onclick = function () { a.status = "Closed"; saveToStorage(); closeModal(); showToast(a.id + " closed"); render(); };
+          return;
+        }
+
+        var excBtn = t.closest("[data-inspect-exc]");
+        if (excBtn) {
+          var eIdx = Number(excBtn.dataset.inspectExc);
+          var ex = data.exceptions[eIdx];
+          if (!ex) return;
+          openModal("Review Exception: " + ex.id,
+            '<p style="margin-bottom:6px;"><strong>' + esc(ex.title) + '</strong></p>' +
+            '<p style="margin-bottom:10px;">Approver: ' + esc(ex.approver) + ' · Expiry: ' + esc(ex.expiryDate) + '</p>' +
+            '<p style="margin-bottom:14px;">' + esc(ex.rationale) + '</p>' +
+            '<div style="display:flex; justify-content:flex-end;"><button class="btn btn-primary" id="btnRenewExc">Grant 90-Day Renewal</button></div>' +
+            renderRawInspector(ex._raw)
+          );
+          document.getElementById("btnRenewExc").onclick = function () {
+            ex.status = "Active";
+            ex.expiryDate = "2027-02-23";
+            saveToStorage();
+            closeModal();
+            showToast("Extended " + ex.id + " by 90 days");
+            render();
+          };
+          return;
+        }
+
+        var rawRow = t.closest("[data-inspect-row]");
+        if (rawRow) {
+          var parts = rawRow.dataset.inspectRow.split(":");
+          var item = data[parts[0]][Number(parts[1])];
+          if (!item) return;
+          openModal("Record Inspector (" + parts[0].toUpperCase() + ")",
+            '<p style="margin-bottom:8px;"><strong class="text-navy">' + esc(item.title || item.job || item.ref || item.id) + '</strong></p>' +
+            renderRawInspector(item._raw)
+          );
+          return;
+        }
+
+        // Export Buttons
+        if (t.id === "btnExportSam") {
+          var filteredSam = data.sam.filter(function (s) {
+            var comp = evaluateUrlCompliance(s.url, s.admin);
+            if (ui.samComplianceFilter === "COMPLIANT" && !comp.isCompliant) return false;
+            if (ui.samComplianceFilter === "NON_COMPLIANT" && comp.isCompliant) return false;
+            if (ui.samHideOtherTenant && comp.isOtherTenant) return false;
+            if (ui.samHighExposureOnly && s.users < 100) return false;
+            if (ui.samExternalOnly && String(s.external).toUpperCase() !== "TRUE" && s.guests === 0) return false;
+            return true;
+          });
+          exportCsv("HPUK_SAM_Permissions_Filtered.csv",
+            ["Site Name", "Site URL", "URL Compliance", "Template", "External Sharing", "Sensitivity", "Users", "Guests", "Primary Admin"],
+            filteredSam.map(function (s) {
+              return [s.name, s.url, evaluateUrlCompliance(s.url, s.admin).label, s.template, s.external, s.sensitivity, s.users, s.guests, s.admin];
+            })
+          );
+        } else if (t.id === "btnExportSites") {
+          exportCsv("HPUK_Site_Register_Filtered.csv",
+            ["Title", "URL", "URL Compliance", "Department", "Primary Owner", "Secondary Owner", "Sensitivity", "External Sharing", "Status"],
+            data.sites.filter(matchesCommon).map(function (s) {
+              return [s.title, s.url, evaluateUrlCompliance(s.url, s.primaryOwner).label, s.dept, s.primaryOwner, s.secondaryOwner, s.sensitivity, s.externalSharing, s.status];
+            })
+          );
+        } else if (t.id === "btnExportCompliance") {
+          exportCsv("HPUK_Compliance_Filtered.csv", ["ID", "Title", "Framework", "Owner", "Last Assessed", "Status"], data.compliance.filter(matchesCommon).map(function (c) { return [c.id, c.title, c.framework, c.owner, c.lastAssessed, c.status]; }));
+        } else if (t.id === "btnExportRisks") {
+          exportCsv("HPUK_Risks_Filtered.csv", ["Ref", "Title", "Category", "Owner", "Likelihood", "Impact", "Score", "Treatment", "Status"], data.risks.filter(matchesCommon).map(function (r) { return [r.ref, r.title, r.category, r.owner, r.likelihood, r.impact, r.likelihood * r.impact, r.treatment, r.status]; }));
+        } else if (t.id === "btnExportExceptions") {
+          exportCsv("HPUK_Exceptions_Filtered.csv", ["ID", "Title", "Policy", "Requester", "Approver", "Expiry", "Status"], data.exceptions.filter(matchesCommon).map(function (x) { return [x.id, x.title, x.policyRef, x.requestedBy, x.approver, x.expiryDate, x.status]; }));
+        } else if (t.id === "btnExportDecisions") {
+          exportCsv("HPUK_Decisions_Filtered.csv", ["Ref", "Decision", "Decided By", "Date", "Status"], data.decisions.filter(matchesCommon).map(function (d) { return [d.ref, d.title, d.decidedBy, d.date, d.status]; }));
+        } else if (t.id === "btnExportActions") {
+          exportCsv("HPUK_Actions_Filtered.csv", ["ID", "Title", "Severity", "Owner", "Due Date", "Status"], data.actions.filter(matchesCommon).map(function (a) { return [a.id, a.title, a.severity, a.owner, a.dueDate, a.status]; }));
+        } else if (t.id === "btnExportRunlog") {
+          exportCsv("HPUK_RunLog_Filtered.csv", ["Run ID", "Job", "Target", "Owner", "Timestamp", "Result"], data.runlog.filter(matchesCommon).map(function (r) { return [r.id, r.job, r.target, r.owner, r.timestamp, r.result]; }));
+        }
+      });
+
+      document.getElementById("mainContent").addEventListener("change", function (e) {
+        if (e.target.id === "chkSamHighExp") { ui.samHighExposureOnly = e.target.checked; render(); }
+        if (e.target.id === "chkSamExt") { ui.samExternalOnly = e.target.checked; render(); }
+        if (e.target.id === "chkSamHideOther") { ui.samHideOtherTenant = e.target.checked; render(); }
+      });
+
+      /* ===================================================================
+         9. INITIALIZATION + AUTO-LOAD latest-permissions-report.csv
+         =================================================================== */
+      /* ===================================================================
+         9a. SNAPSHOT & DATA FRESHNESS (Save Snapshot HTML)
+         Registers stay in this portal's own localStorage key; the snapshot
+         engine keeps only its Last Updated / Source record alongside.
+         =================================================================== */
+      function snapSources() {
+        var loaded = Object.keys(meta).filter(function (k) { return meta[k].loadedAt; });
+        if (!loaded.length) return "HPUK sample registers, updated in this browser";
+        return loaded.map(function (k) { return k.charAt(0).toUpperCase() + k.slice(1) + ": " + meta[k].source; }).join(" · ");
+      }
+      var snap = window.HPUKSnapshot({
+        storageKey: "hpuk_gov_portal_v2_snapshot_meta",
+        storeData: false,
+        loadLocal: loadFromStorage,
+        fileName: "hpuk-it-governance-portal.html",
+        sampleSource: "Built-in HPUK sample registers",
+        getData: function () { return JSON.parse(JSON.stringify({ registers: data, registerMeta: meta })); },
+        applyData: function (p) {
+          Object.keys(data).forEach(function (k) {
+            if (p.registers && Array.isArray(p.registers[k])) data[k] = p.registers[k];
+            if (p.registerMeta && p.registerMeta[k]) meta[k] = p.registerMeta[k];
+          });
+        },
+        reset: function () {
+          try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+          var def = getDefaultData();
+          Object.keys(def).forEach(function (k) {
+            data[k] = def[k];
+            meta[k] = { source: "Sample data", loadedAt: null, columns: [] };
+          });
+          render();
+        },
+        summary: function () {
+          var openActions = data.actions.filter(function (a) { return String(a.status).toLowerCase() !== "closed"; }).length;
+          return data.sites.length + " Sites · " + data.risks.length + " Risks · " + openActions + " Open Actions · " + data.sam.length + " SAM Rows";
+        },
+        toast: showToast
+      });
+      snap.load();
+      render();
+
+      // Silently check if latest-permissions-report.csv sits alongside this HTML in SiteAssets
+      fetch("latest-permissions-report.csv")
+        .then(function (res) { return res.ok ? res.text() : Promise.reject(); })
+        .then(function (text) {
+          if (text && text.length > 20) {
+            mapCsvToRegister("sam", text, "latest-permissions-report.csv");
+            snap.changed(snapSources(), "live");
+          }
+        })
+        .catch(function () { /* Stand by for manual CSV load */ });
+    })();
+  </script>
+</body>
+</html>

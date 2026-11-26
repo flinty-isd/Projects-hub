@@ -1,0 +1,40 @@
+name: Portal snapshots
+
+on:
+  pull_request:
+    paths:
+      - "solutions/PortalSnapshots/**"
+      - "solutions/SharePointGovernance/tools/**"
+  push:
+    branches: [main]
+    paths:
+      - "solutions/PortalSnapshots/**"
+      - "solutions/SharePointGovernance/tools/**"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate flow definitions against the list schema
+        run: python solutions/SharePointGovernance/tools/validate_flows.py --root solutions/PortalSnapshots
+      - name: Check every page a flow writes has a valid template
+        run: python solutions/PortalSnapshots/tools/check_templates.py
+      - name: Check no two solutions share environment variables or flow IDs
+        run: python solutions/SharePointGovernance/tools/check_solutions.py
+      - name: Build the solution package and the deployment kit
+        run: python solutions/SharePointGovernance/tools/build_kit.py --root solutions/PortalSnapshots --out dist
+      - name: Upload solution package
+        uses: actions/upload-artifact@v4
+        with:
+          name: PortalSnapshots-solution
+          path: dist/PortalSnapshots_*.zip
+      - name: Upload deployment kit
+        uses: actions/upload-artifact@v4
+        with:
+          name: PortalSnapshots-DeploymentKit
+          path: dist/PortalSnapshots-DeploymentKit_*.zip

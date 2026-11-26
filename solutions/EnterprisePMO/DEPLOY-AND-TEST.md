@@ -52,7 +52,7 @@ repeats the same steps from the same deployment kit (check its
 3. Open the solution's **Environment variables** and set `PMOSiteUrl`,
    `PMOOwnerEmail`, the four Teams IDs, the approvers (`CRPMOApproverEmails`,
    `CRSteerCoApproverEmails`, `EscalationApproverEmails`), the change
-   tolerances and, if you want copies, `SupportMailboxEmail`. Leave
+   tolerances and, if you want copies, `PMOSupportMailboxEmail`. Leave
    `DigestEnabled`, `EarlyWarningEnabled`, `CRApprovalsEnabled` and
    `EscalationAlertsEnabled` at No for now.
 4. Turn on 03a and 03b first, then 05, 04, 01 and 02.

@@ -1,0 +1,61 @@
+{
+  "$comment": "Settings for SharePointGovernance/tools/build_solution.py --root solutions/PortalSnapshots. Bump 'version' for every release you import.",
+  "uniqueName": "PortalSnapshots",
+  "displayName": "HPUK Portal Snapshots",
+  "description": "Refreshes the HPUK Asset Management, Project Management Control Board and IT Governance portal pages from SharePoint lists by writing their embedded snapshot on a schedule.",
+  "version": "1.0.0.0",
+  "kitInclude": ["README.md", "DEPLOY-AND-TEST.md", "solution-config.json", "powerautomate", "provisioning", "sharepoint", "templates", "tools"],
+  "publisher": {
+    "uniqueName": "HPUKIT",
+    "displayName": "HPUK IT",
+    "prefix": "spg",
+    "optionValuePrefix": 46310
+  },
+  "environmentVariables": {
+    "PortalSiteUrl": {
+      "displayName": "Portal site URL",
+      "description": "Site that holds the portal pages and their templates, e.g. https://{tenant}.sharepoint.com/sites/hpuk-it-portals. No trailing slash."
+    },
+    "PortalPagesFolder": {
+      "displayName": "Portal pages folder",
+      "description": "Server-relative folder on the portal site the flows write the pages to. /SitePages for SharePoint HTML pages (Allow HTML files must be on), or /SiteAssets to keep the existing SiteAssets links.",
+      "default": "/SitePages"
+    },
+    "PortalTemplatesFolder": {
+      "displayName": "Portal templates folder",
+      "description": "Server-relative folder holding the portal templates (pages with an empty snapshot block). Upload new portal versions here, never a saved snapshot.",
+      "default": "/SiteAssets/PortalTemplates"
+    },
+    "PortalSnapshotsEnabled": {
+      "displayName": "Portal snapshots enabled",
+      "description": "Master switch for flows P1-P3. No (the default) means they read and write nothing. Set to Yes once the templates are uploaded and a manual run has been checked.",
+      "default": false
+    },
+    "PortalOwnerEmail": {
+      "displayName": "Portal support mailbox email",
+      "description": "Shared mailbox that gets the Flow failed alerts and the not-published emails (template not ready, page too large). Never a person's own address."
+    },
+    "PortalSupportMailboxEmail": {
+      "displayName": "Portal support copy mailbox email",
+      "description": "Optional second address copied on every failure email. Empty means no copy.",
+      "default": ""
+    },
+    "PortalAssetSiteUrl": {
+      "displayName": "Asset lists site URL",
+      "description": "Site holding the Asset Register and Asset Requests lists (flow P1)."
+    },
+    "PortalBoardSiteUrl": {
+      "displayName": "Control Board lists site URL",
+      "description": "Site holding Programme Status, Board Decisions, Programme RAID, Migration Waves and Programme Gates (flow P2)."
+    },
+    "PortalGovernanceSiteUrl": {
+      "displayName": "Governance lists site URL",
+      "description": "The IT Enterprise Governance site: the SharePointGovernance solution's Site Register and Decision Log, plus the Compliance Register, Governance Risks, Policy Exceptions, Governance Actions and Automation Run Log (flow P3)."
+    }
+  },
+  "connectionReferenceTag": "portal",
+  "connectionReferences": {
+    "shared_sharepointonline": "SharePoint (portals)",
+    "shared_office365": "Office 365 Outlook (portals)"
+  }
+}

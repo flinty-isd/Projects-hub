@@ -28,6 +28,8 @@ jobs:
         run: python solutions/EnterprisePMO/tools/build_copilot_prompts.py --check
       - name: Check the HTML pages match the configuration
         run: python solutions/EnterprisePMO/tools/build_pages.py --check
+      - name: Check no two solutions share environment variables or flow IDs
+        run: python solutions/SharePointGovernance/tools/check_solutions.py
       - name: Build the solution package and the deployment kit
         run: python solutions/SharePointGovernance/tools/build_kit.py --root solutions/EnterprisePMO --out dist
       - name: Upload solution package

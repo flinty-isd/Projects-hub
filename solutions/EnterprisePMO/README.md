@@ -162,7 +162,7 @@ Not built (needs a decision or a licence):
 |---|---|---|
 | `PMOSiteUrl` | all | set after import |
 | `PMOOwnerEmail` | all: failure alerts, digest-not-posted | set after import (shared mailbox) |
-| `SupportMailboxEmail` | all: optional copy of failure emails | empty |
+| `PMOSupportMailboxEmail` | all: optional copy of failure emails | empty |
 | `SteerCoTeamId`, `SteerCoChannelId` | 01, 05 | set after import |
 | `DigestEnabled` | 01 | No |
 | `DigestMaxItems` | 01 | 20 |

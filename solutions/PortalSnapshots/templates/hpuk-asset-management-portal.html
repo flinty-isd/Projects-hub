@@ -1,0 +1,2155 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HPUK Asset Management Portal</title>
+  <style>
+    /* ==========================================================================
+       HPUK SHAREPOINT UI DESIGN SYSTEM v1.3 — TOKENS & BASELINE STYLES
+       Strict WCAG 2.1 AA Compliance · Zero External Dependencies · Arial Only
+       ========================================================================== */
+    :root {
+      --hpuk-sea-blue: #002E6D;
+      --hpuk-sea-blue-dark: #001F4B;
+      --hpuk-sky-blue: #009BDE;
+      --hpuk-white: #FFFFFF;
+      --hpuk-light-grey: #F2F4F7;
+      --hpuk-mid-grey: #D9DEE7;
+      --hpuk-border-grey: #8A94A6;
+      --hpuk-dark-grey: #323130;
+      --hpuk-muted-grey: #6B6B6B;
+
+      /* Semantic Tokens (WCAG 2.1 AA On-Light Verified — Deltas D-01 to D-07) */
+      --status-success-text: #107C10;
+      --status-success-bg: #E6F4EA;
+      --status-warning-text: #8A5A00;
+      --status-warning-bg: #FEF7E0;
+      --status-error-text: #C4314B;
+      --status-error-bg: #FDE7E9;
+      --status-info-text: #005E86;
+      --status-info-bg: #E0F2FE;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: var(--hpuk-white);
+      color: var(--hpuk-dark-grey);
+      line-height: 1.45;
+      font-size: 14px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ==========================================================================
+       ZONE 1: WHITE BRAND HEADER + SEA BLUE NAVIGATION BAR
+       ========================================================================== */
+    .brand-header {
+      background-color: var(--hpuk-white);
+      border-bottom: 1px solid var(--hpuk-mid-grey);
+      padding: 12px 24px;
+    }
+
+    .header-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .hpuk-logo-lockup {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .hpuk-wordmark {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.05;
+    }
+
+    .hpuk-wordmark-top {
+      font-size: 17px;
+      letter-spacing: 0.4px;
+      color: var(--hpuk-sea-blue);
+    }
+
+    .hpuk-wordmark-top strong {
+      font-weight: 900;
+    }
+
+    .hpuk-wordmark-top span {
+      font-weight: 400;
+    }
+
+    .hpuk-wordmark-sub {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 1.3px;
+      color: var(--hpuk-sea-blue);
+      margin-top: 2px;
+    }
+
+    .header-divider {
+      width: 1px;
+      height: 36px;
+      background-color: var(--hpuk-mid-grey);
+    }
+
+    .site-title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .site-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .site-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--hpuk-sea-blue);
+    }
+
+    .template-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--status-info-text);
+      background-color: var(--status-info-bg);
+      border: 1px solid #B6E0FE;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .site-subtitle {
+      font-size: 12px;
+      color: var(--hpuk-muted-grey);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Port Switcher Pills */
+    .port-switcher {
+      display: inline-flex;
+      background-color: var(--hpuk-light-grey);
+      border: 1px solid var(--hpuk-mid-grey);
+      border-radius: 6px;
+      padding: 2px;
+      flex-wrap: wrap;
+    }
+
+    .port-btn {
+      background: transparent;
+      border: none;
+      padding: 5px 10px;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--hpuk-dark-grey);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .port-btn:hover {
+      background-color: #E4E8EF;
+    }
+
+    .port-btn.active {
+      background-color: var(--hpuk-sea-blue);
+      color: var(--hpuk-white);
+    }
+
+    /* Primary & Secondary Buttons */
+    .btn {
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid transparent;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background-color: var(--hpuk-sea-blue);
+      color: var(--hpuk-white);
+      border-color: var(--hpuk-sea-blue);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--hpuk-sea-blue-dark);
+    }
+
+    .btn-sky {
+      background-color: var(--status-info-bg);
+      color: var(--status-info-text);
+      border-color: #90CDF4;
+    }
+
+    .btn-sky:hover {
+      background-color: #CBE7FC;
+    }
+
+    .btn-secondary {
+      background-color: var(--hpuk-white);
+      color: var(--hpuk-sea-blue);
+      border-color: var(--hpuk-border-grey);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--hpuk-light-grey);
+    }
+
+    .btn-sm {
+      padding: 4px 9px;
+      font-size: 11px;
+    }
+
+    /* Data Freshness & Last Updated Strip */
+    .freshness-strip {
+      background-color: var(--hpuk-light-grey);
+      border-bottom: 1px solid var(--hpuk-mid-grey);
+      padding: 8px 24px;
+    }
+
+    .freshness-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+    }
+
+    .freshness-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .mode-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 4px;
+      letter-spacing: 0.3px;
+    }
+
+    .mode-saved {
+      background-color: var(--status-success-bg);
+      color: var(--status-success-text);
+      border: 1px solid #A3D9B1;
+    }
+
+    .mode-live {
+      background-color: var(--status-info-bg);
+      color: var(--status-info-text);
+      border: 1px solid #90CDF4;
+    }
+
+    .mode-sample {
+      background-color: var(--status-warning-bg);
+      color: var(--status-warning-text);
+      border: 1px solid #F6D58E;
+    }
+
+    .freshness-timestamp {
+      color: var(--hpuk-dark-grey);
+    }
+
+    .freshness-timestamp strong {
+      color: var(--hpuk-sea-blue);
+    }
+
+    .freshness-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Sea Blue Navigation Bar */
+    .main-nav {
+      background-color: var(--hpuk-sea-blue);
+      border-bottom: 3px solid var(--hpuk-sky-blue);
+      padding: 0 24px;
+    }
+
+    .nav-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      overflow-x: auto;
+    }
+
+    .nav-tab {
+      background: transparent;
+      border: none;
+      color: #E2E8F0;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -3px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+
+    .nav-tab:hover {
+      background-color: rgba(255, 255, 255, 0.08);
+      color: var(--hpuk-white);
+    }
+
+    .nav-tab.active {
+      background-color: rgba(0, 155, 222, 0.22);
+      color: var(--hpuk-white);
+      border-bottom-color: var(--hpuk-white);
+    }
+
+    .nav-count {
+      background-color: rgba(255, 255, 255, 0.18);
+      color: var(--hpuk-white);
+      font-size: 11px;
+      padding: 1px 7px;
+      border-radius: 10px;
+    }
+
+    /* ==========================================================================
+       MAIN CONTAINER & PANELS
+       ========================================================================== */
+    .main-content {
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 20px 24px 36px;
+      flex: 1;
+    }
+
+    .section-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--hpuk-sea-blue);
+    }
+
+    .section-subtitle {
+      font-size: 12px;
+      color: var(--hpuk-muted-grey);
+    }
+
+    /* Top 5 Quick Links Grid (Template T03 Standard) */
+    .quick-links-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .quick-card {
+      background-color: var(--hpuk-light-grey);
+      border: 1px solid var(--hpuk-mid-grey);
+      border-left: 4px solid var(--hpuk-sky-blue);
+      border-radius: 6px;
+      padding: 13px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .quick-card-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--hpuk-sea-blue);
+      margin-bottom: 4px;
+    }
+
+    .quick-card-desc {
+      font-size: 12px;
+      color: var(--hpuk-dark-grey);
+    }
+
+    .quick-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .sla-tag {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--status-info-text);
+    }
+
+    /* KPI Strip */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .kpi-card {
+      background-color: var(--hpuk-white);
+      border: 1px solid var(--hpuk-mid-grey);
+      border-top: 4px solid var(--hpuk-sea-blue);
+      border-radius: 6px;
+      padding: 14px 16px;
+    }
+
+    .kpi-card.kpi-sky { border-top-color: var(--hpuk-sky-blue); }
+    .kpi-card.kpi-green { border-top-color: var(--status-success-text); }
+    .kpi-card.kpi-amber { border-top-color: var(--status-warning-text); }
+    .kpi-card.kpi-red { border-top-color: var(--status-error-text); }
+
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: var(--hpuk-muted-grey);
+      margin-bottom: 6px;
+    }
+
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--hpuk-sea-blue);
+      line-height: 1.1;
+      margin-bottom: 5px;
+    }
+
+    .kpi-card.kpi-green .kpi-value { color: var(--status-success-text); }
+    .kpi-card.kpi-amber .kpi-value { color: var(--status-warning-text); }
+    .kpi-card.kpi-red .kpi-value { color: var(--status-error-text); }
+
+    .kpi-meta {
+      font-size: 11.5px;
+      color: var(--hpuk-muted-grey);
+    }
+
+    /* 2-Column Overview Grid */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 960px) {
+      .overview-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background-color: var(--hpuk-white);
+      border: 1px solid var(--hpuk-mid-grey);
+      border-radius: 6px;
+      padding: 16px;
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--hpuk-sea-blue);
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--hpuk-mid-grey);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    /* Distribution Bars */
+    .dist-group {
+      margin-bottom: 16px;
+    }
+
+    .dist-group-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--hpuk-muted-grey);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .bar-row {
+      margin-bottom: 9px;
+    }
+
+    .bar-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 3px;
+    }
+
+    .bar-track {
+      height: 9px;
+      background-color: var(--hpuk-light-grey);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid #E2E6EE;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background-color: var(--hpuk-sea-blue);
+      border-radius: 4px;
+    }
+
+    .bar-fill.sky {
+      background-color: var(--hpuk-sky-blue);
+    }
+
+    /* Attention Queue Items */
+    .attention-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      max-height: 390px;
+      overflow-y: auto;
+    }
+
+    .attention-item {
+      background-color: var(--hpuk-light-grey);
+      border: 1px solid var(--hpuk-mid-grey);
+      border-radius: 5px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .attention-item:hover {
+      border-color: var(--hpuk-sky-blue);
+      background-color: #EDF4FA;
+    }
+
+    .attention-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .attention-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--hpuk-sea-blue);
+    }
+
+    .attention-sub {
+      font-size: 11.5px;
+      color: var(--hpuk-muted-grey);
+    }
+
+    /* Toolbar & Filter Controls */
+    .filter-bar {
+      background-color: var(--hpuk-light-grey);
+      border: 1px solid var(--hpuk-mid-grey);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .input-text, .input-select {
+      font-family: Arial, sans-serif;
+      font-size: 12.5px;
+      padding: 6px 10px;
+      border: 1px solid var(--hpuk-border-grey);
+      border-radius: 4px;
+      background-color: var(--hpuk-white);
+      color: var(--hpuk-dark-grey);
+    }
+
+    .input-text {
+      min-width: 240px;
+    }
+
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--hpuk-dark-grey);
+      cursor: pointer;
+    }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--hpuk-mid-grey);
+      border-radius: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      text-align: left;
+    }
+
+    thead th {
+      background-color: var(--hpuk-sea-blue);
+      color: var(--hpuk-white);
+      font-weight: 700;
+      padding: 10px 12px;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    thead th.sortable {
+      cursor: pointer;
+    }
+
+    thead th.sortable:hover {
+      background-color: var(--hpuk-sea-blue-dark);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--hpuk-mid-grey);
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: #FAFBFD;
+    }
+
+    tbody tr:hover {
+      background-color: #EEF5FC;
+    }
+
+    tbody tr.clickable-row {
+      cursor: pointer;
+    }
+
+    td {
+      padding: 9px 12px;
+      vertical-align: middle;
+    }
+
+    /* Status Badges (WCAG 2.1 AA Verified) */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge-deployed, .badge-completed, .badge-approved, .badge-ontrack {
+      background-color: var(--status-success-bg);
+      color: var(--status-success-text);
+      border: 1px solid #B7E1C1;
+    }
+
+    .badge-instock, .badge-info {
+      background-color: var(--status-info-bg);
+      color: var(--status-info-text);
+      border: 1px solid #A6D8FA;
+    }
+
+    .badge-maintenance, .badge-duesoon, .badge-pending, .badge-inprogress, .badge-confidential {
+      background-color: var(--status-warning-bg);
+      color: var(--status-warning-text);
+      border: 1px solid #F5D58E;
+    }
+
+    .badge-disposal, .badge-breached, .badge-expired, .badge-rejected {
+      background-color: var(--status-error-bg);
+      color: var(--status-error-text);
+      border: 1px solid #F5B7BE;
+    }
+
+    .badge-retired, .badge-internal {
+      background-color: var(--hpuk-light-grey);
+      color: var(--hpuk-dark-grey);
+      border: 1px solid var(--hpuk-border-grey);
+    }
+
+    /* Code Box for JSON Formatting */
+    .code-box {
+      background-color: #1E293B;
+      color: #F8FAFC;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 12px;
+      padding: 14px;
+      border-radius: 6px;
+      overflow-x: auto;
+      line-height: 1.45;
+      margin-top: 10px;
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 31, 75, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 1000;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background-color: var(--hpuk-white);
+      border: 1px solid var(--hpuk-border-grey);
+      border-top: 5px solid var(--hpuk-sea-blue);
+      border-radius: 6px;
+      max-width: 640px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 20px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--hpuk-mid-grey);
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--hpuk-sea-blue);
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 16px;
+      margin-bottom: 14px;
+    }
+
+    .detail-item label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--hpuk-muted-grey);
+      text-transform: uppercase;
+    }
+
+    .detail-item div {
+      font-size: 13px;
+      color: var(--hpuk-dark-grey);
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-field.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-field label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--hpuk-sea-blue);
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: var(--hpuk-sea-blue);
+      color: var(--hpuk-white);
+      border-left: 4px solid var(--hpuk-sky-blue);
+      padding: 11px 16px;
+      border-radius: 5px;
+      font-size: 12.5px;
+      font-weight: 700;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+      z-index: 1200;
+      display: none;
+    }
+
+    /* ==========================================================================
+       ZONE 5: SEA BLUE FOOTER WITH REVERSED-WHITE HPUK LOCKUP
+       ========================================================================== */
+    .site-footer {
+      background-color: var(--hpuk-sea-blue);
+      color: var(--hpuk-white);
+      border-top: 3px solid var(--hpuk-sky-blue);
+      padding: 16px 24px;
+      margin-top: auto;
+    }
+
+    .footer-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      font-size: 11.5px;
+    }
+
+    .footer-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      color: #E2E8F0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================================================
+       ZONE 1: WHITE BRAND HEADER
+       ======================================================================== -->
+  <header class="brand-header">
+    <div class="header-inner">
+      <div class="brand-left">
+        <!-- Official Hutchison Ports UK Positive-Colour Lockup (Design System Page 17) -->
+        <div class="hpuk-logo-lockup" aria-label="Hutchison Ports United Kingdom">
+          <svg width="38" height="38" viewBox="0 0 100 100" role="img" aria-hidden="true">
+            <polygon points="0,0 100,0 100,38 0,80" fill="#009BDE"></polygon>
+            <polygon points="0,84 100,42 100,100 0,100" fill="#002E6D"></polygon>
+          </svg>
+          <div class="hpuk-wordmark">
+            <div class="hpuk-wordmark-top"><strong>HUTCHISON</strong><span>PORTS</span></div>
+            <div class="hpuk-wordmark-sub">UNITED KINGDOM</div>
+          </div>
+        </div>
+
+        <div class="header-divider"></div>
+
+        <div class="site-title-block">
+          <div class="site-title-row">
+            <h1 class="site-title">Asset Management Portal</h1>
+            <span class="template-badge">Template T03 / T07</span>
+          </div>
+          <div class="site-subtitle">Enterprise Hardware, Port Equipment, Network &amp; Software Lifecycle Governance</div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Port Switcher -->
+        <div class="port-switcher" role="group" aria-label="Filter by UK Port">
+          <button type="button" class="port-btn active" data-port="All">All Ports</button>
+          <button type="button" class="port-btn" data-port="Felixstowe">Felixstowe</button>
+          <button type="button" class="port-btn" data-port="Harwich">Harwich</button>
+          <button type="button" class="port-btn" data-port="Thamesport">Thamesport</button>
+          <button type="button" class="port-btn" data-port="Corporate">Corporate</button>
+        </div>
+
+        <!-- Upload CSV Extract -->
+        <label class="btn btn-primary" for="headerCsvInput" title="Upload an exported SharePoint Asset Register CSV">
+          + Load Asset CSV
+        </label>
+        <input type="file" id="headerCsvInput" accept=".csv,text/csv" style="display:none;" />
+
+        <!-- Save Snapshot HTML for SharePoint SiteAssets -->
+        <button type="button" class="btn btn-sky" id="btnSaveSnapshotHtml" title="Download this HTML page with your current figures and Last Updated timestamp baked in for SharePoint SiteAssets">
+          Save Snapshot HTML
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       PERSISTENT DATA FRESHNESS & LAST UPDATED STRIP
+       ======================================================================== -->
+  <div class="freshness-strip" role="region" aria-label="Data Freshness and Last Updated Status">
+    <div class="freshness-inner">
+      <div class="freshness-left">
+        <span id="dataModePill" class="mode-pill mode-sample">SAMPLE PREVIEW DATA</span>
+        <span class="freshness-timestamp" id="lastUpdatedDisplay">
+          <strong>Last Updated:</strong> Initial Sample Baseline (No CSV extracted yet)
+        </span>
+        <span class="freshness-timestamp" id="sourceFilesDisplay">
+          <strong>Source:</strong> Built-in HPUK Sample Dataset
+        </span>
+      </div>
+      <div class="freshness-right">
+        <span id="recordSummaryDisplay" style="color:var(--hpuk-muted-grey); font-weight:700;">16 Assets · 7 SLA Requests</span>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnResetSample" title="Clear saved browser extract and restore default sample data">
+          Reset to Sample
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       SEA BLUE NAVIGATION BAR
+       ======================================================================== -->
+  <nav class="main-nav" aria-label="Asset Management Sections">
+    <div class="nav-inner">
+      <button type="button" class="nav-tab active" data-tab="overview">
+        Asset Overview
+      </button>
+      <button type="button" class="nav-tab" data-tab="register">
+        Asset Register (CSV) <span class="nav-count" id="navCountAssets">16</span>
+      </button>
+      <button type="button" class="nav-tab" data-tab="requests">
+        Requests &amp; Disposals (SLA) <span class="nav-count" id="navCountRequests">7</span>
+      </button>
+      <button type="button" class="nav-tab" data-tab="policies">
+        Controlled Policies &amp; SOPs <span class="nav-count">4</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ========================================================================
+       MAIN WORKSPACE CONTAINER
+       ======================================================================== -->
+  <main class="main-content" id="mainContainer"></main>
+
+  <!-- ========================================================================
+       MODAL DIALOG (ASSET INSPECTOR / NEW REQUEST / TRIAGE)
+       ======================================================================== -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Details</h2>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnCloseModal">Close</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- TOAST FEEDBACK -->
+  <div class="toast" id="toastBox" role="status" aria-live="polite"></div>
+
+  <!-- ========================================================================
+       ZONE 5: SEA BLUE FOOTER WITH REVERSED-WHITE LOCKUP
+       ======================================================================== -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="hpuk-logo-lockup" aria-label="Hutchison Ports United Kingdom">
+        <svg width="30" height="30" viewBox="0 0 100 100" role="img" aria-hidden="true">
+          <polygon points="0,0 100,0 100,38 0,80" fill="#009BDE"></polygon>
+          <polygon points="0,84 100,42 100,100 0,100" fill="#FFFFFF"></polygon>
+        </svg>
+        <div class="hpuk-wordmark">
+          <div class="hpuk-wordmark-top" style="color:#FFFFFF; font-size:14px;"><strong>HUTCHISON</strong><span>PORTS</span></div>
+          <div class="hpuk-wordmark-sub" style="color:#FFFFFF; font-size:9px;">UNITED KINGDOM</div>
+        </div>
+      </div>
+
+      <div class="footer-meta">
+        <span><strong>Site Owner:</strong> Head of Asset Management</span>
+        <span><strong>Content Owner:</strong> IT Service &amp; Asset Control Team</span>
+        <span><strong>Governance:</strong> HPUK Design System v1.3 · Review Cycle: Quarterly</span>
+        <span><strong>Classification:</strong> Internal</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================
+       EMBEDDED SNAPSHOT STORAGE (Updated automatically by "Save Snapshot HTML")
+       ======================================================================== -->
+  <script id="embedded-snapshot" type="application/json">null</script>
+
+  <!-- ========================================================================
+       ZERO-DEPENDENCY APPLICATION LOGIC & PERSISTENCE ENGINE
+       ======================================================================== -->
+  <script>
+    (function () {
+      "use strict";
+
+      /* --------------------------------------------------------------------
+         1. STORAGE KEYS & SAMPLE BASELINE DATA
+         -------------------------------------------------------------------- */
+      var STORAGE_KEYS = {
+        ASSETS: "hpuk_am_portal_assets_v1",
+        REQUESTS: "hpuk_am_portal_requests_v1",
+        META: "hpuk_am_portal_meta_v1"
+      };
+
+      function getRelativeDate(daysOffset) {
+        var d = new Date();
+        d.setDate(d.getDate() + daysOffset);
+        return d.toISOString().split("T")[0];
+      }
+
+      function formatUkTimestamp(dateObj) {
+        var d = dateObj || new Date();
+        var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        var day = String(d.getDate()).padStart(2, "0");
+        var mon = months[d.getMonth()];
+        var yr = d.getFullYear();
+        var hr = String(d.getHours()).padStart(2, "0");
+        var min = String(d.getMinutes()).padStart(2, "0");
+        return day + " " + mon + " " + yr + ", " + hr + ":" + min + " GMT";
+      }
+
+      var SAMPLE_ASSETS = [
+        { AssetTag: "HPUK-FXT-0101", Title: "Kalmar Straddle Carrier Rugged Tablet #14", Category: "Port Equipment", PortLocation: "Felixstowe", AssignedOwner: "Trinity Terminal Ops", LifecycleStatus: "Deployed", WarrantyExpiry: getRelativeDate(22), SerialNumber: "KLM-RT-88412", CostCentre: "CC-4100 Ops", SensitivityLabel: "Internal" },
+        { AssetTag: "HPUK-FXT-0102", Title: "ZPMC STS Crane 09 Telemetry Gateway", Category: "Port Equipment", PortLocation: "Felixstowe", AssignedOwner: "Port Engineering Systems", LifecycleStatus: "Deployed", WarrantyExpiry: getRelativeDate(44), SerialNumber: "ZPMC-TG-99201", CostCentre: "CC-4120 Eng", SensitivityLabel: "Confidential" },
+        { AssetTag: "HPUK-FXT-0103", Title: "Cisco Catalyst 9500 Core Distribution Switch", Category: "Network", PortLocation: "Felixstowe", AssignedOwner: "HPUK Network Infrastructure", LifecycleStatus: "Deployed", WarrantyExpiry: getRelativeDate(340), SerialNumber: "FCW2419L09X", CostCentre: "CC-1100 IT", SensitivityLabel: "Confidential" },
+        { AssetTag: "HPUK-FXT-0104", Title: "Dell Latitude 5540 Mobile Workstation", Category: "Hardware", PortLocation: "Felixstowe", AssignedOwner: "Sarah Jenkins", LifecycleStatus: "Deployed", WarrantyExpiry: getRelativeDate(210), SerialNumber: "DL5540-7741A", CostCentre: "CC-4100 Ops", SensitivityLabel: "Internal" },
+        { AssetTag: "HPUK-FXT-0105", Title: "Zebra MC9300 Handheld Container Scanner", Category: "Mobile", PortLocation: "Felixstowe", AssignedOwner: "Rail Terminal Gatehouse", LifecycleStatus: "Maintenance", WarrantyExpiry: getRelativeDate(18), SerialNumber: "ZBR-9300-551", CostCentre: "CC-4150 Rail", SensitivityLabel: "Internal" },
+        { AssetTag: "HPUK-FXT-0106", Title: "HP EliteBook 840 G7 (Decommissioned Pool)", Category: "Hardware", PortLocation: "Felixstowe", AssignedOwner: "IT Asset Disposal Store", LifecycleStatus: "Pending Disposal", WarrantyExpiry: getRelativeDate(-45), SerialNumber: "5CG04219PL", CostCentre: "CC-1100 IT", SensitivityLabel: "Internal" },
+        { AssetTag: "HPUK-HAR-0201", Title: "Harwich Ro-Ro Berth 2 ANPR Gate Camera", Category: "Port Equipment", PortLocation: "Harwich", AssignedOwner: "Harwich Border & Gate Ops", LifecycleStatus: "Deployed", WarrantyExpiry: getRelativeDate(38), SerialNumber: "ANPR-HRW-019", CostCentre: "CC-5100 Harwich", SensitivityLabel: "Confidential" },
+        { AssetTag: "HPUK-HAR-0202", Title: "Cisco Meraki MS250-48FP Access Switch", Category: "Network", PortLocation: "Harwich", AssignedOwner: "HPUK Network Infrastructure", LifecycleStatus: "Deployed", WarrantyExpiry: getRelativeDate(490), SerialNumber: "Q2HP-8841-220", CostCentre: "CC-1100 IT", SensitivityLabel: "Confidential" },
+        { AssetTag: "HPUK-HAR-0203", Title: "Samsung Galaxy Tab Active4 Pro (Marine Pilot)", Category: "Mobile", PortLocation: "Harwich", AssignedOwner: "Marine Pilotage Duty Pool", LifecycleStatus: "In Stock", WarrantyExpiry: getRelativeDate(610), SerialNumber: "R52T90184KL", CostCentre: "CC-5110 Marine", SensitivityLabel: "Internal" },
+        { AssetTag: "HPUK-HAR-0204", Title: "Dell OptiPlex 7080 Control Room PC", Category: "Hardware", PortLocation: "Harwich", AssignedOwner: "WEEE Certified Archive", LifecycleStatus: "Retired", WarrantyExpiry: getRelativeDate(-190), SerialNumber: "OPT-7080-112", CostCentre: "CC-5100 Harwich", SensitivityLabel: "Internal" },
+        { AssetTag: "HPUK-THM-0301", Title: "RTG Crane 04 Differential GPS Receiver", Category: "Port Equipment", PortLocation: "Thamesport", AssignedOwner: "Thamesport Yard Automation", LifecycleStatus: "Deployed", WarrantyExpiry: getRelativeDate(51), SerialNumber: "DGPS-THM-404", CostCentre: "CC-6100 Thames", SensitivityLabel: "Confidential" },
+        { AssetTag: "HPUK-THM-0302", Title: "Palo Alto PA-3220 Perimeter Firewall", Category: "Network", PortLocation: "Thamesport", AssignedOwner: "HPUK Information Security", LifecycleStatus: "Deployed", WarrantyExpiry: getRelativeDate(420), SerialNumber: "PA3220-00891", CostCentre: "CC-1150 InfoSec", SensitivityLabel: "Confidential" },
+        { AssetTag: "HPUK-THM-0303", Title: "Dell Latitude 5440 Field Engineer Laptop", Category: "Hardware", PortLocation: "Thamesport", AssignedOwner: "Thamesport IT Spares", LifecycleStatus: "In Stock", WarrantyExpiry: getRelativeDate(700), SerialNumber: "DL5440-9012B", CostCentre: "CC-1100 IT", SensitivityLabel: "Internal" },
+        { AssetTag: "HPUK-CRP-0401", Title: "Microsoft 365 E5 Enterprise Pool (50 Seats)", Category: "Software", PortLocation: "Corporate", AssignedOwner: "M365 Licensing Admin", LifecycleStatus: "Deployed", WarrantyExpiry: getRelativeDate(160), SerialNumber: "EA-M365-E5-UK", CostCentre: "CC-1100 IT", SensitivityLabel: "Internal" },
+        { AssetTag: "HPUK-CRP-0402", Title: "Autodesk AutoCAD 2026 Named User Pack (15)", Category: "Software", PortLocation: "Corporate", AssignedOwner: "Civil & Port Engineering", LifecycleStatus: "Deployed", WarrantyExpiry: getRelativeDate(29), SerialNumber: "ADSK-2026-883", CostCentre: "CC-2200 Design", SensitivityLabel: "Internal" },
+        { AssetTag: "HPUK-CRP-0403", Title: "Lenovo ThinkPad T14s Gen 4 Executive Spare", Category: "Hardware", PortLocation: "Corporate", AssignedOwner: "Tomline House IT Store", LifecycleStatus: "In Stock", WarrantyExpiry: getRelativeDate(540), SerialNumber: "PF49X812", CostCentre: "CC-1100 IT", SensitivityLabel: "Internal" }
+      ];
+
+      var SAMPLE_REQUESTS = [
+        { RequestID: "REQ-2026-041", Title: "2x Rugged Straddle Carrier Tablets (Trinity)", RequestType: "New Hardware", PortLocation: "Felixstowe", Requester: "David Miller", SubmittedDate: getRelativeDate(-2), TargetSLADate: getRelativeDate(3), ApprovalStatus: "Approved" },
+        { RequestID: "REQ-2026-042", Title: "WEEE Certified Disposal — 14 Retired Laptops", RequestType: "Asset Disposal / WEEE", PortLocation: "Felixstowe", Requester: "Carl Sharman", SubmittedDate: getRelativeDate(-4), TargetSLADate: getRelativeDate(1), ApprovalStatus: "In Progress" },
+        { RequestID: "REQ-2026-043", Title: "AutoCAD 2026 Licence Reallocation", RequestType: "Software Licence", PortLocation: "Corporate", Requester: "Rachel Foster", SubmittedDate: getRelativeDate(-1), TargetSLADate: getRelativeDate(4), ApprovalStatus: "Pending Approval" },
+        { RequestID: "REQ-2026-044", Title: "Transfer Zebra Scanner Pool to Rail Gate 3", RequestType: "Equipment Transfer", PortLocation: "Felixstowe", Requester: "Mark Stevens", SubmittedDate: getRelativeDate(-6), TargetSLADate: getRelativeDate(-1), ApprovalStatus: "In Progress" },
+        { RequestID: "REQ-2026-045", Title: "CMDB Calibration Certificate Update — DGPS 04", RequestType: "CMDB Update", PortLocation: "Thamesport", Requester: "Toby Richards", SubmittedDate: getRelativeDate(-3), TargetSLADate: getRelativeDate(2), ApprovalStatus: "Approved" },
+        { RequestID: "REQ-2026-046", Title: "New Marine Pilot Rugged Tablet Provisioning", RequestType: "New Hardware", PortLocation: "Harwich", Requester: "Chloe Bennett", SubmittedDate: getRelativeDate(-5), TargetSLADate: getRelativeDate(0), ApprovalStatus: "Pending Approval" },
+        { RequestID: "REQ-2026-047", Title: "Microsoft Visio Plan 2 Entitlement Assignment", RequestType: "Software Licence", PortLocation: "Corporate", Requester: "Hannah Price", SubmittedDate: getRelativeDate(-7), TargetSLADate: getRelativeDate(-2), ApprovalStatus: "Completed" }
+      ];
+
+      var CONTROLLED_POLICIES = [
+        { DocID: "POL-AM-001", Title: "HPUK Enterprise IT & Operational Asset Lifecycle Policy", Template: "T07 — Governance & Policy", Owner: "Head of Asset Management", Approver: "IT Director & Design Authority", ReviewDate: "2027-03-31", Sensitivity: "Internal", Versioning: "Major (500 retained)" },
+        { DocID: "SOP-AM-002", Title: "WEEE Disposal, Media Sanitisation & Certificate of Destruction SOP", Template: "T07 — Governance & Policy", Owner: "IT Service & Asset Controller", Approver: "Information Security Lead", ReviewDate: "2027-02-15", Sensitivity: "Confidential", Versioning: "Major (500 retained)" },
+        { DocID: "STD-AM-003", Title: "Port Crane & Straddle Carrier Telemetry Calibration Standard", Template: "T10 — Document Centre", Owner: "Port Engineering Systems Lead", Approver: "Head of Port Engineering", ReviewDate: "2027-05-01", Sensitivity: "Confidential", Versioning: "Major (500 retained)" },
+        { DocID: "POL-AM-004", Title: "Software Asset Management (SAM) & M365 Licence Reclamation Policy", Template: "T07 — Governance & Policy", Owner: "M365 Licensing Specialist", Approver: "IT Governance Board", ReviewDate: "2027-06-30", Sensitivity: "Internal", Versioning: "Major (500 retained)" }
+      ];
+
+      var TOP_5_REQUESTS = [
+        { title: "New Hardware Request", desc: "Request laptops, rugged port tablets, scanners, or monitors.", type: "New Hardware", sla: "5-Day SLA (BAU-01)" },
+        { title: "Asset Disposal / Write-off", desc: "Book certified WEEE collection and media sanitisation.", type: "Asset Disposal / WEEE", sla: "5-Day SLA (BAU-01)" },
+        { title: "Software Licence Allocation", desc: "Assign or reclaim M365 E5, Visio, Project, or AutoCAD.", type: "Software Licence", sla: "5-Day SLA (BAU-01)" },
+        { title: "CMDB Record Update", desc: "Update asset custodian, cost centre, or calibration date.", type: "CMDB Update", sla: "5-Day SLA (BAU-01)" },
+        { title: "Equipment Transfer", desc: "Move operational hardware between UK ports or terminals.", type: "Equipment Transfer", sla: "5-Day SLA (BAU-01)" }
+      ];
+
+      /* --------------------------------------------------------------------
+         2. APPLICATION STATE & PERSISTENCE LAYER
+         -------------------------------------------------------------------- */
+      var state = {
+        activeTab: "overview",
+        portFilter: "All",
+        assets: [],
+        requests: [],
+        meta: {
+          mode: "sample", // "sample" | "saved" | "live"
+          lastUpdated: "Initial Sample Baseline (No CSV extracted yet)",
+          assetSource: "Built-in HPUK Sample Dataset",
+          requestSource: "Built-in HPUK Sample Dataset"
+        },
+        // Register filters & sorting
+        regSearch: "",
+        regStatus: "All",
+        regCategory: "All",
+        regExpiringOnly: false,
+        sortCol: "AssetTag",
+        sortAsc: true,
+        // Request filters
+        reqSearch: "",
+        reqStatus: "All"
+      };
+
+      function loadInitialState() {
+        var loadedFromEmbedded = false;
+
+        // 1. Check if this HTML file was saved with an embedded snapshot ("Save Snapshot HTML")
+        try {
+          var snapEl = document.getElementById("embedded-snapshot");
+          if (snapEl && snapEl.textContent && snapEl.textContent.trim() !== "null") {
+            var snapData = JSON.parse(snapEl.textContent);
+            if (snapData && Array.isArray(snapData.assets) && snapData.assets.length > 0) {
+              state.assets = snapData.assets;
+              state.requests = Array.isArray(snapData.requests) ? snapData.requests : JSON.parse(JSON.stringify(SAMPLE_REQUESTS));
+              state.meta = snapData.meta || {
+                mode: "saved",
+                lastUpdated: formatUkTimestamp(new Date()),
+                assetSource: "Saved HTML Snapshot",
+                requestSource: "Saved HTML Snapshot"
+              };
+              loadedFromEmbedded = true;
+            }
+          }
+        } catch (e) {
+          console.warn("Embedded snapshot parse skipped:", e);
+        }
+
+        // 2. Check localStorage for saved browser extracts (overrides sample, or merges if newer)
+        if (!loadedFromEmbedded) {
+          try {
+            var savedAssetsRaw = localStorage.getItem(STORAGE_KEYS.ASSETS);
+            var savedReqsRaw = localStorage.getItem(STORAGE_KEYS.REQUESTS);
+            var savedMetaRaw = localStorage.getItem(STORAGE_KEYS.META);
+
+            if (savedAssetsRaw) {
+              var parsedAssets = JSON.parse(savedAssetsRaw);
+              if (Array.isArray(parsedAssets) && parsedAssets.length > 0) {
+                state.assets = parsedAssets;
+              }
+            }
+            if (savedReqsRaw) {
+              var parsedReqs = JSON.parse(savedReqsRaw);
+              if (Array.isArray(parsedReqs) && parsedReqs.length > 0) {
+                state.requests = parsedReqs;
+              }
+            }
+            if (savedMetaRaw) {
+              var parsedMeta = JSON.parse(savedMetaRaw);
+              if (parsedMeta && parsedMeta.lastUpdated) {
+                state.meta = parsedMeta;
+              }
+            }
+          } catch (e) {
+            console.warn("localStorage read skipped:", e);
+          }
+        }
+
+        // 3. Fallback to Sample Data if nothing saved yet
+        if (!state.assets || state.assets.length === 0) {
+          state.assets = JSON.parse(JSON.stringify(SAMPLE_ASSETS));
+        }
+        if (!state.requests || state.requests.length === 0) {
+          state.requests = JSON.parse(JSON.stringify(SAMPLE_REQUESTS));
+        }
+      }
+
+      function persistToStorage(modeOverride, assetSrc, reqSrc) {
+        state.meta.mode = modeOverride || "saved";
+        state.meta.lastUpdated = formatUkTimestamp(new Date());
+        if (assetSrc) state.meta.assetSource = assetSrc;
+        if (reqSrc) state.meta.requestSource = reqSrc;
+
+        try {
+          localStorage.setItem(STORAGE_KEYS.ASSETS, JSON.stringify(state.assets));
+          localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(state.requests));
+          localStorage.setItem(STORAGE_KEYS.META, JSON.stringify(state.meta));
+        } catch (e) {
+          console.warn("Unable to save to localStorage:", e);
+        }
+
+        updateFreshnessBar();
+      }
+
+      function resetToSampleData() {
+        try {
+          localStorage.removeItem(STORAGE_KEYS.ASSETS);
+          localStorage.removeItem(STORAGE_KEYS.REQUESTS);
+          localStorage.removeItem(STORAGE_KEYS.META);
+        } catch (e) {}
+
+        state.assets = JSON.parse(JSON.stringify(SAMPLE_ASSETS));
+        state.requests = JSON.parse(JSON.stringify(SAMPLE_REQUESTS));
+        state.meta = {
+          mode: "sample",
+          lastUpdated: "Initial Sample Baseline (Reset at " + formatUkTimestamp(new Date()) + ")",
+          assetSource: "Built-in HPUK Sample Dataset",
+          requestSource: "Built-in HPUK Sample Dataset"
+        };
+        updateFreshnessBar();
+        render();
+        showToast("Cleared saved browser extract and restored sample baseline.");
+      }
+
+      function downloadSnapshotHtml() {
+        // Clone current DOM and embed the live JSON state into #embedded-snapshot
+        var docClone = document.documentElement.cloneNode(true);
+        var snapNode = docClone.querySelector("#embedded-snapshot");
+        var payload = {
+          assets: state.assets,
+          requests: state.requests,
+          meta: {
+            mode: "saved",
+            lastUpdated: state.meta.mode === "sample" ? formatUkTimestamp(new Date()) : state.meta.lastUpdated,
+            assetSource: state.meta.assetSource,
+            requestSource: state.meta.requestSource
+          }
+        };
+        if (snapNode) {
+          snapNode.textContent = JSON.stringify(payload);
+        }
+        var htmlString = "<!DOCTYPE html>\n" + docClone.outerHTML;
+        var blob = new Blob([htmlString], { type: "text/html;charset=utf-8;" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "hpuk-asset-management-portal.html";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("Downloaded hpuk-asset-management-portal.html with saved figures & timestamp!");
+      }
+
+      /* --------------------------------------------------------------------
+         3. RFC-4180 CSV PARSER & FLEXIBLE COLUMN MAPPING
+         -------------------------------------------------------------------- */
+      function parseCsv(text) {
+        var clean = String(text || "").replace(/^\uFEFF/, "");
+        var rows = [];
+        var row = [];
+        var cell = "";
+        var inQuotes = false;
+
+        for (var i = 0; i < clean.length; i++) {
+          var ch = clean[i];
+          var next = clean[i + 1];
+
+          if (inQuotes) {
+            if (ch === '"' && next === '"') {
+              cell += '"';
+              i++;
+            } else if (ch === '"') {
+              inQuotes = false;
+            } else {
+              cell += ch;
+            }
+          } else {
+            if (ch === '"') {
+              inQuotes = true;
+            } else if (ch === ",") {
+              row.push(cell.trim());
+              cell = "";
+            } else if (ch === "\r" && next === "\n") {
+              row.push(cell.trim());
+              if (row.some(function (c) { return c !== ""; })) rows.push(row);
+              row = [];
+              cell = "";
+              i++;
+            } else if (ch === "\n" || ch === "\r") {
+              row.push(cell.trim());
+              if (row.some(function (c) { return c !== ""; })) rows.push(row);
+              row = [];
+              cell = "";
+            } else {
+              cell += ch;
+            }
+          }
+        }
+        if (cell !== "" || row.length > 0) {
+          row.push(cell.trim());
+          if (row.some(function (c) { return c !== ""; })) rows.push(row);
+        }
+
+        if (rows.length < 2) return [];
+        var headers = rows[0].map(function (h) {
+          return h.toLowerCase().replace(/[\s_-]+/g, "");
+        });
+
+        var records = [];
+        for (var r = 1; r < rows.length; r++) {
+          var obj = {};
+          for (var c = 0; c < headers.length; c++) {
+            obj[headers[c]] = rows[r][c] !== undefined ? rows[r][c] : "";
+          }
+          records.push(obj);
+        }
+        return records;
+      }
+
+      function pickField(obj, candidates, fallback) {
+        for (var i = 0; i < candidates.length; i++) {
+          var k = candidates[i].toLowerCase().replace(/[\s_-]+/g, "");
+          if (obj[k] !== undefined && String(obj[k]).trim() !== "") {
+            return String(obj[k]).trim();
+          }
+        }
+        return fallback || "";
+      }
+
+      function normalizeDate(val) {
+        if (!val) return "";
+        var s = String(val).trim();
+        if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10);
+        var uk = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (uk) {
+          return uk[3] + "-" + uk[2].padStart(2, "0") + "-" + uk[1].padStart(2, "0");
+        }
+        return s;
+      }
+
+      function ingestAssetCsv(csvText, fileName, sourceMode) {
+        var rawRows = parseCsv(csvText);
+        if (rawRows.length === 0) {
+          showToast("No valid rows found in " + fileName);
+          return;
+        }
+
+        state.assets = rawRows.map(function (r, idx) {
+          return {
+            AssetTag: pickField(r, ["AssetTag", "ID", "Tag", "AssetID"], "HPUK-CSV-" + (1000 + idx)),
+            Title: pickField(r, ["Title", "AssetName", "DeviceName", "Name", "Item"], "Unnamed Asset"),
+            Category: pickField(r, ["Category", "AssetCategory", "Type"], "Hardware"),
+            PortLocation: pickField(r, ["PortLocation", "Port", "Location", "Site"], "Corporate"),
+            AssignedOwner: pickField(r, ["AssignedOwner", "Owner", "AssignedTo", "Custodian"], "Unassigned"),
+            LifecycleStatus: pickField(r, ["LifecycleStatus", "Status", "State"], "Deployed"),
+            WarrantyExpiry: normalizeDate(pickField(r, ["WarrantyExpiry", "ExpiryDate", "ReviewDate", "Warranty"], "")),
+            SerialNumber: pickField(r, ["SerialNumber", "Serial", "SN"], "N/A"),
+            CostCentre: pickField(r, ["CostCentre", "Department", "CostCenter"], "CC-1100 IT"),
+            SensitivityLabel: pickField(r, ["SensitivityLabel", "Sensitivity", "Label"], "Internal")
+          };
+        });
+
+        persistToStorage(sourceMode || "saved", fileName, null);
+        render();
+        showToast("Saved " + state.assets.length + " assets from " + fileName + " — figures will persist when reopened.");
+      }
+
+      function ingestRequestsCsv(csvText, fileName, sourceMode) {
+        var rawRows = parseCsv(csvText);
+        if (rawRows.length === 0) {
+          showToast("No valid request rows found in " + fileName);
+          return;
+        }
+
+        state.requests = rawRows.map(function (r, idx) {
+          return {
+            RequestID: pickField(r, ["RequestID", "ID", "Reference"], "REQ-CSV-" + (100 + idx)),
+            Title: pickField(r, ["Title", "Summary", "Request", "Description"], "Asset Request"),
+            RequestType: pickField(r, ["RequestType", "Type", "Category"], "New Hardware"),
+            PortLocation: pickField(r, ["PortLocation", "Port", "Location"], "Corporate"),
+            Requester: pickField(r, ["Requester", "RequestedBy", "CreatedBy", "Author"], "HPUK User"),
+            SubmittedDate: normalizeDate(pickField(r, ["SubmittedDate", "Created", "DateSubmitted"], getRelativeDate(-1))),
+            TargetSLADate: normalizeDate(pickField(r, ["TargetSLADate", "DueDate", "SLADate"], getRelativeDate(4))),
+            ApprovalStatus: pickField(r, ["ApprovalStatus", "Status", "Approval"], "Pending Approval")
+          };
+        });
+
+        persistToStorage(sourceMode || "saved", null, fileName);
+        render();
+        showToast("Saved " + state.requests.length + " SLA requests from " + fileName + ".");
+      }
+
+      /* --------------------------------------------------------------------
+         4. HELPER CALCULATIONS & BADGES
+         -------------------------------------------------------------------- */
+      function esc(str) {
+        return String(str == null ? "" : str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function daysUntil(dateStr) {
+        if (!dateStr) return null;
+        var target = new Date(dateStr + "T00:00:00");
+        if (isNaN(target.getTime())) return null;
+        var now = new Date();
+        now.setHours(0, 0, 0, 0);
+        return Math.round((target.getTime() - now.getTime()) / 86400000);
+      }
+
+      function getFilteredAssets() {
+        return state.assets.filter(function (a) {
+          if (state.portFilter !== "All" && a.PortLocation.toLowerCase().indexOf(state.portFilter.toLowerCase()) === -1) {
+            return false;
+          }
+          return true;
+        });
+      }
+
+      function getFilteredRequests() {
+        return state.requests.filter(function (r) {
+          if (state.portFilter !== "All" && r.PortLocation.toLowerCase().indexOf(state.portFilter.toLowerCase()) === -1) {
+            return false;
+          }
+          return true;
+        });
+      }
+
+      function getStatusBadge(status) {
+        var s = String(status || "").toLowerCase();
+        if (s === "deployed") return '<span class="badge badge-deployed">Deployed</span>';
+        if (s === "in stock") return '<span class="badge badge-instock">In Stock</span>';
+        if (s === "maintenance") return '<span class="badge badge-maintenance">Maintenance</span>';
+        if (s === "pending disposal") return '<span class="badge badge-disposal">Pending Disposal</span>';
+        if (s === "retired") return '<span class="badge badge-retired">Retired</span>';
+        return '<span class="badge badge-internal">' + esc(status) + '</span>';
+      }
+
+      function getSlaBadge(req) {
+        var st = String(req.ApprovalStatus || "").toLowerCase();
+        if (st === "completed") return '<span class="badge badge-completed">Completed</span>';
+        if (st === "rejected") return '<span class="badge badge-rejected">Rejected</span>';
+        var diff = daysUntil(req.TargetSLADate);
+        if (diff === null) return '<span class="badge badge-ontrack">On Track</span>';
+        if (diff < 0) return '<span class="badge badge-breached">SLA Breached (' + Math.abs(diff) + 'd)</span>';
+        if (diff <= 1) return '<span class="badge badge-duesoon">Due Soon (' + diff + 'd)</span>';
+        return '<span class="badge badge-ontrack">On Track (' + diff + 'd left)</span>';
+      }
+
+      function getApprovalBadge(status) {
+        var s = String(status || "").toLowerCase();
+        if (s === "approved" || s === "completed") return '<span class="badge badge-approved">' + esc(status) + '</span>';
+        if (s === "rejected") return '<span class="badge badge-rejected">' + esc(status) + '</span>';
+        return '<span class="badge badge-pending">' + esc(status) + '</span>';
+      }
+
+      function updateFreshnessBar() {
+        var pill = document.getElementById("dataModePill");
+        var updatedEl = document.getElementById("lastUpdatedDisplay");
+        var sourceEl = document.getElementById("sourceFilesDisplay");
+        var summaryEl = document.getElementById("recordSummaryDisplay");
+
+        pill.className = "mode-pill";
+        if (state.meta.mode === "live") {
+          pill.classList.add("mode-live");
+          pill.textContent = "LIVE SITEASSETS CSV";
+        } else if (state.meta.mode === "saved") {
+          pill.classList.add("mode-saved");
+          pill.textContent = "SAVED EXTRACT DATA";
+        } else {
+          pill.classList.add("mode-sample");
+          pill.textContent = "SAMPLE PREVIEW DATA";
+        }
+
+        updatedEl.innerHTML = "<strong>Last Updated:</strong> " + esc(state.meta.lastUpdated);
+        var srcText = state.meta.assetSource;
+        if (state.meta.requestSource && state.meta.requestSource !== state.meta.assetSource) {
+          srcText += " | Requests: " + state.meta.requestSource;
+        }
+        sourceEl.innerHTML = "<strong>Source:</strong> " + esc(srcText);
+        summaryEl.textContent = state.assets.length + " Total Assets · " + state.requests.length + " SLA Requests";
+
+        document.getElementById("navCountAssets").textContent = getFilteredAssets().length;
+        document.getElementById("navCountRequests").textContent = getFilteredRequests().length;
+      }
+
+      /* --------------------------------------------------------------------
+         5. TAB RENDERERS
+         -------------------------------------------------------------------- */
+      function renderOverview() {
+        var assets = getFilteredAssets();
+        var total = assets.length;
+        var deployed = assets.filter(function (a) { return a.LifecycleStatus.toLowerCase() === "deployed"; }).length;
+        var inStock = assets.filter(function (a) { return a.LifecycleStatus.toLowerCase() === "in stock"; }).length;
+        var expiring60 = assets.filter(function (a) {
+          var d = daysUntil(a.WarrantyExpiry);
+          return d !== null && d >= 0 && d <= 60 && a.LifecycleStatus.toLowerCase() !== "retired";
+        });
+        var pendingDisp = assets.filter(function (a) {
+          var d = daysUntil(a.WarrantyExpiry);
+          return a.LifecycleStatus.toLowerCase() === "pending disposal" || (d !== null && d < 0 && a.LifecycleStatus.toLowerCase() !== "retired");
+        });
+
+        // Port & Category counts
+        var ports = ["Felixstowe", "Harwich", "Thamesport", "Corporate"];
+        var categories = ["Port Equipment", "Hardware", "Network", "Software", "Mobile"];
+
+        var html = "";
+
+        // Top 5 Requests (T03 Department Landing)
+        html += '<div class="section-header">';
+        html += '<div><h2 class="section-title">Top 5 Asset Management Requests</h2><div class="section-subtitle">Standardised BAU Workflow 1 services across all UK ports (reviewed quarterly)</div></div>';
+        html += '</div>';
+        html += '<div class="quick-links-grid">';
+        TOP_5_REQUESTS.forEach(function (q) {
+          html += '<div class="quick-card">';
+          html += '<div><div class="quick-card-title">' + esc(q.title) + '</div><div class="quick-card-desc">' + esc(q.desc) + '</div></div>';
+          html += '<div class="quick-card-footer"><span class="sla-tag">' + esc(q.sla) + '</span><button type="button" class="btn btn-primary btn-sm" data-new-req="' + esc(q.type) + '">+ Log Request</button></div>';
+          html += '</div>';
+        });
+        html += '</div>';
+
+        // 5-Card KPI Strip
+        html += '<div class="kpi-grid">';
+        html += '<div class="kpi-card"><div class="kpi-label">Total Assets Tracked</div><div class="kpi-value">' + total + '</div><div class="kpi-meta">Port Scope: ' + esc(state.portFilter) + '</div></div>';
+        html += '<div class="kpi-card kpi-green"><div class="kpi-label">Deployed &amp; Active</div><div class="kpi-value">' + deployed + '</div><div class="kpi-meta">' + (total ? Math.round((deployed / total) * 100) : 0) + '% of active estate</div></div>';
+        html += '<div class="kpi-card kpi-sky"><div class="kpi-label">In Stock / Ready</div><div class="kpi-value">' + inStock + '</div><div class="kpi-meta">Available for 5-day SLA issue</div></div>';
+        html += '<div class="kpi-card kpi-amber"><div class="kpi-label">Warranty Expiring &le;60d</div><div class="kpi-value">' + expiring60.length + '</div><div class="kpi-meta">Renewal or lifecycle review due</div></div>';
+        html += '<div class="kpi-card kpi-red"><div class="kpi-label">Pending Disposal / Overdue</div><div class="kpi-value">' + pendingDisp.length + '</div><div class="kpi-meta">WEEE sanitisation or expired cover</div></div>';
+        html += '</div>';
+
+        // 2-Column Breakdown & Attention Queue
+        html += '<div class="overview-grid">';
+
+        // Left: Breakdown Bars
+        html += '<div class="panel">';
+        html += '<div class="panel-title"><span>Estate Distribution by Port &amp; Category</span></div>';
+        html += '<div class="dist-group"><div class="dist-group-label">By UK Port Location</div>';
+        ports.forEach(function (p) {
+          var cnt = assets.filter(function (a) { return a.PortLocation.toLowerCase().indexOf(p.toLowerCase()) !== -1; }).length;
+          var pct = total ? Math.round((cnt / total) * 100) : 0;
+          html += '<div class="bar-row"><div class="bar-meta"><strong>' + esc(p) + '</strong><span>' + cnt + ' (' + pct + '%)</span></div>';
+          html += '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;"></div></div></div>';
+        });
+        html += '</div>';
+
+        html += '<div class="dist-group" style="margin-bottom:0;"><div class="dist-group-label">By Asset Category</div>';
+        categories.forEach(function (c) {
+          var cnt = assets.filter(function (a) { return a.Category.toLowerCase() === c.toLowerCase(); }).length;
+          var pct = total ? Math.round((cnt / total) * 100) : 0;
+          html += '<div class="bar-row"><div class="bar-meta"><strong>' + esc(c) + '</strong><span>' + cnt + ' (' + pct + '%)</span></div>';
+          html += '<div class="bar-track"><div class="bar-fill sky" style="width:' + pct + '%;"></div></div></div>';
+        });
+        html += '</div></div>';
+
+        // Right: Lifecycle & Warranty Attention Queue
+        var queueItems = pendingDisp.concat(expiring60);
+        // Deduplicate by AssetTag
+        var seenTags = {};
+        queueItems = queueItems.filter(function (item) {
+          if (seenTags[item.AssetTag]) return false;
+          seenTags[item.AssetTag] = true;
+          return true;
+        });
+
+        html += '<div class="panel">';
+        html += '<div class="panel-title"><span>Lifecycle &amp; Warranty Attention Queue</span><span class="badge badge-duesoon">' + queueItems.length + ' Items</span></div>';
+        if (queueItems.length === 0) {
+          html += '<p style="color:var(--hpuk-muted-grey); font-size:13px;">No urgent warranty expiries or pending disposals in the selected port scope.</p>';
+        } else {
+          html += '<div class="attention-list">';
+          queueItems.forEach(function (item) {
+            var d = daysUntil(item.WarrantyExpiry);
+            var reason = item.LifecycleStatus.toLowerCase() === "pending disposal"
+              ? "Pending WEEE Disposal"
+              : (d < 0 ? "Warranty Expired " + Math.abs(d) + "d ago" : "Warranty Expiring in " + d + " days");
+            html += '<div class="attention-item" data-inspect-tag="' + esc(item.AssetTag) + '">';
+            html += '<div class="attention-main"><div class="attention-title">' + esc(item.AssetTag) + ' — ' + esc(item.Title) + '</div>';
+            html += '<div class="attention-sub">' + esc(item.PortLocation) + ' · Owner: ' + esc(item.AssignedOwner) + ' · ' + esc(reason) + '</div></div>';
+            html += '<div>' + getStatusBadge(item.LifecycleStatus) + '</div>';
+            html += '</div>';
+          });
+          html += '</div>';
+        }
+        html += '</div></div>';
+
+        return html;
+      }
+
+      function renderRegister() {
+        var rows = getFilteredAssets().filter(function (a) {
+          if (state.regStatus !== "All" && a.LifecycleStatus.toLowerCase() !== state.regStatus.toLowerCase()) return false;
+          if (state.regCategory !== "All" && a.Category.toLowerCase() !== state.regCategory.toLowerCase()) return false;
+          if (state.regExpiringOnly) {
+            var d = daysUntil(a.WarrantyExpiry);
+            if (d === null || d > 60 || a.LifecycleStatus.toLowerCase() === "retired") return false;
+          }
+          if (state.regSearch) {
+            var q = state.regSearch.toLowerCase();
+            var hay = (a.AssetTag + " " + a.Title + " " + a.AssignedOwner + " " + a.SerialNumber + " " + a.CostCentre).toLowerCase();
+            if (hay.indexOf(q) === -1) return false;
+          }
+          return true;
+        });
+
+        rows.sort(function (a, b) {
+          var va = String(a[state.sortCol] || "").toLowerCase();
+          var vb = String(b[state.sortCol] || "").toLowerCase();
+          if (va < vb) return state.sortAsc ? -1 : 1;
+          if (va > vb) return state.sortAsc ? 1 : -1;
+          return 0;
+        });
+
+        var html = '<div class="section-header">';
+        html += '<div><h2 class="section-title">Enterprise Asset Register (' + rows.length + ' shown)</h2><div class="section-subtitle">Click any row to inspect hardware/software metadata, serial number, and Purview sensitivity label</div></div>';
+        html += '<div class="filter-group">';
+        html += '<label class="btn btn-primary btn-sm" for="tabAssetCsvInput">+ Upload Asset CSV</label><input type="file" id="tabAssetCsvInput" accept=".csv,text/csv" style="display:none;" />';
+        html += '<button type="button" class="btn btn-secondary btn-sm" id="btnExportFilteredAssets">Export Filtered CSV</button>';
+        html += '</div></div>';
+
+        html += '<div class="filter-bar">';
+        html += '<div class="filter-group">';
+        html += '<input type="text" class="input-text" id="regSearchInput" placeholder="Search tag, title, serial, owner..." value="' + esc(state.regSearch) + '" />';
+        html += '<select class="input-select" id="regStatusSelect">';
+        ["All", "Deployed", "In Stock", "Maintenance", "Pending Disposal", "Retired"].forEach(function (st) {
+          html += '<option value="' + st + '"' + (state.regStatus === st ? ' selected' : '') + '>Status: ' + st + '</option>';
+        });
+        html += '</select>';
+        html += '<select class="input-select" id="regCategorySelect">';
+        ["All", "Port Equipment", "Hardware", "Network", "Software", "Mobile"].forEach(function (cat) {
+          html += '<option value="' + cat + '"' + (state.regCategory === cat ? ' selected' : '') + '>Category: ' + cat + '</option>';
+        });
+        html += '</select>';
+        html += '</div>';
+        html += '<label class="checkbox-label"><input type="checkbox" id="regExpiringCheck"' + (state.regExpiringOnly ? ' checked' : '') + ' /> Warranty Expiring &le;60 Days / Expired</label>';
+        html += '</div>';
+
+        html += '<div class="table-wrap"><table><thead><tr>';
+        var cols = [
+          { key: "AssetTag", label: "Asset Tag" },
+          { key: "Title", label: "Asset / Device Name" },
+          { key: "Category", label: "Category" },
+          { key: "PortLocation", label: "Port Location" },
+          { key: "AssignedOwner", label: "Assigned Owner" },
+          { key: "LifecycleStatus", label: "Lifecycle Status" },
+          { key: "WarrantyExpiry", label: "Warranty Expiry" },
+          { key: "SensitivityLabel", label: "Sensitivity" }
+        ];
+        cols.forEach(function (c) {
+          var arrow = state.sortCol === c.key ? (state.sortAsc ? " ▲" : " ▼") : "";
+          html += '<th class="sortable" data-sort="' + c.key + '">' + c.label + arrow + '</th>';
+        });
+        html += '</tr></thead><tbody>';
+
+        if (rows.length === 0) {
+          html += '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--hpuk-muted-grey);">No assets match the current filters.</td></tr>';
+        } else {
+          rows.forEach(function (a) {
+            var d = daysUntil(a.WarrantyExpiry);
+            var warCell = esc(a.WarrantyExpiry || "—");
+            if (d !== null && a.LifecycleStatus.toLowerCase() !== "retired") {
+              if (d < 0) warCell += ' <span class="badge badge-expired">Expired</span>';
+              else if (d <= 60) warCell += ' <span class="badge badge-duesoon">' + d + 'd</span>';
+            }
+            var sensBadge = a.SensitivityLabel.toLowerCase() === "confidential"
+              ? '<span class="badge badge-confidential">Confidential</span>'
+              : '<span class="badge badge-internal">' + esc(a.SensitivityLabel) + '</span>';
+
+            html += '<tr class="clickable-row" data-inspect-tag="' + esc(a.AssetTag) + '">';
+            html += '<td><strong>' + esc(a.AssetTag) + '</strong></td>';
+            html += '<td>' + esc(a.Title) + '</td>';
+            html += '<td>' + esc(a.Category) + '</td>';
+            html += '<td>' + esc(a.PortLocation) + '</td>';
+            html += '<td>' + esc(a.AssignedOwner) + '</td>';
+            html += '<td>' + getStatusBadge(a.LifecycleStatus) + '</td>';
+            html += '<td>' + warCell + '</td>';
+            html += '<td>' + sensBadge + '</td>';
+            html += '</tr>';
+          });
+        }
+        html += '</tbody></table></div>';
+        return html;
+      }
+
+      function renderRequests() {
+        var rows = getFilteredRequests().filter(function (r) {
+          if (state.reqStatus !== "All" && r.ApprovalStatus.toLowerCase() !== state.reqStatus.toLowerCase()) return false;
+          if (state.reqSearch) {
+            var q = state.reqSearch.toLowerCase();
+            var hay = (r.RequestID + " " + r.Title + " " + r.RequestType + " " + r.Requester + " " + r.PortLocation).toLowerCase();
+            if (hay.indexOf(q) === -1) return false;
+          }
+          return true;
+        });
+
+        var html = '<div class="section-header">';
+        html += '<div><h2 class="section-title">Asset Requests &amp; Disposals (BAU Workflow 1 — 5-Working-Day SLA)</h2><div class="section-subtitle">Approving or completing a request automatically updates the saved snapshot and Last Updated timestamp</div></div>';
+        html += '<div class="filter-group">';
+        html += '<button type="button" class="btn btn-primary btn-sm" data-new-req="New Hardware">+ Log New Request</button>';
+        html += '<label class="btn btn-secondary btn-sm" for="tabReqCsvInput">Load Requests CSV</label><input type="file" id="tabReqCsvInput" accept=".csv,text/csv" style="display:none;" />';
+        html += '</div></div>';
+
+        html += '<div class="filter-bar">';
+        html += '<div class="filter-group">';
+        html += '<input type="text" class="input-text" id="reqSearchInput" placeholder="Search request ID, summary, requester..." value="' + esc(state.reqSearch) + '" />';
+        html += '<select class="input-select" id="reqStatusSelect">';
+        ["All", "Pending Approval", "In Progress", "Approved", "Completed", "Rejected"].forEach(function (st) {
+          html += '<option value="' + st + '"' + (state.reqStatus === st ? ' selected' : '') + '>Approval: ' + st + '</option>';
+        });
+        html += '</select>';
+        html += '</div></div>';
+
+        html += '<div class="table-wrap"><table><thead><tr>';
+        html += '<th>Request ID</th><th>Summary</th><th>Type</th><th>Port</th><th>Requester</th><th>Submitted</th><th>Target SLA</th><th>Approval</th><th>SLA Status</th><th>Action</th>';
+        html += '</tr></thead><tbody>';
+
+        if (rows.length === 0) {
+          html += '<tr><td colspan="10" style="text-align:center; padding:20px; color:var(--hpuk-muted-grey);">No requests match the current filter.</td></tr>';
+        } else {
+          rows.forEach(function (r) {
+            var isDone = r.ApprovalStatus.toLowerCase() === "completed";
+            html += '<tr>';
+            html += '<td><strong>' + esc(r.RequestID) + '</strong></td>';
+            html += '<td>' + esc(r.Title) + '</td>';
+            html += '<td>' + esc(r.RequestType) + '</td>';
+            html += '<td>' + esc(r.PortLocation) + '</td>';
+            html += '<td>' + esc(r.Requester) + '</td>';
+            html += '<td>' + esc(r.SubmittedDate) + '</td>';
+            html += '<td>' + esc(r.TargetSLADate) + '</td>';
+            html += '<td>' + getApprovalBadge(r.ApprovalStatus) + '</td>';
+            html += '<td>' + getSlaBadge(r) + '</td>';
+            html += '<td>';
+            if (!isDone) {
+              html += '<button type="button" class="btn btn-sky btn-sm" data-advance-req="' + esc(r.RequestID) + '">Advance / Complete</button>';
+            } else {
+              html += '<span style="font-size:11px; color:var(--hpuk-muted-grey);">Closed</span>';
+            }
+            html += '</td></tr>';
+          });
+        }
+        html += '</tbody></table></div>';
+        return html;
+      }
+
+      function renderPolicies() {
+        var jsonSnippet = JSON.stringify({
+          "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
+          "elmType": "div",
+          "style": {
+            "display": "inline-block",
+            "padding": "2px 8px",
+            "border-radius": "4px",
+            "font-weight": "700",
+            "font-size": "11px",
+            "background-color": "=if(@currentField=='Deployed','#E6F4EA',if(@currentField=='In Stock','#E0F2FE',if(@currentField=='Maintenance','#FEF7E0',if(@currentField=='Pending Disposal','#FDE7E9','#F2F4F7'))))",
+            "color": "=if(@currentField=='Deployed','#107C10',if(@currentField=='In Stock','#005E86',if(@currentField=='Maintenance','#8A5A00',if(@currentField=='Pending Disposal','#C4314B','#323130'))))"
+          },
+          "txtContent": "@currentField"
+        }, null, 2);
+
+        var html = '<div class="section-header">';
+        html += '<div><h2 class="section-title">Controlled Asset Policies &amp; SOPs (Templates T07 &amp; T10)</h2><div class="section-subtitle">Major versioning enabled (500 retained) · Annual review cadence · Purview Sensitivity Labels enforced</div></div>';
+        html += '</div>';
+
+        html += '<div class="table-wrap" style="margin-bottom:22px;"><table><thead><tr>';
+        html += '<th>Doc ID</th><th>Policy / SOP Title</th><th>Template</th><th>Document Owner</th><th>Approver</th><th>Next Review</th><th>Sensitivity</th><th>Versioning</th>';
+        html += '</tr></thead><tbody>';
+        CONTROLLED_POLICIES.forEach(function (p) {
+          var sens = p.Sensitivity === "Confidential"
+            ? '<span class="badge badge-confidential">Confidential</span>'
+            : '<span class="badge badge-internal">Internal</span>';
+          html += '<tr>';
+          html += '<td><strong>' + esc(p.DocID) + '</strong></td>';
+          html += '<td>' + esc(p.Title) + '</td>';
+          html += '<td>' + esc(p.Template) + '</td>';
+          html += '<td>' + esc(p.Owner) + '</td>';
+          html += '<td>' + esc(p.Approver) + '</td>';
+          html += '<td>' + esc(p.ReviewDate) + '</td>';
+          html += '<td>' + sens + '</td>';
+          html += '<td>' + esc(p.Versioning) + '</td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table></div>';
+
+        html += '<div class="panel">';
+        html += '<div class="panel-title"><span>SharePoint List JSON Column Formatting — LifecycleStatus (WCAG 2.1 AA)</span>';
+        html += '<button type="button" class="btn btn-primary btn-sm" id="btnCopyJson">Copy JSON Formatting</button></div>';
+        html += '<p style="font-size:12.5px; color:var(--hpuk-dark-grey);">Paste this JSON schema into <strong>Column settings &rarr; Format this column</strong> on your native SharePoint <em>Asset Register</em> list so native list views match the portal status badges:</p>';
+        html += '<pre class="code-box" id="jsonFormatPre">' + esc(jsonSnippet) + '</pre>';
+        html += '</div>';
+
+        return html;
+      }
+
+      /* --------------------------------------------------------------------
+         6. MODALS & INTERACTIONS
+         -------------------------------------------------------------------- */
+      function openAssetModal(tag) {
+        var asset = state.assets.find(function (a) { return a.AssetTag === tag; });
+        if (!asset) return;
+
+        document.getElementById("modalTitle").textContent = asset.AssetTag + " — " + asset.Title;
+        var html = '<div class="detail-grid">';
+        html += '<div class="detail-item"><label>Asset Tag</label><div>' + esc(asset.AssetTag) + '</div></div>';
+        html += '<div class="detail-item"><label>Category</label><div>' + esc(asset.Category) + '</div></div>';
+        html += '<div class="detail-item"><label>Port Location</label><div>' + esc(asset.PortLocation) + '</div></div>';
+        html += '<div class="detail-item"><label>Lifecycle Status</label><div>' + getStatusBadge(asset.LifecycleStatus) + '</div></div>';
+        html += '<div class="detail-item"><label>Assigned Owner</label><div>' + esc(asset.AssignedOwner) + '</div></div>';
+        html += '<div class="detail-item"><label>Serial Number</label><div>' + esc(asset.SerialNumber || "N/A") + '</div></div>';
+        html += '<div class="detail-item"><label>Cost Centre</label><div>' + esc(asset.CostCentre || "N/A") + '</div></div>';
+        html += '<div class="detail-item"><label>Warranty Expiry</label><div>' + esc(asset.WarrantyExpiry || "Not recorded") + '</div></div>';
+        html += '<div class="detail-item"><label>Sensitivity Label</label><div>' + esc(asset.SensitivityLabel) + '</div></div>';
+        html += '</div>';
+
+        html += '<div style="border-top:1px solid var(--hpuk-mid-grey); padding-top:12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">';
+        html += '<span style="font-size:12px; color:var(--hpuk-muted-grey);">Quick Lifecycle Update (auto-saves snapshot):</span>';
+        html += '<div style="display:flex; gap:6px; flex-wrap:wrap;">';
+        ["Deployed", "In Stock", "Maintenance", "Pending Disposal", "Retired"].forEach(function (st) {
+          html += '<button type="button" class="btn btn-secondary btn-sm" data-set-asset-status="' + esc(st) + '" data-target-tag="' + esc(asset.AssetTag) + '">' + st + '</button>';
+        });
+        html += '</div></div>';
+
+        document.getElementById("modalBody").innerHTML = html;
+        document.getElementById("modalBackdrop").classList.add("open");
+      }
+
+      function openNewRequestModal(defaultType) {
+        document.getElementById("modalTitle").textContent = "Log New Asset Management Request (5-Day SLA)";
+        var html = '<form id="newRequestForm">';
+        html += '<div class="form-grid">';
+        html += '<div class="form-field"><label>Request Type</label><select class="input-select" name="RequestType">';
+        ["New Hardware", "Asset Disposal / WEEE", "Software Licence", "CMDB Update", "Equipment Transfer"].forEach(function (t) {
+          html += '<option value="' + t + '"' + (t === defaultType ? ' selected' : '') + '>' + t + '</option>';
+        });
+        html += '</select></div>';
+        html += '<div class="form-field"><label>Port Location</label><select class="input-select" name="PortLocation">';
+        ["Felixstowe", "Harwich", "Thamesport", "Corporate"].forEach(function (p) {
+          var sel = state.portFilter === p ? " selected" : "";
+          html += '<option value="' + p + '"' + sel + '>' + p + '</option>';
+        });
+        html += '</select></div>';
+        html += '<div class="form-field full"><label>Request Summary / Asset Details</label><input type="text" class="input-text" name="Title" required placeholder="e.g. 2x Rugged Tablets for Trinity Straddle Carriers" /></div>';
+        html += '<div class="form-field"><label>Requester Name</label><input type="text" class="input-text" name="Requester" required placeholder="e.g. J. Smith" /></div>';
+        html += '<div class="form-field"><label>Target Completion (5 Working Days)</label><input type="date" class="input-text" name="TargetSLADate" value="' + getRelativeDate(5) + '" required /></div>';
+        html += '</div>';
+        html += '<div style="display:flex; justify-content:flex-end; gap:8px;">';
+        html += '<button type="button" class="btn btn-secondary" id="btnCancelReqModal">Cancel</button>';
+        html += '<button type="submit" class="btn btn-primary">Save Request &amp; Update Snapshot</button>';
+        html += '</div></form>';
+
+        document.getElementById("modalBody").innerHTML = html;
+        document.getElementById("modalBackdrop").classList.add("open");
+
+        document.getElementById("btnCancelReqModal").addEventListener("click", closeModal);
+        document.getElementById("newRequestForm").addEventListener("submit", function (e) {
+          e.preventDefault();
+          var fd = new FormData(e.target);
+          var nextNum = 48 + state.requests.length;
+          state.requests.unshift({
+            RequestID: "REQ-2026-0" + nextNum,
+            Title: String(fd.get("Title") || "").trim(),
+            RequestType: String(fd.get("RequestType")),
+            PortLocation: String(fd.get("PortLocation")),
+            Requester: String(fd.get("Requester") || "").trim(),
+            SubmittedDate: getRelativeDate(0),
+            TargetSLADate: String(fd.get("TargetSLADate")),
+            ApprovalStatus: "Pending Approval"
+          });
+          persistToStorage("saved", null, "Portal Entry + " + state.meta.requestSource);
+          closeModal();
+          state.activeTab = "requests";
+          syncNavTabs();
+          render();
+          showToast("Request logged and saved to browser snapshot.");
+        });
+      }
+
+      function closeModal() {
+        document.getElementById("modalBackdrop").classList.remove("open");
+      }
+
+      function showToast(msg) {
+        var box = document.getElementById("toastBox");
+        box.textContent = msg;
+        box.style.display = "block";
+        clearTimeout(box._timer);
+        box._timer = setTimeout(function () {
+          box.style.display = "none";
+        }, 3800);
+      }
+
+      function exportFilteredAssetsCsv() {
+        var headers = ["AssetTag", "Title", "Category", "PortLocation", "AssignedOwner", "LifecycleStatus", "WarrantyExpiry", "SerialNumber", "CostCentre", "SensitivityLabel"];
+        var lines = [headers.join(",")];
+        getFilteredAssets().forEach(function (a) {
+          var row = headers.map(function (h) {
+            var val = String(a[h] || "").replace(/"/g, '""');
+            return '"' + val + '"';
+          });
+          lines.push(row.join(","));
+        });
+        var blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement("a");
+        link.href = url;
+        link.download = "hpuk-asset-register-export.csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        showToast("Exported filtered Asset Register CSV.");
+      }
+
+      function syncNavTabs() {
+        document.querySelectorAll(".nav-tab").forEach(function (btn) {
+          btn.classList.toggle("active", btn.getAttribute("data-tab") === state.activeTab);
+        });
+      }
+
+      function render() {
+        updateFreshnessBar();
+        var container = document.getElementById("mainContainer");
+        if (state.activeTab === "overview") container.innerHTML = renderOverview();
+        else if (state.activeTab === "register") container.innerHTML = renderRegister();
+        else if (state.activeTab === "requests") container.innerHTML = renderRequests();
+        else if (state.activeTab === "policies") container.innerHTML = renderPolicies();
+      }
+
+      /* --------------------------------------------------------------------
+         7. GLOBAL EVENT DELEGATION & FILE HANDLERS
+         -------------------------------------------------------------------- */
+      document.addEventListener("click", function (e) {
+        var target = e.target;
+
+        // Navigation tabs
+        var navBtn = target.closest(".nav-tab");
+        if (navBtn) {
+          state.activeTab = navBtn.getAttribute("data-tab");
+          syncNavTabs();
+          render();
+          return;
+        }
+
+        // Port Switcher
+        var portBtn = target.closest(".port-btn");
+        if (portBtn) {
+          state.portFilter = portBtn.getAttribute("data-port");
+          document.querySelectorAll(".port-btn").forEach(function (b) {
+            b.classList.toggle("active", b === portBtn);
+          });
+          render();
+          return;
+        }
+
+        // Inspect Asset Row or Attention Item
+        var inspectEl = target.closest("[data-inspect-tag]");
+        if (inspectEl) {
+          openAssetModal(inspectEl.getAttribute("data-inspect-tag"));
+          return;
+        }
+
+        // Update Asset Status inside Modal
+        var statusBtn = target.closest("[data-set-asset-status]");
+        if (statusBtn) {
+          var newStatus = statusBtn.getAttribute("data-set-asset-status");
+          var assetTag = statusBtn.getAttribute("data-target-tag");
+          var found = state.assets.find(function (a) { return a.AssetTag === assetTag; });
+          if (found) {
+            found.LifecycleStatus = newStatus;
+            persistToStorage("saved", state.meta.assetSource, null);
+            closeModal();
+            render();
+            showToast(assetTag + " updated to " + newStatus + " & saved.");
+          }
+          return;
+        }
+
+        // Log New Request button
+        var reqBtn = target.closest("[data-new-req]");
+        if (reqBtn) {
+          openNewRequestModal(reqBtn.getAttribute("data-new-req"));
+          return;
+        }
+
+        // Advance / Complete SLA Request
+        var advBtn = target.closest("[data-advance-req]");
+        if (advBtn) {
+          var reqId = advBtn.getAttribute("data-advance-req");
+          var req = state.requests.find(function (r) { return r.RequestID === reqId; });
+          if (req) {
+            var cur = req.ApprovalStatus.toLowerCase();
+            if (cur === "pending approval") req.ApprovalStatus = "Approved";
+            else if (cur === "approved") req.ApprovalStatus = "In Progress";
+            else req.ApprovalStatus = "Completed";
+            persistToStorage("saved", null, state.meta.requestSource);
+            render();
+            showToast(reqId + " moved to " + req.ApprovalStatus + " & saved.");
+          }
+          return;
+        }
+
+        // Table Column Sorting
+        var sortTh = target.closest("th.sortable");
+        if (sortTh) {
+          var col = sortTh.getAttribute("data-sort");
+          if (state.sortCol === col) {
+            state.sortAsc = !state.sortAsc;
+          } else {
+            state.sortCol = col;
+            state.sortAsc = true;
+          }
+          render();
+          return;
+        }
+
+        // Export Filtered Assets CSV
+        if (target.id === "btnExportFilteredAssets") {
+          exportFilteredAssetsCsv();
+          return;
+        }
+
+        // Copy JSON Formatting
+        if (target.id === "btnCopyJson") {
+          var pre = document.getElementById("jsonFormatPre");
+          if (pre) {
+            var range = document.createRange();
+            range.selectNodeContents(pre);
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            try {
+              document.execCommand("copy");
+              showToast("Copied SharePoint JSON Column Formatting to clipboard.");
+            } catch (err) {
+              showToast("Select and copy the JSON text manually.");
+            }
+            sel.removeAllRanges();
+          }
+          return;
+        }
+
+        // Save Snapshot HTML
+        if (target.id === "btnSaveSnapshotHtml") {
+          downloadSnapshotHtml();
+          return;
+        }
+
+        // Reset to Sample
+        if (target.id === "btnResetSample") {
+          resetToSampleData();
+          return;
+        }
+
+        // Close Modal
+        if (target.id === "btnCloseModal" || target.id === "modalBackdrop") {
+          closeModal();
+          return;
+        }
+      });
+
+      document.addEventListener("input", function (e) {
+        if (e.target.id === "regSearchInput") {
+          state.regSearch = e.target.value;
+          render();
+        } else if (e.target.id === "reqSearchInput") {
+          state.reqSearch = e.target.value;
+          render();
+        }
+      });
+
+      document.addEventListener("change", function (e) {
+        var t = e.target;
+        if (t.id === "regStatusSelect") {
+          state.regStatus = t.value;
+          render();
+        } else if (t.id === "regCategorySelect") {
+          state.regCategory = t.value;
+          render();
+        } else if (t.id === "regExpiringCheck") {
+          state.regExpiringOnly = t.checked;
+          render();
+        } else if (t.id === "reqStatusSelect") {
+          state.reqStatus = t.value;
+          render();
+        } else if ((t.id === "headerCsvInput" || t.id === "tabAssetCsvInput") && t.files && t.files[0]) {
+          var f = t.files[0];
+          var reader = new FileReader();
+          reader.onload = function (ev) {
+            ingestAssetCsv(ev.target.result, f.name, "saved");
+          };
+          reader.readAsText(f);
+          t.value = "";
+        } else if (t.id === "tabReqCsvInput" && t.files && t.files[0]) {
+          var rf = t.files[0];
+          var rReader = new FileReader();
+          rReader.onload = function (ev) {
+            ingestRequestsCsv(ev.target.result, rf.name, "saved");
+          };
+          rReader.readAsText(rf);
+          t.value = "";
+        }
+      });
+
+      /* --------------------------------------------------------------------
+         8. BOOTSTRAP & OPTIONAL SITEASSETS AUTO-CSV CHECK
+         -------------------------------------------------------------------- */
+      loadInitialState();
+      render();
+
+      // If hosted in SharePoint /SiteAssets/ alongside latest-asset-register.csv,
+      // automatically fetch & cache it if no manual localStorage extract is newer.
+      if (window.location.protocol.indexOf("http") === 0) {
+        fetch("latest-asset-register.csv", { cache: "no-store" })
+          .then(function (res) { return res.ok ? res.text() : null; })
+          .then(function (txt) {
+            if (txt && txt.indexOf(",") !== -1) {
+              ingestAssetCsv(txt, "latest-asset-register.csv", "live");
+            }
+          })
+          .catch(function () {});
+
+        fetch("latest-asset-requests.csv", { cache: "no-store" })
+          .then(function (res) { return res.ok ? res.text() : null; })
+          .then(function (txt) {
+            if (txt && txt.indexOf(",") !== -1) {
+              ingestRequestsCsv(txt, "latest-asset-requests.csv", "live");
+            }
+          })
+          .catch(function () {});
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -31,7 +31,7 @@
       "type": "String",
       "defaultValue": "{pmo-shared-mailbox}@{domain}"
     },
-    "SupportMailboxEmail": {
+    "PMOSupportMailboxEmail": {
       "type": "String",
       "defaultValue": ""
     },
@@ -419,7 +419,7 @@
                           "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
                         },
                         "parameters": {
-                          "emailMessage/To": "@{concat(parameters('PMOOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
+                          "emailMessage/To": "@{concat(parameters('PMOOwnerEmail'), if(empty(parameters('PMOSupportMailboxEmail')), '', concat(';', parameters('PMOSupportMailboxEmail'))))}",
                           "emailMessage/Subject": "PMO daily digest not posted @{outputs('Compose_today')}",
                           "emailMessage/Body": "<p>The daily executive overdue digest could not be posted to the Steering Committee channel. Teams said: @{coalesce(outputs('Post_digest_card')?['body']?['error']?['message'], string(outputs('Post_digest_card')?['statusCode']))}</p><p>It covered @{length(body('Get_overdue_escalations')?['value'])} overdue escalation(s) and @{length(body('Get_overdue_actions')?['value'])} overdue board action(s). The PMO Digest History row is marked Failed. Fix the cause (usually the team or channel ID, or the flow owner is no longer a channel member), delete that row, and resubmit the run.</p>",
                           "emailMessage/Importance": "High"
@@ -484,7 +484,7 @@
               "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
             },
             "parameters": {
-              "emailMessage/To": "@{concat(parameters('PMOOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
+              "emailMessage/To": "@{concat(parameters('PMOOwnerEmail'), if(empty(parameters('PMOSupportMailboxEmail')), '', concat(';', parameters('PMOSupportMailboxEmail'))))}",
               "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
               "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error it did not handle, so some of its work may not have been done. Nothing has been retried.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a> (started @{workflow()?['run']?['startTime']})</p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Open the run, find the failed step and its raw output, fix the cause, then resubmit the run. See Stopping and recovery in the EnterprisePMO deployment guide.</p>",
               "emailMessage/Importance": "High"

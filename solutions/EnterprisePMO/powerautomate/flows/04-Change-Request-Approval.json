@@ -31,7 +31,7 @@
       "type": "String",
       "defaultValue": "{pmo-shared-mailbox}@{domain}"
     },
-    "SupportMailboxEmail": {
+    "PMOSupportMailboxEmail": {
       "type": "String",
       "defaultValue": ""
     },
@@ -629,7 +629,7 @@
               "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
             },
             "parameters": {
-              "emailMessage/To": "@{concat(parameters('PMOOwnerEmail'), if(empty(parameters('SupportMailboxEmail')), '', concat(';', parameters('SupportMailboxEmail'))))}",
+              "emailMessage/To": "@{concat(parameters('PMOOwnerEmail'), if(empty(parameters('PMOSupportMailboxEmail')), '', concat(';', parameters('PMOSupportMailboxEmail'))))}",
               "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
               "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error it did not handle, so some of its work may not have been done. Nothing has been retried.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a> (started @{workflow()?['run']?['startTime']})</p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Open the run, find the failed step and its raw output, fix the cause, then resubmit the run. See Stopping and recovery in the EnterprisePMO deployment guide.</p>",
               "emailMessage/Importance": "High"

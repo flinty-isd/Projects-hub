@@ -1,0 +1,718 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Portal P2 - Control Board snapshot",
+  "description": "Weekdays at 06:30 and 12:30 UK. Reads the latest Programme Status row and the Board Decisions (highest score first), open Programme RAID items, Migration Waves and Programme Gates lists, works out the KPIs (Red and Amber risks, open issues and dependencies from RAID; week-on-week deltas against the page as last published) and republishes the Project Management Control Board page with them embedded as its snapshot. Guardrails stay as built into the page. Does nothing while PortalSnapshotsEnabled is No.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "PortalSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{portal-site}"
+    },
+    "PortalPagesFolder": {
+      "type": "String",
+      "defaultValue": "/SitePages"
+    },
+    "PortalTemplatesFolder": {
+      "type": "String",
+      "defaultValue": "/SiteAssets/PortalTemplates"
+    },
+    "PortalSnapshotsEnabled": {
+      "type": "Bool",
+      "defaultValue": false
+    },
+    "PortalOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{portal-support-mailbox}@{domain}"
+    },
+    "PortalSupportMailboxEmail": {
+      "type": "String",
+      "defaultValue": ""
+    },
+    "PortalBoardSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{source-site}"
+    }
+  },
+  "triggers": {
+    "Weekdays_0630_and_1230_UK": {
+      "type": "Recurrence",
+      "recurrence": {
+        "frequency": "Week",
+        "interval": 1,
+        "timeZone": "GMT Standard Time",
+        "schedule": {
+          "hours": [
+            6,
+            12
+          ],
+          "minutes": [
+            30
+          ],
+          "weekDays": [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday"
+          ]
+        }
+      },
+      "runtimeConfiguration": {
+        "concurrency": {
+          "runs": 1
+        }
+      }
+    }
+  },
+  "actions": {
+    "Init_Previous": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "Previous",
+            "type": "object",
+            "value": {}
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Scope_Main": {
+      "type": "Scope",
+      "actions": {
+        "Condition_Enabled": {
+          "type": "If",
+          "expression": {
+            "equals": [
+              "@parameters('PortalSnapshotsEnabled')",
+              true
+            ]
+          },
+          "actions": {
+            "Compose_stamp": {
+              "type": "Compose",
+              "inputs": "@{formatDateTime(convertFromUtc(utcNow(), 'GMT Standard Time'), 'dd MMM yyyy, HH:mm')}",
+              "runAfter": {}
+            },
+            "Get_template": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetFileContentByPath",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PortalSiteUrl')",
+                  "path": "@{concat(parameters('PortalTemplatesFolder'), '/hpuk-project-management-control-board.html')}",
+                  "inferContentType": false
+                }
+              },
+              "runAfter": {
+                "Compose_stamp": [
+                  "Succeeded"
+                ]
+              },
+              "description": "The portal page with an empty snapshot block. Upload new portal versions here, never a saved snapshot."
+            },
+            "Compose_template_text": {
+              "type": "Compose",
+              "inputs": "@base64ToString(body('Get_template')?['$content'])",
+              "runAfter": {
+                "Get_template": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Get_published": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetFileContentByPath",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PortalSiteUrl')",
+                  "path": "@{concat(parameters('PortalPagesFolder'), '/hpuk-project-management-control-board.html')}",
+                  "inferContentType": false
+                }
+              },
+              "runAfter": {
+                "Compose_template_text": [
+                  "Succeeded"
+                ]
+              },
+              "description": "The page as last published. Missing on the first run, which is fine: it only supplies previous figures (KPI deltas, SAM rows)."
+            },
+            "Compose_published_text": {
+              "type": "Compose",
+              "inputs": "@if(equals(actions('Get_published')?['status'], 'Succeeded'), base64ToString(coalesce(body('Get_published')?['$content'], '')), '')",
+              "runAfter": {
+                "Get_published": [
+                  "Succeeded",
+                  "Failed"
+                ]
+              }
+            },
+            "Condition_Has_previous": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "contains": [
+                      "@outputs('Compose_published_text')",
+                      "<script id=\"embedded-snapshot\" type=\"application/json\">"
+                    ]
+                  },
+                  {
+                    "not": {
+                      "contains": [
+                        "@outputs('Compose_published_text')",
+                        "<script id=\"embedded-snapshot\" type=\"application/json\">null</script>"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "actions": {
+                "Set_previous": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "Previous",
+                    "value": "@json(first(split(last(split(outputs('Compose_published_text'), '<script id=\"embedded-snapshot\" type=\"application/json\">')), '</script>')))"
+                  },
+                  "runAfter": {}
+                },
+                "Note_previous_unreadable": {
+                  "type": "Compose",
+                  "inputs": "The published page's snapshot could not be read; previous figures are ignored this run.",
+                  "runAfter": {
+                    "Set_previous": [
+                      "Failed"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Compose_published_text": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Get_status": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetItems",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PortalBoardSiteUrl')",
+                  "table": "Programme Status",
+                  "$top": 1,
+                  "$orderby": "ReportDate desc"
+                }
+              },
+              "runAfter": {
+                "Condition_Has_previous": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Get_decisions": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetItems",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PortalBoardSiteUrl')",
+                  "table": "Board Decisions",
+                  "$top": 5000,
+                  "$orderby": "DecisionScore desc"
+                }
+              },
+              "runAfter": {
+                "Condition_Has_previous": [
+                  "Succeeded"
+                ]
+              },
+              "runtimeConfiguration": {
+                "paginationPolicy": {
+                  "minimumItemCount": 100000
+                }
+              }
+            },
+            "Get_raid": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetItems",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PortalBoardSiteUrl')",
+                  "table": "Programme RAID",
+                  "$top": 5000,
+                  "$filter": "Status ne 'Closed'"
+                }
+              },
+              "runAfter": {
+                "Condition_Has_previous": [
+                  "Succeeded"
+                ]
+              },
+              "runtimeConfiguration": {
+                "paginationPolicy": {
+                  "minimumItemCount": 100000
+                }
+              }
+            },
+            "Get_waves": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetItems",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PortalBoardSiteUrl')",
+                  "table": "Migration Waves",
+                  "$top": 5000,
+                  "$orderby": "SortOrder asc"
+                }
+              },
+              "runAfter": {
+                "Condition_Has_previous": [
+                  "Succeeded"
+                ]
+              },
+              "runtimeConfiguration": {
+                "paginationPolicy": {
+                  "minimumItemCount": 100000
+                }
+              }
+            },
+            "Get_gates": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetItems",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PortalBoardSiteUrl')",
+                  "table": "Programme Gates",
+                  "$top": 5000,
+                  "$orderby": "SortOrder asc"
+                }
+              },
+              "runAfter": {
+                "Condition_Has_previous": [
+                  "Succeeded"
+                ]
+              },
+              "runtimeConfiguration": {
+                "paginationPolicy": {
+                  "minimumItemCount": 100000
+                }
+              }
+            },
+            "Filter_red_risks": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Get_raid')?['value']",
+                "where": "@and(equals(item()?['RAIDType']?['Value'], 'Risk'), equals(item()?['RAG']?['Value'], 'Red'))"
+              },
+              "runAfter": {
+                "Get_status": [
+                  "Succeeded"
+                ],
+                "Get_decisions": [
+                  "Succeeded"
+                ],
+                "Get_raid": [
+                  "Succeeded"
+                ],
+                "Get_waves": [
+                  "Succeeded"
+                ],
+                "Get_gates": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_amber_risks": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Get_raid')?['value']",
+                "where": "@and(equals(item()?['RAIDType']?['Value'], 'Risk'), equals(item()?['RAG']?['Value'], 'Amber'))"
+              },
+              "runAfter": {
+                "Filter_red_risks": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_issues": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Get_raid')?['value']",
+                "where": "@equals(item()?['RAIDType']?['Value'], 'Issue')"
+              },
+              "runAfter": {
+                "Filter_amber_risks": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filter_dependencies": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Get_raid')?['value']",
+                "where": "@equals(item()?['RAIDType']?['Value'], 'Dependency')"
+              },
+              "runAfter": {
+                "Filter_issues": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Compose_counts": {
+              "type": "Compose",
+              "inputs": {
+                "openActions": "@coalesce(first(body('Get_status')?['value'])?['OpenActions'], 0)",
+                "redRisks": "@length(body('Filter_red_risks'))",
+                "amberRisks": "@length(body('Filter_amber_risks'))",
+                "openIssues": "@length(body('Filter_issues'))",
+                "openDeps": "@length(body('Filter_dependencies'))"
+              },
+              "runAfter": {
+                "Filter_dependencies": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Compose_kpis": {
+              "type": "Compose",
+              "inputs": {
+                "rag": "@{toUpper(coalesce(first(body('Get_status')?['value'])?['OverallRAG']?['Value'], 'Amber'))}",
+                "sitesDone": "@coalesce(first(body('Get_status')?['value'])?['SitesDone'], 0)",
+                "sitesTotal": "@coalesce(first(body('Get_status')?['value'])?['SitesTotal'], 0)",
+                "gbDone": "@coalesce(first(body('Get_status')?['value'])?['GBDone'], 0)",
+                "gbTotal": "@coalesce(first(body('Get_status')?['value'])?['GBTotal'], 0)",
+                "openActions": "@outputs('Compose_counts')?['openActions']",
+                "actionsDelta": "@{concat(if(greater(sub(outputs('Compose_counts')?['openActions'], coalesce(variables('Previous')?['data']?['kpis']?['openActions'], outputs('Compose_counts')?['openActions'])), 0), '+', ''), string(sub(outputs('Compose_counts')?['openActions'], coalesce(variables('Previous')?['data']?['kpis']?['openActions'], outputs('Compose_counts')?['openActions']))), if(equals(sub(outputs('Compose_counts')?['openActions'], coalesce(variables('Previous')?['data']?['kpis']?['openActions'], outputs('Compose_counts')?['openActions'])), 0), ' steady', if(less(sub(outputs('Compose_counts')?['openActions'], coalesce(variables('Previous')?['data']?['kpis']?['openActions'], outputs('Compose_counts')?['openActions'])), 0), ' improving', ' worsening')))}",
+                "redRisks": "@outputs('Compose_counts')?['redRisks']",
+                "redDelta": "@{concat(if(greater(sub(outputs('Compose_counts')?['redRisks'], coalesce(variables('Previous')?['data']?['kpis']?['redRisks'], outputs('Compose_counts')?['redRisks'])), 0), '+', ''), string(sub(outputs('Compose_counts')?['redRisks'], coalesce(variables('Previous')?['data']?['kpis']?['redRisks'], outputs('Compose_counts')?['redRisks']))), if(equals(sub(outputs('Compose_counts')?['redRisks'], coalesce(variables('Previous')?['data']?['kpis']?['redRisks'], outputs('Compose_counts')?['redRisks'])), 0), ' steady', if(less(sub(outputs('Compose_counts')?['redRisks'], coalesce(variables('Previous')?['data']?['kpis']?['redRisks'], outputs('Compose_counts')?['redRisks'])), 0), ' improving', ' worsening')))}",
+                "amberRisks": "@outputs('Compose_counts')?['amberRisks']",
+                "openIssues": "@outputs('Compose_counts')?['openIssues']",
+                "issuesDelta": "@{concat(if(greater(sub(outputs('Compose_counts')?['openIssues'], coalesce(variables('Previous')?['data']?['kpis']?['openIssues'], outputs('Compose_counts')?['openIssues'])), 0), '+', ''), string(sub(outputs('Compose_counts')?['openIssues'], coalesce(variables('Previous')?['data']?['kpis']?['openIssues'], outputs('Compose_counts')?['openIssues']))), if(equals(sub(outputs('Compose_counts')?['openIssues'], coalesce(variables('Previous')?['data']?['kpis']?['openIssues'], outputs('Compose_counts')?['openIssues'])), 0), ' steady', if(less(sub(outputs('Compose_counts')?['openIssues'], coalesce(variables('Previous')?['data']?['kpis']?['openIssues'], outputs('Compose_counts')?['openIssues'])), 0), ' improving', ' worsening')))}",
+                "openDeps": "@outputs('Compose_counts')?['openDeps']"
+              },
+              "runAfter": {
+                "Compose_counts": [
+                  "Succeeded"
+                ]
+              },
+              "description": "Deltas compare with the KPIs in the page as last published (0 steady on the first run)."
+            },
+            "Select_decisions": {
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Get_decisions')?['value']",
+                "select": {
+                  "ref": "@coalesce(item()?['DecisionRef'], '')",
+                  "category": "@coalesce(item()?['Category'], '')",
+                  "score": "@coalesce(item()?['DecisionScore'], 0)",
+                  "title": "@coalesce(item()?['Title'], '')",
+                  "owner": "@coalesce(item()?['Owner'], '')",
+                  "due": "@if(empty(item()?['DueDate']), '', formatDateTime(convertFromUtc(coalesce(item()?['DueDate'], '1900-01-01T00:00:00Z'), 'GMT Standard Time'), 'yyyy-MM-dd'))",
+                  "status": "@coalesce(item()?['Status']?['Value'], 'Required')",
+                  "linkedRaid": "@coalesce(item()?['LinkedRAID'], '')",
+                  "optA": "@coalesce(item()?['OptionA'], '')",
+                  "optB": "@coalesce(item()?['OptionB'], '')",
+                  "optC": "@coalesce(item()?['OptionC'], '')",
+                  "recommended": "@coalesce(item()?['Recommended'], '')",
+                  "rationale": "@coalesce(item()?['Rationale'], '')",
+                  "costOfDelay": "@coalesce(item()?['CostOfDelay'], '')",
+                  "boardStatement": "@coalesce(item()?['BoardStatement'], '')"
+                }
+              },
+              "runAfter": {
+                "Compose_kpis": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Select_raid": {
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Get_raid')?['value']",
+                "select": {
+                  "id": "@coalesce(item()?['RiskRef'], '')",
+                  "type": "@coalesce(item()?['RAIDType']?['Value'], '')",
+                  "title": "@coalesce(item()?['Title'], '')",
+                  "rag": "@toUpper(coalesce(item()?['RAG']?['Value'], 'Amber'))",
+                  "velocity": "@coalesce(item()?['Velocity'], 'Steady')",
+                  "breachDays": "@coalesce(item()?['BreachDays'], 0)",
+                  "owner": "@coalesce(item()?['OwnerName'], '')",
+                  "linkedDec": "@coalesce(item()?['LinkedDecision'], '—')",
+                  "mitigation": "@coalesce(item()?['Mitigation'], '')"
+                }
+              },
+              "runAfter": {
+                "Select_decisions": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Select_waves": {
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Get_waves')?['value']",
+                "select": {
+                  "wave": "@coalesce(item()?['Title'], '')",
+                  "scope": "@coalesce(item()?['Scope'], '')",
+                  "sites": "@coalesce(item()?['SitesInScope'], 0)",
+                  "completed": "@coalesce(item()?['SitesCompleted'], 0)",
+                  "gb": "@{concat(formatNumber(coalesce(item()?['DataGB'], 0), '0.0'), ' GB')}",
+                  "status": "@coalesce(item()?['WaveStatus']?['Value'], '')",
+                  "owner": "@coalesce(item()?['WaveOwner'], '')"
+                }
+              },
+              "runAfter": {
+                "Select_raid": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Select_gates": {
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Get_gates')?['value']",
+                "select": {
+                  "gate": "@coalesce(item()?['GateLabel'], '')",
+                  "title": "@coalesce(item()?['Title'], '')",
+                  "owner": "@coalesce(item()?['GateOwner'], '')",
+                  "criteria": "@coalesce(item()?['Criteria'], '')",
+                  "status": "@coalesce(item()?['GateType']?['Value'], '')"
+                }
+              },
+              "runAfter": {
+                "Select_waves": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Compose_payload": {
+              "type": "Compose",
+              "inputs": {
+                "data": {
+                  "kpis": "@outputs('Compose_kpis')",
+                  "decisions": "@body('Select_decisions')",
+                  "raidItems": "@body('Select_raid')",
+                  "waves": "@body('Select_waves')",
+                  "gates": "@body('Select_gates')"
+                },
+                "meta": {
+                  "mode": "flow",
+                  "lastUpdated": "@{concat(outputs('Compose_stamp'), ' UK')}",
+                  "source": "SharePoint lists: Programme Status, Board Decisions, Programme RAID, Migration Waves, Programme Gates (flow P2)",
+                  "savedAt": "@{concat(outputs('Compose_stamp'), ' UK')}"
+                }
+              },
+              "runAfter": {
+                "Select_gates": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Compose_json": {
+              "type": "Compose",
+              "inputs": "@replace(string(outputs('Compose_payload')), '<', '\\u003c')",
+              "runAfter": {},
+              "description": "Every < escaped, so nothing in the data can close the script block early (the same escaping as Save Snapshot HTML)."
+            },
+            "Condition_Template_ready": {
+              "type": "If",
+              "description": "The template must contain the empty snapshot block exactly as the portal ships it.",
+              "expression": {
+                "contains": [
+                  "@outputs('Compose_template_text')",
+                  "<script id=\"embedded-snapshot\" type=\"application/json\">null</script>"
+                ]
+              },
+              "actions": {
+                "Compose_page": {
+                  "type": "Compose",
+                  "inputs": "@replace(outputs('Compose_template_text'), '<script id=\"embedded-snapshot\" type=\"application/json\">null</script>', concat('<script id=\"embedded-snapshot\" type=\"application/json\">', outputs('Compose_json'), '</script>'))",
+                  "runAfter": {}
+                },
+                "Condition_Size_ok": {
+                  "type": "If",
+                  "description": "SharePoint HTML pages are limited to 10 MB.",
+                  "expression": {
+                    "less": [
+                      "@length(outputs('Compose_page'))",
+                      10000000
+                    ]
+                  },
+                  "actions": {
+                    "Write_page": {
+                      "type": "OpenApiConnection",
+                      "description": "Create file replaces the published page (a new version when the library keeps versions).",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "CreateFile",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('PortalSiteUrl')",
+                          "folderPath": "@parameters('PortalPagesFolder')",
+                          "name": "hpuk-project-management-control-board.html",
+                          "body": "@outputs('Compose_page')"
+                        }
+                      },
+                      "runAfter": {}
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Email_too_large": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_office365",
+                            "operationId": "SendEmailV2",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                          },
+                          "parameters": {
+                            "emailMessage/To": "@{concat(parameters('PortalOwnerEmail'), if(empty(parameters('PortalSupportMailboxEmail')), '', concat(';', parameters('PortalSupportMailboxEmail'))))}",
+                            "emailMessage/Subject": "Portal snapshot not published: hpuk-project-management-control-board.html is too large",
+                            "emailMessage/Body": "<p>The refreshed hpuk-project-management-control-board.html would be @{div(length(outputs('Compose_page')), 1048576)} MB, over SharePoint's 10 MB limit for HTML pages, so it was not written. The published page still shows the previous snapshot.</p><p>Reduce what the flow publishes (for example fewer Run Log days) or archive closed items.</p>",
+                            "emailMessage/Importance": "High"
+                          }
+                        },
+                        "runAfter": {}
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_page": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Email_template_not_ready": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_office365",
+                        "operationId": "SendEmailV2",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                      },
+                      "parameters": {
+                        "emailMessage/To": "@{concat(parameters('PortalOwnerEmail'), if(empty(parameters('PortalSupportMailboxEmail')), '', concat(';', parameters('PortalSupportMailboxEmail'))))}",
+                        "emailMessage/Subject": "Portal snapshot not published: hpuk-project-management-control-board.html template has no empty snapshot block",
+                        "emailMessage/Body": "<p>The template @{concat(parameters('PortalTemplatesFolder'), '/hpuk-project-management-control-board.html')} doesn't contain the empty snapshot block, so the flow can't fill it in. This happens when a saved snapshot is uploaded as the template.</p><p>Upload the portal file from the PortalSnapshots kit (templates/hpuk-project-management-control-board.html) to the templates folder, then run the flow again.</p>",
+                        "emailMessage/Importance": "High"
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                }
+              },
+              "runAfter": {
+                "Compose_json": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {}
+        }
+      },
+      "runAfter": {
+        "Init_Previous": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Catch_run_failed": {
+      "type": "Scope",
+      "description": "Run-level failure alert: any error in Scope_Main that no step handled.",
+      "actions": {
+        "Select_failed_steps": {
+          "type": "Select",
+          "inputs": {
+            "from": "@result('Scope_Main')",
+            "select": "@concat('<li><b>', item()?['name'], '</b>: ', item()?['status'], ' ', coalesce(item()?['error']?['code'], item()?['outputs']?['statusCode'], ''), ' ', coalesce(item()?['error']?['message'], ''), '</li>')"
+          },
+          "runAfter": {}
+        },
+        "Alert_run_failed": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@{concat(parameters('PortalOwnerEmail'), if(empty(parameters('PortalSupportMailboxEmail')), '', concat(';', parameters('PortalSupportMailboxEmail'))))}",
+              "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
+              "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error, so the portal page was not refreshed; it still shows the previous snapshot and its Last Updated time.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a></p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Fix the cause and resubmit the run (or run the flow again). See PortalSnapshots/README.md, When a refresh fails.</p>",
+              "emailMessage/Importance": "High"
+            }
+          },
+          "runAfter": {
+            "Select_failed_steps": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Scope_Main": [
+          "Failed",
+          "TimedOut"
+        ]
+      }
+    }
+  }
+}
