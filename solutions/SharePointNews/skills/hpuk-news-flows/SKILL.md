@@ -25,8 +25,7 @@ description: Help set up, test and troubleshoot the HPUK SharePoint News flows (
 Use this skill for the four flows in the **SharePoint News and Notices** solution
 (version 1.2.11.0 or later):
 
-- **C1 News Expiry**: sets **Status** to Expired and **Show in News** to No on posts
-  past their Expiry Date.
+- **C1 News Expiry**: each morning moves posts past their Expiry Date to the site's **News archive** (Status Expired, Show in News No, no longer a news post, still published and readable). It never deletes or hides them; a publisher unpublishes a notice by hand to remove it completely.
   Runs daily at 06:00 UK time, or on demand.
 - For C1's steps, a normal run and what each email means, follow `C1-WALKTHROUGH.md` (in the solution folder and the deployment kit).
 - **C2 News Port Roundup**: emails and posts a weekly digest to each port. Its week comes from the run's scheduled Monday, and the date in each Delivery Log key (`roundup|yyyy-MM-dd|...`) is that Monday. To resend a week after the next Monday has passed, set **Roundup replay week** to that date and run C2, then clear it (README: Replaying a roundup week).
@@ -206,7 +205,10 @@ Keep it short:
   1. Open the post's **Page details**. If **Status** is still **Live**, check
      **Expiry writes enabled** is **Yes** and the Expiry Date is before today, then
      run C1 again.
-  2. If **Status** is **Expired**, edit the News page, open the News web part's
+  2. If **Status** is **Expired** but Page details still shows it as a **news
+     post**, C1 couldn't finish: check the expiry report for the reason.
+  3. If it's a page (not news) and Expired, it is archived and only news web
+     parts that don't filter on news posts can show it: edit the News page, open the News web part's
      settings, set **Filter > Page properties > Status**, **Doesn't equal**,
      **Expired**, and republish. On the intranet home, this needs the search
      mapping first.

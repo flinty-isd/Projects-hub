@@ -17,7 +17,7 @@ It uses standard modern pages only, with no SPFx.
 > Monday processed the new week and left the failed one outstanding. 1.7.0.0
 > takes the week from the run's scheduled time and adds `RoundupReplayWeek`
 > (see *Replaying a roundup week*). The hold lifts only when the Testing
-> table passes in test on 1.7.0.0 (including *Reserved, never sent* and
+> table passes in test on 1.8.0.0 (expired posts are now archived, decision 6c) (including *Reserved, never sent* and
 > *Roundup across the Monday boundary*), the reviewer has re-reviewed
 > `SharePointNews-DeploymentKit_1_7_0_0.zip`,
 > and the release decision is recorded. Don't import into production before
@@ -30,6 +30,7 @@ It uses standard modern pages only, with no SPFx.
 | [`provisioning/Set-NewsRetention.ps1`](provisioning/Set-NewsRetention.ps1) | Purview retention policy: 7 years on both sites |
 | [`pages/Publisher-Guide.html`](pages/Publisher-Guide.html) | Content of Publisher-Guide.aspx on HPUK News |
 | [`powerautomate/flows/`](powerautomate/flows) | C1 expiry, C2 weekly port roundup, C3a/C3b urgent notice (one per site) |
+| [`pages/News-Archive-Page.md`](pages/News-Archive-Page.md) | The News archive page on each site: where expired posts stay readable (view, List web part, checks) |
 | [`pages/HPUK-News-Post-Template.md`](pages/HPUK-News-Post-Template.md) | Step-by-step build of the *HPUK News post* page template (and *Other News post*) in the SharePoint editor |
 | [`C1-WALKTHROUGH.md`](C1-WALKTHROUGH.md) | One-page walkthrough of C1 expiry: each step, a normal day, what each email means, how to check it |
 | [`taxonomy/`](taxonomy) | Department and Category term sets (term-store import files) |
@@ -53,6 +54,7 @@ if Communications or IT decide otherwise.
 | 6 | Expiry boundary to confirm | **Expiry Date is the last current day.** C1 runs 06:00 UK time and expires dates before today (UK date, so BST is handled) | Matches the design's proposed rule |
 | 6a | (found in testing) The Site Pages columns were made by hand, not by the provisioning script | The flows use the sites' own columns: **Show in News** (Yes/No, internal `ShowinNews`) instead of Status Live/Expired, **Expiry Date** (internal `Expiry_x0020_Date`), **Include in Weekly Roundup** (`Include_x0020_in_x0020_Weekly_x0020_Roundup`) and **Strategy Theme** (`Strategy_x0020_Theme`, a Choice column; theme grouping matches Choice values as well as managed metadata labels). Other News has different internal names for three of these: `ExpiryDate`, `StrategyTheme` and `InRoundup` (added by hand there), and the flows use each site's own names. **Urgent** and **Port** keep their names; **UrgentSent** and **NotificationRound** are added by hand. C1 sets Show in News to No on any published post past its Expiry Date unless it is already No, **blank included**. Set both columns as described under Testing. The News web part filter can't use Yes/No columns, so a **Status** Choice column (Live, Expired; default Live) is added by hand on both sites for the web parts to filter on; C1 sets it to Expired together with Show in News | PowerShell can't be run, so the flows follow the sites. C2 and C3 also need the Comms Distribution and Delivery Log lists on HPUK News, created by hand with the internal names in `sharepoint/list-schema.json` |
 | 6b | (found in UAT) Status and Show in News alone don't hide an expired post: hub and home-page news, the SharePoint start page and app, Viva Connections and the news digest ignore them, and search lags | **C1 unpublishes expired posts** (back to draft) after setting Status Expired and Show in News No, and confirms it by reading the page back. Site Pages needs draft versions with drafts visible only to editors, so readers can't open an expired post | Chosen by the service owner (option A). Links to an expired post stop working for readers; editors still see it; nothing is deleted and republishing restores it |
+| 6c | (27 November 2026) Expired posts must stay readable somewhere, separately from current news | **C1 archives instead of unpublishing** (1.8.0.0, replaces 6b's unpublish): it checks the page out, sets Status Expired, Show in News No and **PromotedState 0** (an ordinary page, no longer a news post), and checks it in published. The post leaves every news feed, hub news, Viva and the roundup, and is listed on each site's **News archive** page, where readers can open it. Confirmed by read-back. Posts unpublished before 1.8.0.0 stay hidden until `ArchiveUnpublishedExpired` is set to Yes for one run | Chosen by the service owner: every expired post stays readable by the site's readers. To remove a notice completely, a publisher unpublishes it by hand |
 | 7 | Frontline route for generic accounts | **Out of this build.** PID v3.1 prohibits shared and generic accounts in SharePoint. Its approved routes are the Employee App (view-only staff) and display-mode pages (screens) | Avoids a design that breaks the access model |
 | 8 | Everyone except external users as Visitors, to confirm | **A scoped reader group** is required by the script, and EEEU is never used | The tenant is shared with a peer company |
 | 9 | Compare the built-in news digest with C2 | C2 is built, with **Include in Weekly Roundup** and per-port routing that the built-in digest can't do | Pilot both. If the built-in digest is good enough, turn C2 off |
@@ -97,7 +99,7 @@ all ports (decision 1).
 ```mermaid
 flowchart LR
   P([Publisher publishes a post]) --> SP[("Site Pages<br/>both sites")]
-  SP -- "daily 06:00: Expiry Date passed" --> C1["C1 Expiry"] -- "Expired, then unpublished" --> SP
+  SP -- "daily 06:00: Expiry Date passed" --> C1["C1 Expiry"] -- "Expired, no longer a news post:<br/>News archive" --> SP
   SP -- "Mondays 07:00: Show in News, Include in Weekly Roundup, last 7 days" --> C2["C2 Port roundup"]
   SP -- "published major version, Urgent, not yet sent,<br/>by an urgent publisher" --> C3["C3 Urgent notice"]
   CD[("Comms Distribution<br/>port → email group, Teams channel")] --> C2 & C3
@@ -173,7 +175,8 @@ and isn't in this kit.)
      [`pages/HPUK-News-Post-Template.md`](pages/HPUK-News-Post-Template.md)
      (sections Summary, Main content, Action required and deadline,
      Attachments, Contact; no author byline; saved as a template).
-   - Home pages: set up the News web parts as listed below.
+   - Home pages: set up the News web parts as listed below, and build the
+     **News archive** page on each site ([`pages/News-Archive-Page.md`](pages/News-Archive-Page.md)).
 4. **Comms Distribution.** Add one row per port, with its email group, Team ID
    and Channel ID. For a company-wide roundup, add a row with Port **All
    ports** (for example an all-HPUK list or a corporate Teams channel): it
@@ -224,6 +227,9 @@ and isn't in this kit.)
 | Intranet home | News (secondary) | Other News | Status = Live; audience targeting on | List, lower on the page |
 | Intranet home (optional) | News, one per theme: Our People, Our Business, Our Environment, One TEAM | HPUK News and Other News | Status = Live **and** Strategy theme = that theme | Side-by-side or carousel |
 
+| HPUK News and Other News | **News archive** page: List web part showing the Site Pages **News archive** view | This site | Status = Expired (in the view) | List, newest first; see [`pages/News-Archive-Page.md`](pages/News-Archive-Page.md) |
+| Intranet home (optional) | Quick link *News archive* to each site's archive page | — | — | — |
+
 If the News web part can't filter on the managed metadata Category in your
 tenant, use a Category view of Site Pages in a Highlighted content web part
 for the Safety section instead.
@@ -235,11 +241,13 @@ is not the production permission model.
 
 | Test | Pass condition |
 |------|----------------|
-| Expiry | A post with yesterday's Expiry Date is Status Expired, Show in News No and **unpublished** (draft) after the 06:00 run, and listed under Unpublished in the report. A blank date stays published. A reader account can't open the expired post's link; an editor can |
-| Expiry re-run | Run C1 again straight away: the same post is counted as already unpublished and nothing changes |
+| Expiry | A post with yesterday's Expiry Date, after the 06:00 run: Status Expired, Show in News No, **no longer a news post** (Page details shows it as a page), still published; listed under *Archived* in the report. It has gone from the site and intranet home news, hub news and the next roundup, and appears on the **News archive** page, where a reader account can open it. A blank date stays as news. Adding the post to a C3 test: archiving it sends no urgent alert |
+| Expiry re-run | Run C1 again straight away: the archived post isn't picked up again and nothing changes |
+| Expiry, earlier unpublished posts | A past-expiry news post that is a draft (unpublished earlier) is listed under *left hidden* and not changed. Set `ArchiveUnpublishedExpired` = Yes and run C1: it is archived (published as a page, on the News archive). Set it back to No |
+| Expiry failure leaves no checkout | In a test copy, make *Update fields* fail (e.g. a column name that doesn't exist): the page is reported, is **not** left checked out, and is unchanged |
 | Expiry checked out | Check a past-expiry post out to another account, run C1: it is reported as checked out and left alone |
 | Expiry site locked | On a locked or read-only site, C1 reports each page with SharePoint's message (*Additions to this Web site have been blocked*) and carries on |
-| Site Pages columns | On each site: Library settings → **Show in News**: default **Yes**, then **OK** (re-save even if it already says Yes). **Expiry Date**: Date and Time Format **Date Only**. A new News post must show Show in News = Yes in Page details before you publish it. In grid view, set any blank Show in News to Yes. Create **Status** (type the name exactly): Choice, Live and Expired, default **Live**, **OK**, then open it again and **OK**; set any blank Status to Live. **Versioning settings**: *Create major and minor (draft) versions*, and *Draft item security*: **Only users who can edit items** (needed for C1 to unpublish expired posts out of readers' sight) |
+| Site Pages columns | On each site: Library settings → **Show in News**: default **Yes**, then **OK** (re-save even if it already says Yes). **Expiry Date**: Date and Time Format **Date Only**. A new News post must show Show in News = Yes in Page details before you publish it. In grid view, set any blank Show in News to Yes. Create **Status** (type the name exactly): Choice, Live and Expired, default **Live**, **OK**, then open it again and **OK**; set any blank Status to Live. **Versioning settings**: *Create major and minor (draft) versions*, and *Draft item security*: **Only users who can edit items** (keeps work-in-progress drafts away from readers; C1 itself no longer depends on it) |
 | Urgent, happy path | One email and one Teams post per matching port. Delivery Log has one *Sent* row per port and channel. UrgentSent = Yes |
 | Urgent, edit | Editing and republishing a sent urgent post sends nothing |
 | Urgent, correction | Round + 1 and UrgentSent = No, then republish. Exactly one new alert per destination |
