@@ -1,0 +1,8 @@
+﻿Title,ShareOwner,SizeGB,LastModified,IntegrationMarker,GenericAccountPresent,ApplicationBackEnd,PermissionComplexity,TargetSiteUrl,Disposition,Status,DecisionLog
+EXAMPLE 1 - delete after import,,1,2026-12-01 09:00,No,No,No,Low,Example,Migrate to SharePoint Online,Registered,Example text
+EXAMPLE 2 - delete after import,,1,2026-12-01 09:00,No,No,No,Medium,Example,Excluded - system dependent,Awaiting owner decision,Example text
+EXAMPLE 3 - delete after import,,1,2026-12-01 09:00,No,No,No,High,Example,Archive,Disposition required,Example text
+EXAMPLE 4 - delete after import,,1,2026-12-01 09:00,No,No,No,Low,Example,Remediate,Disposition agreed,Example text
+EXAMPLE 5 - delete after import,,1,2026-12-01 09:00,No,No,No,Medium,Example,Delete,Approved - permissions remediation before migration,Example text
+EXAMPLE 6 - delete after import,,1,2026-12-01 09:00,No,No,No,High,Example,Move to non-SharePoint platform,Ready for migration,Example text
+EXAMPLE 7 - delete after import,,1,2026-12-01 09:00,No,No,No,Low,Example,Migrate to SharePoint Online,Migrated,Example text

@@ -1,0 +1,6 @@
+﻿Title,GuestUserId,GroupId,SiteId,Sponsor,AccessEndDate,AccessRequestId,Status,ReminderSent,RemovedOn,DecisionDueBy,KeptUntil
+EXAMPLE 1 - delete after import,Example,Example,1,,2026-12-01 09:00,1,Active,No,2026-12-01 09:00,2026-12-01 09:00,2026-12-01 09:00
+EXAMPLE 2 - delete after import,Example,Example,1,,2026-12-01 09:00,1,Removal pending owner decision,No,2026-12-01 09:00,2026-12-01 09:00,2026-12-01 09:00
+EXAMPLE 3 - delete after import,Example,Example,1,,2026-12-01 09:00,1,Kept - owner decision,No,2026-12-01 09:00,2026-12-01 09:00,2026-12-01 09:00
+EXAMPLE 4 - delete after import,Example,Example,1,,2026-12-01 09:00,1,Expired - access removed,No,2026-12-01 09:00,2026-12-01 09:00,2026-12-01 09:00
+EXAMPLE 5 - delete after import,Example,Example,1,,2026-12-01 09:00,1,Revoked,No,2026-12-01 09:00,2026-12-01 09:00,2026-12-01 09:00

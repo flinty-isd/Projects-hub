@@ -1,0 +1,4 @@
+﻿Title,WorkstreamCode,Sponsor,WorkstreamLead,Active,OverallRAG,ScheduleRAG,BudgetRAG,ScopeRAG,StatusSummary
+EXAMPLE 1 - delete after import,Example,,,Yes,Red,Red,Red,Red,Example text
+EXAMPLE 2 - delete after import,Example,,,Yes,Amber,Amber,Amber,Amber,Example text
+EXAMPLE 3 - delete after import,Example,,,Yes,Green,Green,Green,Green,Example text

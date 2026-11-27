@@ -1,0 +1,6 @@
+﻿Title,RunID,JobName,Target,RunOwner,RunTimestamp,Result,Port
+EXAMPLE 1 - delete after import,Example,Example,Example,Example,2026-12-01 09:00,Success,All
+EXAMPLE 2 - delete after import,Example,Example,Example,Example,2026-12-01 09:00,Partial,Felixstowe
+EXAMPLE 3 - delete after import,Example,Example,Example,Example,2026-12-01 09:00,Failed,Harwich
+EXAMPLE 4 - delete after import,Example,Example,Example,Example,2026-12-01 09:00,Success,Thamesport
+EXAMPLE 5 - delete after import,Example,Example,Example,Example,2026-12-01 09:00,Partial,Corporate

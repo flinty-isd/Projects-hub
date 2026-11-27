@@ -1,0 +1,8 @@
+﻿Title,SourceSite,PageId,PublishedVersion,NotificationRound,Destination,Channel,DeliveryStatus,DeliveredAt,ErrorDetail,FlowRunId
+EXAMPLE 1 - delete after import,Example,1,Example,1,Example,Email,Reserved,2026-12-01 09:00,Example text,Example
+EXAMPLE 2 - delete after import,Example,1,Example,1,Example,Teams,Sent,2026-12-01 09:00,Example text,Example
+EXAMPLE 3 - delete after import,Example,1,Example,1,Example,Email,Failed,2026-12-01 09:00,Example text,Example
+EXAMPLE 4 - delete after import,Example,1,Example,1,Example,Teams,Reconcile,2026-12-01 09:00,Example text,Example
+EXAMPLE 5 - delete after import,Example,1,Example,1,Example,Email,Skipped - not an urgent publisher,2026-12-01 09:00,Example text,Example
+EXAMPLE 6 - delete after import,Example,1,Example,1,Example,Teams,Skipped - audience targeted,2026-12-01 09:00,Example text,Example
+EXAMPLE 7 - delete after import,Example,1,Example,1,Example,Email,Skipped - no destinations,2026-12-01 09:00,Example text,Example

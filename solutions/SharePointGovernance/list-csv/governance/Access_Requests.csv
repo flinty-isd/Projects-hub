@@ -1,0 +1,13 @@
+﻿Title,Requester,UserType,BusinessJustification,LineManager,GuestEmail,AccessEndDate,Status,ApprovedAccessMethod,DecisionLog
+EXAMPLE 1 - delete after import,,Employee - view only,Example text,,Example,2026-12-01 09:00,Submitted,Example,Example text
+EXAMPLE 2 - delete after import,,Employee - edit / collaborate,Example text,,Example,2026-12-01 09:00,Granted,Example,Example text
+EXAMPLE 3 - delete after import,,Site Owner / Author,Example text,,Example,2026-12-01 09:00,Approved - awaiting AD group change,Example,Example text
+EXAMPLE 4 - delete after import,,Long-term contractor,Example text,,Example,2026-12-01 09:00,Approved - PIM eligible assignment pending,Example,Example text
+EXAMPLE 5 - delete after import,,Screen / kiosk / display,Example text,,Example,2026-12-01 09:00,Blocked - Licence required,Example,Example text
+EXAMPLE 6 - delete after import,,Privileged admin,Example text,,Example,2026-12-01 09:00,Blocked - Entra ID P2 required,Example,Example text
+EXAMPLE 7 - delete after import,,Service / shared account,Example text,,Example,2026-12-01 09:00,Closed - Use Employee App,Example,Example text
+EXAMPLE 8 - delete after import,,Employee - view only,Example text,,Example,2026-12-01 09:00,Closed - Use published display page,Example,Example text
+EXAMPLE 9 - delete after import,,Employee - edit / collaborate,Example text,,Example,2026-12-01 09:00,Rejected,Example,Example text
+EXAMPLE 10 - delete after import,,Site Owner / Author,Example text,,Example,2026-12-01 09:00,Rejected - Not time-bound,Example,Example text
+EXAMPLE 11 - delete after import,,Long-term contractor,Example text,,Example,2026-12-01 09:00,Rejected - Prohibited,Example,Example text
+EXAMPLE 12 - delete after import,,Screen / kiosk / display,Example text,,Example,2026-12-01 09:00,Rejected - Unknown access type,Example,Example text

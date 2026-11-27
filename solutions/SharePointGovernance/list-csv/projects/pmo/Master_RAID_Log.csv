@@ -1,0 +1,6 @@
+﻿Title,RAIDType,Description,RAGRating,Owner,Status,EscalatedToExecutiveBoard,EscalationRequested,EscalationJustification,EscalationStatus,EscalationDecisionNote,TargetResolutionDate,Mitigation,ClosedDate,DatePushCount,OriginalTargetDate,LastPushNote,TrackedDueDate,TrackedStatus
+EXAMPLE 1 - delete after import,Risk,Example text,Red,,Open,No,No,Example text,Not requested,Example text,2026-12-01,Example text,2026-12-01,0,2026-12-01,Example text,Example,Example
+EXAMPLE 2 - delete after import,Assumption,Example text,Amber,,In progress,No,No,Example text,Requested,Example text,2026-12-01,Example text,2026-12-01,0,2026-12-01,Example text,Example,Example
+EXAMPLE 3 - delete after import,Issue,Example text,Green,,Closed,No,No,Example text,Approved,Example text,2026-12-01,Example text,2026-12-01,0,2026-12-01,Example text,Example,Example
+EXAMPLE 4 - delete after import,Dependency,Example text,Red,,Open,No,No,Example text,Declined,Example text,2026-12-01,Example text,2026-12-01,0,2026-12-01,Example text,Example,Example
+EXAMPLE 5 - delete after import,Risk,Example text,Amber,,In progress,No,No,Example text,Not decided,Example text,2026-12-01,Example text,2026-12-01,0,2026-12-01,Example text,Example,Example

@@ -1,0 +1,8 @@
+﻿Title,PageID,BusinessArea,ScopeClassification,ExistingURL,TargetURL,Disposition,ContentOwner,DeliveryOwner,Priority,DeliveryStatus,DesignApproved,ContentReady,UATStatus,BusinessSignoff,TargetGoLive,RelatedActionRisk
+EXAMPLE 1 - delete after import,Example,Example,Original Scope,https://example.com,https://example.com,Migrate,,,Critical,Assess,No,No,Not Required,No,2026-12-01 09:00,Example
+EXAMPLE 2 - delete after import,Example,Example,Out of Scope,https://example.com,https://example.com,Create-Rebuild,,,High,Define,No,No,Not Started,No,2026-12-01 09:00,Example
+EXAMPLE 3 - delete after import,Example,Example,Scope Change,https://example.com,https://example.com,Merge,,,Medium,Design,No,No,Planned,No,2026-12-01 09:00,Example
+EXAMPLE 4 - delete after import,Example,Example,Original Scope,https://example.com,https://example.com,Retire,,,Low,Build,No,No,In Progress,No,2026-12-01 09:00,Example
+EXAMPLE 5 - delete after import,Example,Example,Out of Scope,https://example.com,https://example.com,Assess,,,Critical,UAT,No,No,Passed,No,2026-12-01 09:00,Example
+EXAMPLE 6 - delete after import,Example,Example,Scope Change,https://example.com,https://example.com,Migrate,,,High,Sign-off,No,No,Failed,No,2026-12-01 09:00,Example
+EXAMPLE 7 - delete after import,Example,Example,Original Scope,https://example.com,https://example.com,Create-Rebuild,,,Medium,Complete,No,No,Conditional Acceptance,No,2026-12-01 09:00,Example

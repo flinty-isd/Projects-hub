@@ -1,0 +1,6 @@
+﻿Title,ExceptionID,PolicyRef,RequestedBy,Approver,ExceptionStatus,ExpiryDate,Port,Rationale
+EXAMPLE 1 - delete after import,Example,Example,Example,Example,Requested,2026-12-01,All,Example text
+EXAMPLE 2 - delete after import,Example,Example,Example,Example,Active,2026-12-01,Felixstowe,Example text
+EXAMPLE 3 - delete after import,Example,Example,Example,Example,Expired,2026-12-01,Harwich,Example text
+EXAMPLE 4 - delete after import,Example,Example,Example,Example,Revoked,2026-12-01,Thamesport,Example text
+EXAMPLE 5 - delete after import,Example,Example,Example,Example,Requested,2026-12-01,Corporate,Example text
