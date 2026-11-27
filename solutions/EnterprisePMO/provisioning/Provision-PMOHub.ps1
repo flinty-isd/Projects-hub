@@ -36,7 +36,7 @@
     Not yet run against a tenant: run it on a test site first.
 
 .EXAMPLE
-    ./Provision-PMOHub.ps1 -SiteUrl https://contoso.sharepoint.com/sites/EnterprisePMO -Interactive `
+    ./Provision-PMOHub.ps1 -SiteUrl https://contoso.sharepoint.com/sites/EnterprisePMO -ClientId <pnp-app-id> -Interactive `
         -LeadershipContacts director@contoso.com, headofpmo@contoso.com, governance.lead@contoso.com
 #>
 param(
@@ -60,7 +60,11 @@ $root = Split-Path -Parent $PSScriptRoot
 $schema = Get-Content (Join-Path $root 'sharepoint/list-schema.json') -Raw | ConvertFrom-Json
 $dash = Get-Content (Join-Path $root 'sharepoint/dashboard.json') -Raw | ConvertFrom-Json
 
-$conn = if ($Interactive) { Connect-PnPOnline -Url $SiteUrl -Interactive -ReturnConnection }
+# Interactive sign-in needs your tenant's PnP app registration (-ClientId) since PnP's shared app
+# was retired on 9 Sep 2024. Without -ClientId, PnP only succeeds if a default client ID is configured.
+$clientArg = if ($ClientId) { @{ ClientId = $ClientId } } else { @{} }
+if ($Interactive -and -not $ClientId) { Write-Warning 'No -ClientId given: sign-in fails unless a default PnP client ID is set on this machine. See POWER-PLATFORM-DEPLOYMENT.md, Signing in to SharePoint.' }
+$conn = if ($Interactive) { Connect-PnPOnline -Url $SiteUrl -Interactive @clientArg -ReturnConnection }
         else { Connect-PnPOnline -Url $SiteUrl -ClientId $ClientId -Tenant $Tenant -Thumbprint $Thumbprint -ReturnConnection }
 
 function Escape-Xml([string] $s) { [System.Security.SecurityElement]::Escape($s) }

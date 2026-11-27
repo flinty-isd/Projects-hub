@@ -27,8 +27,8 @@
     registration with Sites.FullControl.All. Run scripts/plan_lists.py first to preview offline.
 
 .EXAMPLE
-    ./Provision-ProjectLists.ps1 -SiteUrl https://hutchisonports.sharepoint.com/sites/hpuk-pof-projects -Sets pmo,board -Interactive -PlanOnly
-    ./Provision-ProjectLists.ps1 -SiteUrl https://hutchisonports.sharepoint.com/sites/hpuk-pof-projects -Sets pmo,board -Interactive
+    ./Provision-ProjectLists.ps1 -SiteUrl https://hutchisonports.sharepoint.com/sites/hpuk-pof-projects -Sets pmo,board -ClientId <pnp-app-id> -Interactive -PlanOnly
+    ./Provision-ProjectLists.ps1 -SiteUrl https://hutchisonports.sharepoint.com/sites/hpuk-pof-projects -Sets pmo,board -ClientId <pnp-app-id> -Interactive
 #>
 param(
     [Parameter(Mandatory)] [string] $SiteUrl,
@@ -45,7 +45,11 @@ $skill = Split-Path -Parent $PSScriptRoot
 $catalogue = Get-Content (Join-Path $skill 'schemas/catalogue.json') -Raw | ConvertFrom-Json
 $setKeys = if ($Sets -contains 'all') { @($catalogue.sets.PSObject.Properties.Name) } else { $Sets }
 
-$conn = if ($Interactive) { Connect-PnPOnline -Url $SiteUrl -Interactive -ReturnConnection }
+# Interactive sign-in needs your tenant's PnP app registration (-ClientId) since PnP's shared app
+# was retired on 9 Sep 2024. Without -ClientId, PnP only succeeds if a default client ID is configured.
+$clientArg = if ($ClientId) { @{ ClientId = $ClientId } } else { @{} }
+if ($Interactive -and -not $ClientId) { Write-Warning 'No -ClientId given: sign-in fails unless a default PnP client ID is set on this machine. See POWER-PLATFORM-DEPLOYMENT.md, Signing in to SharePoint.' }
+$conn = if ($Interactive) { Connect-PnPOnline -Url $SiteUrl -Interactive @clientArg -ReturnConnection }
         else { Connect-PnPOnline -Url $SiteUrl -ClientId $ClientId -Tenant $Tenant -Thumbprint $Thumbprint -ReturnConnection }
 $mode = if ($PlanOnly) { 'PLAN ONLY: nothing will be changed' } else { 'CHANGES WILL BE MADE' }
 Write-Output "Connected to $SiteUrl ($mode). Sets: $($setKeys -join ', ')"

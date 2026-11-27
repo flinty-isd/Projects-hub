@@ -35,13 +35,14 @@ refuse, it's David's call.
    schema problems, stop: the fix belongs in the source schema in the repository, then the skill
    is rebuilt (`ProjectsSite/tools/build_skill.py`).
 3. **Check you can run it.** Creating lists needs PowerShell 7 with PnP.PowerShell 2.x on a
-   machine signed in as a Site Owner of the site. If you have a shell there (Claude Code on
+   machine signed in as a Site Owner of the site, and the tenant's PnP app registration's client ID
+   for `-ClientId` (ask for it; never invent one). If you have a shell there (Claude Code on
    David's machine), check with `pwsh -c "Get-Module PnP.PowerShell -ListAvailable"`. If you
    can't run it (chat, or no PnP), give David the two commands below to run himself and tell
    him what to send back (the summary table).
 4. **Dry run.** Always first:
    ```powershell
-   ./scripts/Provision-ProjectLists.ps1 -SiteUrl <site> -Sets <sets> -Interactive -PlanOnly
+   ./scripts/Provision-ProjectLists.ps1 -SiteUrl <site> -Sets <sets> -ClientId <pnp-app-id> -Interactive -PlanOnly
    ```
    It connects and lists what it would create or add, changing nothing. Show David the result.
 5. **Get a clear yes, then run** the same command without `-PlanOnly`. Creating lists changes a
@@ -75,7 +76,7 @@ existing list, column, view or item, and never creates or renames `SP_MigrationR
 | `A list, survey, discussion board, or document library with the specified title already exists` / URL in use | A different list already uses that URL | Rename or move the other list, or ask whether it is the same list under another title |
 | `Lookup ... needs list 'PMO Workstreams'` | The lookup target failed or was skipped | Fix the first error and re-run; lookups resolve on the next run |
 | `SP_MigrationRegister not found` | Wrong site, or the register hasn't been imported | Check the site URL; the register is imported from its workbook, never created here |
-| `Connect-PnPOnline` fails | PnP not installed, or the tenant needs an app registration for interactive sign-in | `Install-Module PnP.PowerShell -Scope CurrentUser`; use `-ClientId` with the tenant's PnP app registration |
+| `Connect-PnPOnline` fails, or "specify a ClientId" | PnP not installed, or no `-ClientId`: PnP's shared sign-in app was retired in September 2024 | `Install-Module PnP.PowerShell -Scope CurrentUser`; pass `-ClientId` with the tenant's PnP app registration (an Entra ID admin creates it once with `Register-PnPEntraIDAppForInteractiveLogin`); ask David for the ID rather than guessing |
 | Script stops part-way | Network or throttling | Re-run: completed lists and columns are skipped |
 
 ## Keep it short

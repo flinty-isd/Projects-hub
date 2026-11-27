@@ -24,7 +24,7 @@
     ./Provision-PortalSnapshots.ps1 -PortalSiteUrl https://contoso.sharepoint.com/sites/hpuk-it-portals `
         -AssetSiteUrl https://contoso.sharepoint.com/sites/hpuk-it-assets `
         -BoardSiteUrl https://contoso.sharepoint.com/sites/hpuk-pmo-spo `
-        -GovernanceSiteUrl https://contoso.sharepoint.com/sites/hpuk-pof-it-enterprisegovernance -Interactive
+        -GovernanceSiteUrl https://contoso.sharepoint.com/sites/hpuk-pof-it-enterprisegovernance -ClientId <pnp-app-id> -Interactive
 #>
 param(
     [Parameter(Mandatory)] [string] $PortalSiteUrl,
@@ -45,10 +45,14 @@ $root = Split-Path -Parent $PSScriptRoot
 $schema = Get-Content (Join-Path $root 'sharepoint/list-schema.json') -Raw | ConvertFrom-Json
 $sites = @{ asset = $AssetSiteUrl.TrimEnd('/'); board = $BoardSiteUrl.TrimEnd('/'); governance = $GovernanceSiteUrl.TrimEnd('/') }
 
+# Interactive sign-in needs your tenant's PnP app registration (-ClientId) since PnP's shared app
+# was retired on 9 Sep 2024. Without -ClientId, PnP only succeeds if a default client ID is configured.
+$clientArg = if ($ClientId) { @{ ClientId = $ClientId } } else { @{} }
+if ($Interactive -and -not $ClientId) { Write-Warning 'No -ClientId given: sign-in fails unless a default PnP client ID is set on this machine. See POWER-PLATFORM-DEPLOYMENT.md, Signing in to SharePoint.' }
 $connections = @{}
 function Get-Conn([string] $url) {
     if (-not $connections.ContainsKey($url)) {
-        $connections[$url] = if ($Interactive) { Connect-PnPOnline -Url $url -Interactive -ReturnConnection }
+        $connections[$url] = if ($Interactive) { Connect-PnPOnline -Url $url -Interactive @clientArg -ReturnConnection }
                              else { Connect-PnPOnline -Url $url -ClientId $ClientId -Tenant $Tenant -Thumbprint $Thumbprint -ReturnConnection }
     }
     $connections[$url]

@@ -18,7 +18,7 @@ from the same deployment kit (check `MANIFEST.json`), under the rules in the
 
    ```powershell
    ./provisioning/Provision-PortalSnapshots.ps1 -PortalSiteUrl <portal> -AssetSiteUrl <asset> `
-       -BoardSiteUrl <board> -GovernanceSiteUrl <governance> -Interactive
+       -BoardSiteUrl <board> -GovernanceSiteUrl <governance> -ClientId <pnp-app-id> -Interactive
    ```
 
    Check:

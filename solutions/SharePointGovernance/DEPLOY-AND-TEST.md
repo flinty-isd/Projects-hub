@@ -49,7 +49,7 @@ evidence.
 ### 2.2 Dashboard (IT PM)
 
 ```powershell
-./provisioning/Provision-GovernanceDashboard.ps1 -GovernanceSiteUrl <test governance site URL> -Interactive
+./provisioning/Provision-GovernanceDashboard.ps1 -GovernanceSiteUrl <test governance site URL> -ClientId <pnp-app-id> -Interactive
 ```
 
 Check each panel shows its filtered view, not All Items.

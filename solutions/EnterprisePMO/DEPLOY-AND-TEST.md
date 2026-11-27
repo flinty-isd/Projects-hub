@@ -13,7 +13,7 @@ repeats the same steps from the same deployment kit (check its
 2. Run the script as a site owner:
 
    ```powershell
-   ./provisioning/Provision-PMOHub.ps1 -SiteUrl https://<tenant>.sharepoint.com/sites/EnterprisePMO -Interactive `
+   ./provisioning/Provision-PMOHub.ps1 -SiteUrl https://<tenant>.sharepoint.com/sites/EnterprisePMO -ClientId <pnp-app-id> -Interactive `
        -LeadershipContacts <director-upn>, <head-of-pmo-upn>, <governance-lead-upn>
    ```
 

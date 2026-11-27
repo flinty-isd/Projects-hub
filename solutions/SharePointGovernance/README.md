@@ -84,7 +84,7 @@ and nothing embedded (G-06). `tools/validate_dashboard.py` checks every view
 against the list schema in CI.
 
 ```powershell
-./provisioning/Provision-GovernanceDashboard.ps1 -GovernanceSiteUrl https://hphneu.sharepoint.com/sites/<governance-site> -Interactive
+./provisioning/Provision-GovernanceDashboard.ps1 -GovernanceSiteUrl https://hphneu.sharepoint.com/sites/<governance-site> -ClientId <pnp-app-id> -Interactive
 ```
 
 Re-running leaves existing views and the page alone; `-RefreshViews` and

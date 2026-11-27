@@ -41,7 +41,11 @@ $root = Split-Path -Parent $PSScriptRoot
 $dash = Get-Content (Join-Path $root 'sharepoint/dashboard.json') -Raw | ConvertFrom-Json
 $statusFormat = Get-Content (Join-Path $root 'sharepoint/status-format.json') -Raw
 
-$conn = if ($Interactive) { Connect-PnPOnline -Url $GovernanceSiteUrl -Interactive -ReturnConnection }
+# Interactive sign-in needs your tenant's PnP app registration (-ClientId) since PnP's shared app
+# was retired on 9 Sep 2024. Without -ClientId, PnP only succeeds if a default client ID is configured.
+$clientArg = if ($ClientId) { @{ ClientId = $ClientId } } else { @{} }
+if ($Interactive -and -not $ClientId) { Write-Warning 'No -ClientId given: sign-in fails unless a default PnP client ID is set on this machine. See POWER-PLATFORM-DEPLOYMENT.md, Signing in to SharePoint.' }
+$conn = if ($Interactive) { Connect-PnPOnline -Url $GovernanceSiteUrl -Interactive @clientArg -ReturnConnection }
         else { Connect-PnPOnline -Url $GovernanceSiteUrl -ClientId $ClientId -Tenant $Tenant -Thumbprint $Thumbprint -ReturnConnection }
 
 # Admin centre URL for the links: https://<tenant>.sharepoint.com -> https://<tenant>-admin.sharepoint.com

@@ -21,6 +21,10 @@
     none). Safe to re-run: every step checks first and only adds what's
     missing.
 
+.PARAMETER ClientId
+    Application (client) ID of the tenant's PnP PowerShell app registration, for interactive
+    sign-in. Create one once with Register-PnPEntraIDAppForInteractiveLogin.
+
 .PARAMETER SiteUrl
     The SharePoint site to apply the schema to, e.g.
     https://hutchisonports.sharepoint.com/sites/hpuk-pof-projects
@@ -36,7 +40,9 @@
     described in the Control Centre README.
 #>
 param(
-    [Parameter(Mandatory)] [string] $SiteUrl
+    [Parameter(Mandatory)] [string] $SiteUrl,
+    # Your tenant's PnP app registration. Needed for interactive sign-in since PnP retired its shared app (9 Sep 2024).
+    [string] $ClientId
 )
 
 $ErrorActionPreference = 'Stop'
@@ -45,7 +51,11 @@ $schemaPath = Join-Path $PSScriptRoot '..\sharepoint\list-schema.json'
 $schema = Get-Content $schemaPath -Raw | ConvertFrom-Json
 
 Write-Host "Connecting to $SiteUrl ..." -ForegroundColor Cyan
-Connect-PnPOnline -Url $SiteUrl -Interactive
+if ($ClientId) { Connect-PnPOnline -Url $SiteUrl -Interactive -ClientId $ClientId }
+else {
+    Write-Warning 'No -ClientId given: sign-in fails unless a default PnP client ID is set on this machine.'
+    Connect-PnPOnline -Url $SiteUrl -Interactive
+}
 Write-Host "Connected." -ForegroundColor Green
 
 function Add-SchemaField {

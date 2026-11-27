@@ -49,8 +49,8 @@ commands to run yourself.
 ```powershell
 cd skills/hpuk-projects-site-lists
 python scripts/plan_lists.py --sets pmo,board
-./scripts/Provision-ProjectLists.ps1 -SiteUrl https://hutchisonports.sharepoint.com/sites/hpuk-pof-projects -Sets pmo,board -Interactive -PlanOnly
-./scripts/Provision-ProjectLists.ps1 -SiteUrl https://hutchisonports.sharepoint.com/sites/hpuk-pof-projects -Sets pmo,board -Interactive
+./scripts/Provision-ProjectLists.ps1 -SiteUrl https://hutchisonports.sharepoint.com/sites/hpuk-pof-projects -Sets pmo,board -ClientId <pnp-app-id> -Interactive -PlanOnly
+./scripts/Provision-ProjectLists.ps1 -SiteUrl https://hutchisonports.sharepoint.com/sites/hpuk-pof-projects -Sets pmo,board -ClientId <pnp-app-id> -Interactive
 ```
 
 ## Behaviour

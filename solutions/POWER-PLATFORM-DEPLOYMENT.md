@@ -63,6 +63,40 @@ Approvals, Microsoft Teams, HTTP with Microsoft Entra ID and Azure Automation
 in the **Business** group, and block HTTP (plain), custom connectors and
 everything else not needed.
 
+## Signing in to SharePoint
+
+The provisioning scripts sign in with PnP.PowerShell. PnP's shared sign-in app (the "PnP
+Management Shell") was retired on 9 September 2024. Since then, interactive sign-in needs the
+tenant's own app registration, passed as `-ClientId`.
+
+**Once per tenant: an Entra ID administrator registers the app.**
+
+```powershell
+Install-Module PnP.PowerShell -Scope CurrentUser
+Register-PnPEntraIDAppForInteractiveLogin -ApplicationName "PnP PowerShell (HPUK)" -Tenant hutchisonports.onmicrosoft.com -Interactive
+```
+
+- **Who can do it:** an Application Administrator, Cloud Application Administrator or Global
+  Administrator, because it grants admin consent to the app's SharePoint and Graph permissions.
+- **What you get:** the command prints the app's **Application (client) ID**. Record it in the
+  Automation Catalogue (G-09) with its owner.
+- **Sign-in identity:** people still sign in as themselves (named accounts, D-03). The app only
+  identifies PnP to Entra ID.
+
+**Every run: pass the ID.**
+
+```powershell
+./Provision-PMOHub.ps1 -SiteUrl <site> -ClientId <application-client-id> -Interactive
+```
+
+If you leave `-ClientId` out, each script warns you and still tries. It succeeds only if a default
+client ID has been set up for PnP on that machine; see PnP's *Set a default Client ID* article. The
+unattended route (`-ClientId`, `-Tenant` and `-Thumbprint`, with certificate authentication) needs
+a separate app registration with a certificate and `Sites.FullControl.All`.
+
+The runbook `Set-SiteGovernanceBaseline.ps1` is not affected. It runs in Azure Automation and signs
+in with the account's managed identity.
+
 ## Identities
 
 PID v4.2 (D-03, guardrail G-01, §12.2) allows **no service, shared or generic
