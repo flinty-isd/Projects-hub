@@ -237,7 +237,21 @@ def outputs():
         files[f"{folder}/README.md"] = site_readme(folder, name, groups)
         index.append(f"| {name} | `{folder}/` | {n_csv} | {', '.join(manual) or '-'} |")
     index += ["", "The headers are internal column names on purpose: keep them as they are, and rename the display names after the import. "
-              "ISO 27001 controls go in the governance site's Compliance Register."]
+              "ISO 27001 controls go in the governance site's Compliance Register.", "",
+              "## Already created some lists?", "",
+              "Don't import those again. Find out what's missing first:", "",
+              "1. Signed in to the site (Read access is enough), open this address, with your site in place of `<site>`:", "",
+              "   ```",
+              "   https://<tenant>.sharepoint.com/sites/<site>/_api/web/lists?$filter=Hidden eq false&$expand=Fields&$select=Title,BaseTemplate,Fields/InternalName,Fields/Title,Fields/TypeAsString,Fields/Required,Fields/Hidden",
+              "   ```", "",
+              "2. Save the page (Ctrl+S) as an .xml file. It is the site's lists and columns, no content.",
+              "3. Run the comparison (or send the file to whoever maintains this repository):", "",
+              "   ```",
+              "   python solutions/SharePointGovernance/tools/compare_lists.py --site projects --sets pmo,board saved-lists.xml --out report.md",
+              "   ```", "",
+              "The report says, list by list, what's missing and how to add it; columns created under the wrong internal name "
+              "(e.g. `Asset_x0020_tag` or `Category0`, which the flows can't find); wrong types; and list names that differ only in capitals. "
+              "Import a CSV only for lists the report says are missing; add missing columns to existing lists by hand."]
     files["README.md"] = "\n".join(index) + "\n"
     return files
 
