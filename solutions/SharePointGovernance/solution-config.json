@@ -4,7 +4,7 @@
   "displayName": "SharePoint Governance (BAU)",
   "description": "Power Automate flows that enforce SharePoint Online governance controls (PID v4.2) in BAU.",
   "version": "1.9.0.0",
-  "kitInclude": ["README.md", "DEPLOY-AND-TEST.md", "SAM-POLICIES.md", "PERMISSIONS.md", "solution-config.json", "powerautomate", "runbooks", "provisioning", "sharepoint", "diagrams", "skills", "tools"],
+  "kitInclude": ["README.md", "DEPLOY-AND-TEST.md", "SAM-POLICIES.md", "PERMISSIONS.md", "solution-config.json", "powerautomate", "runbooks", "provisioning", "sharepoint", "diagrams", "skills", "tools", "pages"],
   "publisher": {
     "uniqueName": "HPUKIT",
     "displayName": "HPUK IT",

@@ -31,7 +31,9 @@ param(
     [string] $Thumbprint,
     [switch] $Interactive,
     [switch] $RefreshViews,
-    [switch] $RefreshPage
+    [switch] $RefreshPage,
+    # Upload pages/HPUK-List-Schemas.html to Site Pages as a SharePoint HTML page (needs "Allow HTML files" on in Site Pages).
+    [switch] $UploadSchemaPage
 )
 
 $ErrorActionPreference = 'Stop'
@@ -99,6 +101,13 @@ if ($page -and -not $RefreshPage) {
 
     Set-PnPPage -Identity $name -Publish -Connection $conn | Out-Null
     Write-Output "  + $name.aspx published"
+}
+
+# --- List schemas page --------------------------------------------------------------
+if ($UploadSchemaPage) {
+    $schemaPage = Join-Path $root 'pages/HPUK-List-Schemas.html'
+    Add-PnPFile -Path $schemaPage -Folder 'SitePages' -Connection $conn | Out-Null
+    Write-Output '  + SitePages/HPUK-List-Schemas.html uploaded'
 }
 
 Write-Output ''
