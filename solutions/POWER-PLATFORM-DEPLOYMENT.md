@@ -1,12 +1,14 @@
 # Power Platform deployment plan
 
-How the two flow solutions move from this repository into production and
+How the flow solutions move from this repository into production and
 stay supported in BAU:
 
 | Solution | Flows | Connectors |
 |----------|-------|------------|
 | **SharePoint Governance (BAU)**, `solutions/SharePointGovernance` (1.9.0.0) | 7: 01, 02, 03, 05, 06, 07, 08 | SharePoint, Office 365 Outlook, Approvals, HTTP with Microsoft Entra ID, Azure Automation |
 | **SharePoint News and Notices**, `solutions/SharePointNews` (1.7.0.0) | 4: C1, C2, C3a, C3b | SharePoint, Office 365 Outlook, Microsoft Teams |
+| **Enterprise PMO Governance Hub**, `solutions/EnterprisePMO` (1.2.1.0, not yet deployed) | 6: 01, 02, 03a, 03b, 04, 05 | SharePoint, Office 365 Outlook, Microsoft Teams, Approvals |
+| **HPUK Portal Snapshots**, `solutions/PortalSnapshots` (1.0.0.0, not yet deployed) | 3: P1, P2, P3 | SharePoint, Office 365 Outlook |
 
 **Status today: unmanaged only.** Each solution is built as an **unmanaged**
 .zip and imported by hand. The managed pipeline below is a **proposal; it
@@ -60,6 +62,40 @@ you have already imported into is meant to become Production, follow
 Approvals, Microsoft Teams, HTTP with Microsoft Entra ID and Azure Automation
 in the **Business** group, and block HTTP (plain), custom connectors and
 everything else not needed.
+
+## Signing in to SharePoint
+
+The provisioning scripts sign in with PnP.PowerShell. PnP's shared sign-in app (the "PnP
+Management Shell") was retired on 9 September 2024. Since then, interactive sign-in needs the
+tenant's own app registration, passed as `-ClientId`.
+
+**Once per tenant: an Entra ID administrator registers the app.**
+
+```powershell
+Install-Module PnP.PowerShell -Scope CurrentUser
+Register-PnPEntraIDAppForInteractiveLogin -ApplicationName "PnP PowerShell (HPUK)" -Tenant hutchisonports.onmicrosoft.com -Interactive
+```
+
+- **Who can do it:** an Application Administrator, Cloud Application Administrator or Global
+  Administrator, because it grants admin consent to the app's SharePoint and Graph permissions.
+- **What you get:** the command prints the app's **Application (client) ID**. Record it in the
+  Automation Catalogue (G-09) with its owner.
+- **Sign-in identity:** people still sign in as themselves (named accounts, D-03). The app only
+  identifies PnP to Entra ID.
+
+**Every run: pass the ID.**
+
+```powershell
+./Provision-PMOHub.ps1 -SiteUrl <site> -ClientId <application-client-id> -Interactive
+```
+
+If you leave `-ClientId` out, each script warns you and still tries. It succeeds only if a default
+client ID has been set up for PnP on that machine; see PnP's *Set a default Client ID* article. The
+unattended route (`-ClientId`, `-Tenant` and `-Thumbprint`, with certificate authentication) needs
+a separate app registration with a certificate and `Sites.FullControl.All`.
+
+The runbook `Set-SiteGovernanceBaseline.ps1` is not affected. It runs in Azure Automation and signs
+in with the account's managed identity.
 
 ## Identities
 

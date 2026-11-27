@@ -1,0 +1,4 @@
+﻿Title,Scope,SitesInScope,SitesCompleted,DataGB,WaveStatus,WaveOwner,SortOrder
+EXAMPLE 1 - delete after import,Example,1,1,1,Not Started,Example,1
+EXAMPLE 2 - delete after import,Example,1,1,1,In Progress,Example,1
+EXAMPLE 3 - delete after import,Example,1,1,1,Complete,Example,1

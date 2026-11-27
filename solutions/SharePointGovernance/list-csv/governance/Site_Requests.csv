@@ -1,0 +1,7 @@
+﻿Title,SiteAlias,Purpose,Department,Requester,PrimaryOwner,SecondaryOwner,OwnersGroupId,MembersGroupId,VisitorsGroupId,GuestsGroupId,ExternalSharingRequired,Sensitivity,Status,SiteUrl,DecisionLog
+EXAMPLE 1 - delete after import,Example,Example text,Example,,,,Example,Example,Example,Example,No,General,Submitted,Example,Example text
+EXAMPLE 2 - delete after import,Example,Example text,Example,,,,Example,Example,Example,Example,No,Confidential,Provisioned,Example,Example text
+EXAMPLE 3 - delete after import,Example,Example text,Example,,,,Example,Example,Example,Example,No,Highly Confidential,Provisioning failed,Example,Example text
+EXAMPLE 4 - delete after import,Example,Example text,Example,,,,Example,Example,Example,Example,No,General,Rejected,Example,Example text
+EXAMPLE 5 - delete after import,Example,Example text,Example,,,,Example,Example,Example,Example,No,Confidential,Returned - Ownership invalid,Example,Example text
+EXAMPLE 6 - delete after import,Example,Example text,Example,,,,Example,Example,Example,Example,No,Highly Confidential,Returned - Naming standard,Example,Example text

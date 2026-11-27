@@ -1,0 +1,31 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
+  "$comment": "Due-date badge for TargetResolutionDate (Master RAID Log) and DueDate (Action and Decision Tracker). Closed/Completed: grey with a tick. Open and past due: red, warning icon, 'overdue'. Open and due within 7 days: amber, clock, 'due soon'. Otherwise plain. Reads [$Status], so every view that shows the date must include Status (tools/validate_dashboard.py checks this). Empty dates show nothing.",
+  "elmType": "div",
+  "style": {
+    "display": "=if(@currentField == '', 'none', 'inline-flex')",
+    "align-items": "center",
+    "padding": "2px 8px",
+    "border-radius": "4px",
+    "font-weight": "=if([$Status] == 'Closed' || [$Status] == 'Completed', 'normal', if(Number(@currentField) < Number(@now), '700', if(Number(@currentField) <= Number(@now) + 604800000, '600', 'normal')))",
+    "background-color": "=if([$Status] == 'Closed' || [$Status] == 'Completed', 'transparent', if(Number(@currentField) < Number(@now), '#fee2e2', if(Number(@currentField) <= Number(@now) + 604800000, '#fef3c7', 'transparent')))",
+    "color": "=if([$Status] == 'Closed' || [$Status] == 'Completed', '#6b7280', if(Number(@currentField) < Number(@now), '#7f1d1d', if(Number(@currentField) <= Number(@now) + 604800000, '#78350f', 'inherit')))",
+    "border": "=if([$Status] == 'Closed' || [$Status] == 'Completed', 'none', if(Number(@currentField) < Number(@now), '1px solid #b91c1c', if(Number(@currentField) <= Number(@now) + 604800000, '1px solid #b45309', 'none')))"
+  },
+  "children": [
+    {
+      "elmType": "span",
+      "attributes": {
+        "iconName": "=if([$Status] == 'Closed' || [$Status] == 'Completed', 'CheckMark', if(Number(@currentField) < Number(@now), 'Warning', if(Number(@currentField) <= Number(@now) + 604800000, 'Clock', 'Calendar')))"
+      },
+      "style": {
+        "margin-right": "5px",
+        "font-size": "12px"
+      }
+    },
+    {
+      "elmType": "span",
+      "txtContent": "=toLocaleDateString(@currentField) + if([$Status] == 'Closed' || [$Status] == 'Completed', '', if(Number(@currentField) < Number(@now), ' · overdue', if(Number(@currentField) <= Number(@now) + 604800000, ' · due soon', '')))"
+    }
+  ]
+}

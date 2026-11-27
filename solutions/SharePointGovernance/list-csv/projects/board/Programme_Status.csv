@@ -1,0 +1,4 @@
+﻿Title,ReportDate,OverallRAG,SitesDone,SitesTotal,GBDone,GBTotal,OpenActions
+EXAMPLE 1 - delete after import,2026-12-01,Red,1,1,1,1,1
+EXAMPLE 2 - delete after import,2026-12-01,Amber,1,1,1,1,1
+EXAMPLE 3 - delete after import,2026-12-01,Green,1,1,1,1,1

@@ -1,0 +1,5 @@
+﻿Title,SiteTitle,SiteUrl,Department,PrimaryOwner,SecondaryOwner,OwnersGroupId,MembersGroupId,VisitorsGroupId,GuestsGroupId,SharingCapability,Sensitivity,Status,LastAccessReview,NextAccessReview,UrgentAlertKey
+EXAMPLE 1 - delete after import,Example,Example,Example,,,Example,Example,Example,Example,Disabled,General,Active,2026-12-01 09:00,2026-12-01 09:00,Example
+EXAMPLE 2 - delete after import,Example,Example,Example,,,Example,Example,Example,Example,ExistingExternalUserSharingOnly,Confidential,Orphaned - owner inactive,2026-12-01 09:00,2026-12-01 09:00,Example
+EXAMPLE 3 - delete after import,Example,Example,Example,,,Example,Example,Example,Example,Disabled,Highly Confidential,Read-only,2026-12-01 09:00,2026-12-01 09:00,Example
+EXAMPLE 4 - delete after import,Example,Example,Example,,,Example,Example,Example,Example,ExistingExternalUserSharingOnly,General,Archived,2026-12-01 09:00,2026-12-01 09:00,Example

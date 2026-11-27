@@ -1,0 +1,6 @@
+﻿Title,RequestID,RequestType,PortLocation,Requester,SubmittedDate,TargetSLADate,ApprovalStatus
+EXAMPLE 1 - delete after import,Example,New Hardware,Felixstowe,,2026-12-01,2026-12-01,Pending Approval
+EXAMPLE 2 - delete after import,Example,Asset Disposal / WEEE,Harwich,,2026-12-01,2026-12-01,Approved
+EXAMPLE 3 - delete after import,Example,Software Licence,Thamesport,,2026-12-01,2026-12-01,In Progress
+EXAMPLE 4 - delete after import,Example,CMDB Update,Corporate,,2026-12-01,2026-12-01,Completed
+EXAMPLE 5 - delete after import,Example,Equipment Transfer,Felixstowe,,2026-12-01,2026-12-01,Rejected

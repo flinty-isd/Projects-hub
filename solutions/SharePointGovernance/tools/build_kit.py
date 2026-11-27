@@ -1,7 +1,7 @@
 """Build a deployment kit: one versioned zip with the importable solution and
 everything its deployment and test guide refers to, plus a manifest of
 SHA-256 checksums. Governance by default; --root solutions/SharePointNews
-builds the news kit. Each solution-config.json lists its kit contents in
+builds the news kit and --root solutions/EnterprisePMO the PMO hub kit. Each solution-config.json lists its kit contents in
 "kitInclude".
 
 The kit holds the importable solution (built here, so the two always match),
@@ -35,8 +35,10 @@ if missing:
 EXTRA = {"docs/POWER-PLATFORM-DEPLOYMENT.md": REPO / "solutions" / "POWER-PLATFORM-DEPLOYMENT.md"}
 if ROOT != TOOLS.parent:
     # The tools that validate and build the flows live with governance; ship them too.
-    # validate_dashboard.py is governance-only (the news solution has no dashboard).
-    EXTRA.update({f"tools/{f.name}": f for f in sorted(TOOLS.glob("*.py")) if f.name != "validate_dashboard.py"})
+    # validate_dashboard.py only ships with solutions that have a dashboard (news has none).
+    has_dashboard = (ROOT / "sharepoint" / "dashboard.json").exists()
+    EXTRA.update({f"tools/{f.name}": f for f in sorted(TOOLS.glob("*.py"))
+                  if f.name != "validate_dashboard.py" or has_dashboard})
 
 
 def files():

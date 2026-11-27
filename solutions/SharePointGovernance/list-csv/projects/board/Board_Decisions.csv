@@ -1,0 +1,5 @@
+﻿Title,DecisionRef,Category,DecisionScore,Owner,DueDate,Status,LinkedRAID,OptionA,OptionB,OptionC,Recommended,Rationale,CostOfDelay,BoardStatement
+EXAMPLE 1 - delete after import,Example,Example,1,Example,2026-12-01,Required,Example,Example text,Example text,Example text,Example,Example text,Example text,Example text
+EXAMPLE 2 - delete after import,Example,Example,1,Example,2026-12-01,Approved,Example,Example text,Example text,Example text,Example,Example text,Example text,Example text
+EXAMPLE 3 - delete after import,Example,Example,1,Example,2026-12-01,Deferred,Example,Example text,Example text,Example text,Example,Example text,Example text,Example text
+EXAMPLE 4 - delete after import,Example,Example,1,Example,2026-12-01,Rejected,Example,Example text,Example text,Example text,Example,Example text,Example text,Example text

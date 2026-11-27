@@ -28,7 +28,8 @@ FLOWS = sorted((ROOT / "powerautomate" / "flows").glob("*.json"))
 SCHEMA = json.loads((ROOT / "sharepoint" / "list-schema.json").read_text())
 
 # Columns every SharePoint list has without being declared.
-BUILTIN = {"ID", "Title", "{Link}", "Created", "Modified", "Author", "Editor"}
+# @odata.etag is not a column but every item read returns it (used for If-Match claims).
+BUILTIN = {"ID", "Title", "{Link}", "Created", "Modified", "Author", "Editor", "@odata.etag"}
 
 ACTION_REF = re.compile(r"\b(?:body|outputs|actions|items)\('([^']+)'\)")
 PARAM_REF = re.compile(r"\bparameters\('([^']+)'\)")

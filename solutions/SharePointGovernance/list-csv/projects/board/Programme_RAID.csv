@@ -1,0 +1,5 @@
+﻿Title,RiskRef,RAIDType,RAG,Velocity,BreachDays,OwnerName,LinkedDecision,Mitigation,Status
+EXAMPLE 1 - delete after import,Example,Risk,Red,Example,1,Example,Example,Example text,Open
+EXAMPLE 2 - delete after import,Example,Issue,Amber,Example,1,Example,Example,Example text,Closed
+EXAMPLE 3 - delete after import,Example,Dependency,Green,Example,1,Example,Example,Example text,Open
+EXAMPLE 4 - delete after import,Example,Assumption,Red,Example,1,Example,Example,Example text,Closed

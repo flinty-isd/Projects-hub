@@ -1,0 +1,5 @@
+﻿Title,RAIDID,Type,Area,Likelihood,Impact,RAG,Owner,TargetDate,Status,RelatedSitePage
+EXAMPLE 1 - delete after import,Example,Risk,Migration,Low,Low,Green,,2026-12-01 09:00,Open,Example
+EXAMPLE 2 - delete after import,Example,Assumption,Page Delivery,Medium,Medium,Amber,,2026-12-01 09:00,Closed,Example
+EXAMPLE 3 - delete after import,Example,Issue,Governance,High,High,Red,,2026-12-01 09:00,Open,Example
+EXAMPLE 4 - delete after import,Example,Dependency,Migration,Low,Low,Green,,2026-12-01 09:00,Closed,Example

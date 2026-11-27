@@ -1,0 +1,37 @@
+name: Projects site skill
+
+on:
+  pull_request:
+    paths:
+      - "solutions/ProjectsSite/**"
+      - "solutions/EnterprisePMO/sharepoint/list-schema.json"
+      - "solutions/SharePointControlCentre/sharepoint/list-schema.json"
+      - "solutions/PortalSnapshots/sharepoint/list-schema.json"
+  push:
+    branches: [main]
+    paths:
+      - "solutions/ProjectsSite/**"
+      - "solutions/EnterprisePMO/sharepoint/list-schema.json"
+      - "solutions/SharePointControlCentre/sharepoint/list-schema.json"
+      - "solutions/PortalSnapshots/sharepoint/list-schema.json"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check the skill's schemas match the solutions
+        run: python solutions/ProjectsSite/tools/build_skill.py --check
+      - name: Check every list and column can be created by the script
+        run: python solutions/ProjectsSite/skills/hpuk-projects-site-lists/scripts/plan_lists.py --check
+      - name: Package the skill
+        run: python solutions/ProjectsSite/tools/build_skill.py --zip dist
+      - name: Upload skill
+        uses: actions/upload-artifact@v4
+        with:
+          name: hpuk-projects-site-lists-skill
+          path: dist/hpuk-projects-site-lists.zip

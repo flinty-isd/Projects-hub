@@ -1,0 +1,227 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "PMO 03a - Master RAID Log date churn tracker",
+  "description": "Runs when a Master RAID Log item is created or changed, but only if its TargetResolutionDate or Status differs from what this flow last recorded (trigger condition on TrackedDueDate and TrackedStatus, so its own update never re-triggers it). When TargetResolutionDate moves later it adds a row to the PMO Date Push Log (with how many times this item was pushed in the last ChurnWindowDays) and updates Date pushes and Last date push. Records the first TargetResolutionDate as OriginalTargetDate and never changes it. Stamps ClosedDate when Status becomes Closed. Writes only these tracking columns.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "PMOSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/EnterprisePMO"
+    },
+    "PMOOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{pmo-shared-mailbox}@{domain}"
+    },
+    "PMOSupportMailboxEmail": {
+      "type": "String",
+      "defaultValue": ""
+    },
+    "ChurnWindowDays": {
+      "type": "Int",
+      "defaultValue": 14
+    }
+  },
+  "triggers": {
+    "When_a_raid_item_changes": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "host": {
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnUpdatedItems",
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+        },
+        "parameters": {
+          "dataset": "@parameters('PMOSiteUrl')",
+          "table": "Master RAID Log"
+        }
+      },
+      "recurrence": {
+        "frequency": "Minute",
+        "interval": 5
+      },
+      "splitOn": "@triggerOutputs()?['body/value']",
+      "runtimeConfiguration": {
+        "concurrency": {
+          "runs": 1
+        }
+      },
+      "conditions": [
+        {
+          "expression": "@or(not(equals(coalesce(triggerBody()?['TargetResolutionDate'], 'none'), coalesce(triggerBody()?['TrackedDueDate'], ''))), not(equals(coalesce(triggerBody()?['Status']?['Value'], ''), coalesce(triggerBody()?['TrackedStatus'], ''))))"
+        }
+      ]
+    }
+  },
+  "actions": {
+    "Scope_Main": {
+      "type": "Scope",
+      "actions": {
+        "Compose_dates": {
+          "type": "Compose",
+          "inputs": {
+            "previous": "@if(or(empty(triggerBody()?['TrackedDueDate']), equals(triggerBody()?['TrackedDueDate'], 'none')), null, triggerBody()?['TrackedDueDate'])",
+            "current": "@triggerBody()?['TargetResolutionDate']",
+            "isPush": "@and(not(equals(if(or(empty(triggerBody()?['TrackedDueDate']), equals(triggerBody()?['TrackedDueDate'], 'none')), null, triggerBody()?['TrackedDueDate']), null)), not(empty(triggerBody()?['TargetResolutionDate'])), greater(ticks(coalesce(triggerBody()?['TargetResolutionDate'], '1900-01-01T00:00:00Z')), ticks(coalesce(if(or(empty(triggerBody()?['TrackedDueDate']), equals(triggerBody()?['TrackedDueDate'], 'none')), null, triggerBody()?['TrackedDueDate']), '1900-01-01T00:00:00Z'))))",
+            "daysPushed": "@div(sub(ticks(coalesce(triggerBody()?['TargetResolutionDate'], '1900-01-01T00:00:00Z')), ticks(coalesce(if(or(empty(triggerBody()?['TrackedDueDate']), equals(triggerBody()?['TrackedDueDate'], 'none')), null, triggerBody()?['TrackedDueDate']), '1900-01-01T00:00:00Z'))), 864000000000)",
+            "nowClosed": "@and(equals(triggerBody()?['Status']?['Value'], 'Closed'), not(equals(triggerBody()?['TrackedStatus'], 'Closed')))"
+          },
+          "runAfter": {},
+          "description": "previous is the TargetResolutionDate this flow last saw (TrackedDueDate), current is the new value. A push is a move to a later date; the first value an item has, or a date brought forward, isn't one."
+        },
+        "Condition_Date_pushed": {
+          "type": "If",
+          "expression": {
+            "equals": [
+              "@outputs('Compose_dates')?['isPush']",
+              true
+            ]
+          },
+          "actions": {
+            "Get_recent_pushes_for_item": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetItems",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PMOSiteUrl')",
+                  "table": "PMO Date Push Log",
+                  "$filter": "SourceList eq 'Master RAID Log' and SourceItemId eq @{triggerBody()?['ID']} and Created ge '@{addDays(utcNow(), mul(-1, parameters('ChurnWindowDays')))}'",
+                  "$top": 5000
+                }
+              },
+              "runAfter": {}
+            },
+            "Log_date_push": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PostItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PMOSiteUrl')",
+                  "table": "PMO Date Push Log",
+                  "item/Title": "@{concat('raid3a|', string(triggerBody()?['ID']), '|', utcNow('yyyy-MM-ddTHH:mm:ssZ'))}",
+                  "item/SourceList/Value": "Master RAID Log",
+                  "item/SourceItemId": "@triggerBody()?['ID']",
+                  "item/Workstream/Id": "@triggerBody()?['Workstream']?['Id']",
+                  "item/PreviousDate": "@outputs('Compose_dates')?['previous']",
+                  "item/NewDate": "@outputs('Compose_dates')?['current']",
+                  "item/DaysPushed": "@outputs('Compose_dates')?['daysPushed']",
+                  "item/PushedBy": "@{coalesce(triggerBody()?['Editor']?['DisplayName'], 'unknown')}",
+                  "item/PushesInWindow": "@add(length(body('Get_recent_pushes_for_item')?['value']), 1)"
+                }
+              },
+              "runAfter": {
+                "Get_recent_pushes_for_item": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Compose_dates": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Update_tracking": {
+          "type": "OpenApiConnection",
+          "description": "Always writes TrackedDueDate and TrackedStatus, so the item now matches the trigger condition's 'already seen' state and this update doesn't start another run. Locks the original baseline the first time a date is seen, stamps ClosedDate when Status becomes Closed, and counts pushes.",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "PatchItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('PMOSiteUrl')",
+              "table": "Master RAID Log",
+              "id": "@triggerBody()?['ID']",
+              "item/Title": "@triggerBody()?['Title']",
+              "item/RAIDType/Value": "@triggerBody()?['RAIDType']?['Value']",
+              "item/Workstream/Id": "@triggerBody()?['Workstream']?['Id']",
+              "item/Status/Value": "@triggerBody()?['Status']?['Value']",
+              "item/TrackedDueDate": "@{coalesce(triggerBody()?['TargetResolutionDate'], 'none')}",
+              "item/TrackedStatus": "@{coalesce(triggerBody()?['Status']?['Value'], '')}",
+              "item/OriginalTargetDate": "@coalesce(triggerBody()?['OriginalTargetDate'], outputs('Compose_dates')?['previous'], outputs('Compose_dates')?['current'])",
+              "item/ClosedDate": "@if(outputs('Compose_dates')?['nowClosed'], utcNow(), triggerBody()?['ClosedDate'])",
+              "item/DatePushCount": "@if(outputs('Compose_dates')?['isPush'], add(coalesce(triggerBody()?['DatePushCount'], 0), 1), coalesce(triggerBody()?['DatePushCount'], 0))",
+              "item/LastPushNote": "@{if(outputs('Compose_dates')?['isPush'], concat('Target date moved from ', formatDateTime(convertFromUtc(coalesce(outputs('Compose_dates')?['previous'], '1900-01-01T00:00:00Z'), 'GMT Standard Time'), 'dd MMM yyyy'), ' to ', formatDateTime(convertFromUtc(coalesce(outputs('Compose_dates')?['current'], '1900-01-01T00:00:00Z'), 'GMT Standard Time'), 'dd MMM yyyy'), ' (+', string(outputs('Compose_dates')?['daysPushed']), ' days) by ', coalesce(triggerBody()?['Editor']?['DisplayName'], 'unknown'), ' on ', formatDateTime(convertFromUtc(utcNow(), 'GMT Standard Time'), 'dd MMM yyyy HH:mm'), ' UK time.'), coalesce(triggerBody()?['LastPushNote'], ''))}"
+            }
+          },
+          "runAfter": {
+            "Condition_Date_pushed": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {}
+    },
+    "Catch_run_failed": {
+      "type": "Scope",
+      "description": "Run-level failure alert: any error in Scope_Main that no step handled.",
+      "actions": {
+        "Select_failed_steps": {
+          "type": "Select",
+          "inputs": {
+            "from": "@result('Scope_Main')",
+            "select": "@concat('<li><b>', item()?['name'], '</b>: ', item()?['status'], ' ', coalesce(item()?['error']?['code'], item()?['outputs']?['statusCode'], ''), ' ', coalesce(item()?['error']?['message'], ''), '</li>')"
+          },
+          "runAfter": {}
+        },
+        "Alert_run_failed": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@{concat(parameters('PMOOwnerEmail'), if(empty(parameters('PMOSupportMailboxEmail')), '', concat(';', parameters('PMOSupportMailboxEmail'))))}",
+              "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
+              "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error it did not handle, so some of its work may not have been done. Nothing has been retried.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a> (started @{workflow()?['run']?['startTime']})</p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Open the run, find the failed step and its raw output, fix the cause, then resubmit the run. See Stopping and recovery in the EnterprisePMO deployment guide.</p>",
+              "emailMessage/Importance": "High"
+            }
+          },
+          "runAfter": {
+            "Select_failed_steps": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Scope_Main": [
+          "Failed",
+          "TimedOut"
+        ]
+      }
+    }
+  }
+}

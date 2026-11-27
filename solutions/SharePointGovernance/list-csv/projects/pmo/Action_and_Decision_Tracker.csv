@@ -1,0 +1,5 @@
+﻿Title,Category,AssignedOwner,DecisionForum,Status,DueDate,RelatedRAIDId,DecisionOutcome,CompletedDate,DatePushCount,OriginalDueDate,LastPushNote,TrackedDueDate,TrackedStatus
+EXAMPLE 1 - delete after import,Action,,Executive Board,Open,2026-12-01,1,Example text,2026-12-01,0,2026-12-01,Example text,Example,Example
+EXAMPLE 2 - delete after import,Decision Required,,Steering Committee,In progress,2026-12-01,1,Example text,2026-12-01,0,2026-12-01,Example text,Example,Example
+EXAMPLE 3 - delete after import,Decision Made,,PMO,Blocked,2026-12-01,1,Example text,2026-12-01,0,2026-12-01,Example text,Example,Example
+EXAMPLE 4 - delete after import,Action,,Workstream,Completed,2026-12-01,1,Example text,2026-12-01,0,2026-12-01,Example text,Example,Example

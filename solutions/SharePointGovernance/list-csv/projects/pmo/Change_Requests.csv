@@ -1,0 +1,9 @@
+﻿Title,CRReference,ChangeType,Description,Justification,ImpactSummary,BudgetImpact,ScheduleImpactDays,RequestedBy,Status,SteeringCommitteeDate,DecisionRoute,DecidedBy,DecisionDate,DecisionNote
+EXAMPLE 1 - delete after import,Example,Scope,Example text,Example text,Example text,1,1,,Submitted,2026-12-01,Example,Example,2026-12-01 09:00,Example text
+EXAMPLE 2 - delete after import,Example,Budget,Example text,Example text,Example text,1,1,,Under review - PMO,2026-12-01,Example,Example,2026-12-01 09:00,Example text
+EXAMPLE 3 - delete after import,Example,Timeline,Example text,Example text,Example text,1,1,,Under review - Steering Committee,2026-12-01,Example,Example,2026-12-01 09:00,Example text
+EXAMPLE 4 - delete after import,Example,Multiple,Example text,Example text,Example text,1,1,,Approved,2026-12-01,Example,Example,2026-12-01 09:00,Example text
+EXAMPLE 5 - delete after import,Example,Scope,Example text,Example text,Example text,1,1,,Rejected,2026-12-01,Example,Example,2026-12-01 09:00,Example text
+EXAMPLE 6 - delete after import,Example,Budget,Example text,Example text,Example text,1,1,,Returned to requester,2026-12-01,Example,Example,2026-12-01 09:00,Example text
+EXAMPLE 7 - delete after import,Example,Timeline,Example text,Example text,Example text,1,1,,Decision overdue,2026-12-01,Example,Example,2026-12-01 09:00,Example text
+EXAMPLE 8 - delete after import,Example,Multiple,Example text,Example text,Example text,1,1,,Withdrawn,2026-12-01,Example,Example,2026-12-01 09:00,Example text

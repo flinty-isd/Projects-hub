@@ -1,0 +1,3 @@
+﻿Title,SnapshotDate,OpenRedCount,OpenAmberCount,NewRisksLast7Days,ClosedRisksLast7Days,NetRiskVelocity,ActionsDueNext10Days,ActionsClosedLast7Days,ActionsOpenedLast7Days,BurnDownRatio,DateChurnCount14d,ChurnAlerts14d,EarlyWarningScore,WarningCodes,WarningReason,AdvisoryPosted
+EXAMPLE 1 - delete after import,2026-12-01 09:00,1,1,1,1,1,1,1,1,1,1,1,1,Example,Example text,No
+EXAMPLE 2 - delete after import,2026-12-01 09:00,1,1,1,1,1,1,1,1,1,1,1,1,Example,Example text,No

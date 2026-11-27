@@ -1,0 +1,6 @@
+﻿Title,AssetTag,Category,PortLocation,AssignedOwner,LifecycleStatus,WarrantyExpiry,SerialNumber,CostCentre,SensitivityLabel
+EXAMPLE 1 - delete after import,Example,Hardware,Felixstowe,Example,In Stock,2026-12-01,Example,Example,Public
+EXAMPLE 2 - delete after import,Example,Mobile,Harwich,Example,Deployed,2026-12-01,Example,Example,Internal
+EXAMPLE 3 - delete after import,Example,Network,Thamesport,Example,Maintenance,2026-12-01,Example,Example,Confidential
+EXAMPLE 4 - delete after import,Example,Port Equipment,Corporate,Example,Pending Disposal,2026-12-01,Example,Example,Highly Confidential
+EXAMPLE 5 - delete after import,Example,Software,Felixstowe,Example,Retired,2026-12-01,Example,Example,Public

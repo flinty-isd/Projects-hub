@@ -1,0 +1,508 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "PMO 01 - Daily executive overdue digest",
+  "description": "Weekdays at 07:00 UK time. Collects Master RAID Log risks and issues escalated to the Executive Board that are past their target resolution date, and Executive Board actions and decisions past their due date, and posts one adaptive card to the Steering Committee channel (up to DigestMaxItems of each, oldest first, with a count of the rest). Posts nothing when nothing is overdue. Claims the day's row in PMO Digest History before posting, so a re-run never posts twice; a failed post marks the row Failed and emails the PMO mailbox. Does nothing while DigestEnabled is No.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_teams": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "PMOSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/EnterprisePMO"
+    },
+    "PMOOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{pmo-shared-mailbox}@{domain}"
+    },
+    "PMOSupportMailboxEmail": {
+      "type": "String",
+      "defaultValue": ""
+    },
+    "SteerCoTeamId": {
+      "type": "String",
+      "defaultValue": ""
+    },
+    "SteerCoChannelId": {
+      "type": "String",
+      "defaultValue": ""
+    },
+    "DigestEnabled": {
+      "type": "Bool",
+      "defaultValue": false
+    },
+    "DigestMaxItems": {
+      "type": "Int",
+      "defaultValue": 20
+    }
+  },
+  "triggers": {
+    "Weekdays_0700_UK": {
+      "type": "Recurrence",
+      "recurrence": {
+        "frequency": "Week",
+        "interval": 1,
+        "timeZone": "GMT Standard Time",
+        "schedule": {
+          "hours": [
+            7
+          ],
+          "minutes": [
+            0
+          ],
+          "weekDays": [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday"
+          ]
+        }
+      },
+      "runtimeConfiguration": {
+        "concurrency": {
+          "runs": 1
+        }
+      }
+    }
+  },
+  "actions": {
+    "Scope_Main": {
+      "type": "Scope",
+      "actions": {
+        "Condition_Digest_enabled": {
+          "type": "If",
+          "expression": {
+            "equals": [
+              "@parameters('DigestEnabled')",
+              true
+            ]
+          },
+          "actions": {
+            "Compose_today": {
+              "type": "Compose",
+              "inputs": "@{formatDateTime(convertFromUtc(utcNow(), 'GMT Standard Time'), 'yyyy-MM-dd')}",
+              "runAfter": {}
+            },
+            "Compose_cutoff": {
+              "type": "Compose",
+              "inputs": "@{formatDateTime(convertToUtc(concat(outputs('Compose_today'), 'T00:00:00'), 'GMT Standard Time'), 'yyyy-MM-ddTHH:mm:ssZ')}",
+              "runAfter": {
+                "Compose_today": [
+                  "Succeeded"
+                ]
+              },
+              "description": "Start of today in UK time, as UTC. Date-only columns are stored as local midnight, so an item due today is not overdue in summer time either."
+            },
+            "Get_overdue_escalations": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetItems",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PMOSiteUrl')",
+                  "table": "Master RAID Log",
+                  "$filter": "Status ne 'Closed' and EscalatedToExecutiveBoard eq 1 and TargetResolutionDate lt '@{outputs('Compose_cutoff')}'",
+                  "$orderby": "TargetResolutionDate asc",
+                  "$top": 5000
+                }
+              },
+              "runAfter": {
+                "Compose_cutoff": [
+                  "Succeeded"
+                ]
+              },
+              "runtimeConfiguration": {
+                "paginationPolicy": {
+                  "minimumItemCount": 100000
+                }
+              }
+            },
+            "Get_overdue_actions": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetItems",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PMOSiteUrl')",
+                  "table": "Action and Decision Tracker",
+                  "$filter": "Status ne 'Completed' and DecisionForum eq 'Executive Board' and DueDate lt '@{outputs('Compose_cutoff')}'",
+                  "$orderby": "DueDate asc",
+                  "$top": 5000
+                }
+              },
+              "runAfter": {
+                "Compose_cutoff": [
+                  "Succeeded"
+                ]
+              },
+              "runtimeConfiguration": {
+                "paginationPolicy": {
+                  "minimumItemCount": 100000
+                }
+              }
+            },
+            "Condition_Anything_overdue": {
+              "type": "If",
+              "description": "Guardrail: nothing overdue means no card.",
+              "expression": {
+                "greater": [
+                  "@add(length(body('Get_overdue_escalations')?['value']), length(body('Get_overdue_actions')?['value']))",
+                  0
+                ]
+              },
+              "actions": {
+                "Get_todays_digest": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "GetItems",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('PMOSiteUrl')",
+                      "table": "PMO Digest History",
+                      "$filter": "Title eq 'digest|@{outputs('Compose_today')}'",
+                      "$top": 1
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Condition_Not_already_posted": {
+                  "type": "If",
+                  "description": "One digest per day: a re-run the same day posts nothing. Delete a Failed row to let a re-run post.",
+                  "expression": {
+                    "equals": [
+                      "@empty(body('Get_todays_digest')?['value'])",
+                      true
+                    ]
+                  },
+                  "actions": {
+                    "Claim_digest": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PostItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('PMOSiteUrl')",
+                          "table": "PMO Digest History",
+                          "item/Title": "digest|@{outputs('Compose_today')}",
+                          "item/DigestDate": "@utcNow()",
+                          "item/Status/Value": "Posting",
+                          "item/EscalationsCount": "@length(body('Get_overdue_escalations')?['value'])",
+                          "item/ActionsCount": "@length(body('Get_overdue_actions')?['value'])",
+                          "item/FlowRunId": "@{workflow()?['run']?['name']}"
+                        }
+                      },
+                      "runAfter": {}
+                    },
+                    "Select_escalation_facts": {
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@take(body('Get_overdue_escalations')?['value'], parameters('DigestMaxItems'))",
+                        "select": {
+                          "title": "@{coalesce(item()?['Workstream']?['Value'], 'No workstream')}",
+                          "value": "@{concat('RAID-', string(item()?['ID']), ' ', item()?['Title'], ' | Owner: ', coalesce(item()?['Owner']?['DisplayName'], 'Unassigned'), ' | Target: ', formatDateTime(convertFromUtc(item()?['TargetResolutionDate'], 'GMT Standard Time'), 'dd MMM yyyy'), ' | RAG: ', coalesce(item()?['RAGRating']?['Value'], 'Unassigned'))}"
+                        }
+                      },
+                      "runAfter": {
+                        "Claim_digest": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Select_action_facts": {
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@take(body('Get_overdue_actions')?['value'], parameters('DigestMaxItems'))",
+                        "select": {
+                          "title": "@{coalesce(item()?['Workstream']?['Value'], 'No workstream')}",
+                          "value": "@{concat('ACT-', string(item()?['ID']), ' ', item()?['Title'], ' | ', item()?['Category']?['Value'], ' | Assigned: ', coalesce(item()?['AssignedOwner']?['DisplayName'], 'Unassigned'), ' | Due: ', formatDateTime(convertFromUtc(item()?['DueDate'], 'GMT Standard Time'), 'dd MMM yyyy'))}"
+                        }
+                      },
+                      "runAfter": {
+                        "Select_escalation_facts": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Compose_card": {
+                      "type": "Compose",
+                      "inputs": {
+                        "$schema": "http://adaptivecards.io/schemas/adaptivecard.json",
+                        "type": "AdaptiveCard",
+                        "version": "1.4",
+                        "body": [
+                          {
+                            "type": "Container",
+                            "style": "attention",
+                            "bleed": true,
+                            "items": [
+                              {
+                                "type": "TextBlock",
+                                "text": "GOVERNANCE ALERT",
+                                "weight": "Bolder",
+                                "color": "Attention",
+                                "size": "Small"
+                              },
+                              {
+                                "type": "TextBlock",
+                                "text": "Daily executive overdue digest, @{outputs('Compose_today')}",
+                                "weight": "Bolder",
+                                "size": "Medium",
+                                "spacing": "None",
+                                "wrap": true
+                              }
+                            ]
+                          },
+                          {
+                            "type": "TextBlock",
+                            "wrap": true,
+                            "spacing": "Medium",
+                            "text": "These items have passed their governance due date and need executive oversight: @{length(body('Get_overdue_escalations')?['value'])} board escalation(s) and @{length(body('Get_overdue_actions')?['value'])} Executive Board action(s) or decision(s)."
+                          },
+                          {
+                            "type": "TextBlock",
+                            "text": "Overdue board escalations (RAID)",
+                            "weight": "Bolder",
+                            "size": "Medium",
+                            "separator": true
+                          },
+                          {
+                            "type": "FactSet",
+                            "facts": "@if(empty(body('Select_escalation_facts')), json('[{\"title\":\"None\",\"value\":\"Nothing overdue\"}]'), body('Select_escalation_facts'))"
+                          },
+                          {
+                            "type": "TextBlock",
+                            "text": "@{if(greater(length(body('Get_overdue_escalations')?['value']), parameters('DigestMaxItems')), concat('...and ', string(sub(length(body('Get_overdue_escalations')?['value']), parameters('DigestMaxItems'))), ' more. Open the Master RAID Log for the full list.'), ' ')}",
+                            "isSubtle": true,
+                            "wrap": true,
+                            "size": "Small"
+                          },
+                          {
+                            "type": "TextBlock",
+                            "text": "Overdue Executive Board actions and decisions",
+                            "weight": "Bolder",
+                            "size": "Medium",
+                            "separator": true
+                          },
+                          {
+                            "type": "FactSet",
+                            "facts": "@if(empty(body('Select_action_facts')), json('[{\"title\":\"None\",\"value\":\"Nothing overdue\"}]'), body('Select_action_facts'))"
+                          },
+                          {
+                            "type": "TextBlock",
+                            "text": "@{if(greater(length(body('Get_overdue_actions')?['value']), parameters('DigestMaxItems')), concat('...and ', string(sub(length(body('Get_overdue_actions')?['value']), parameters('DigestMaxItems'))), ' more. Open the Action and Decision Tracker for the full list.'), ' ')}",
+                            "isSubtle": true,
+                            "wrap": true,
+                            "size": "Small"
+                          }
+                        ],
+                        "actions": [
+                          {
+                            "type": "Action.OpenUrl",
+                            "title": "Open PMO Governance Hub",
+                            "url": "@{concat(parameters('PMOSiteUrl'), '/SitePages/Portfolio-Governance-Hub.aspx')}"
+                          }
+                        ]
+                      },
+                      "runAfter": {
+                        "Select_action_facts": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Post_digest_card": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_teams",
+                          "operationId": "PostCardToConversation",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams"
+                        },
+                        "parameters": {
+                          "poster": "Flow bot",
+                          "location": "Channel",
+                          "body/recipient/groupId": "@parameters('SteerCoTeamId')",
+                          "body/recipient/channelId": "@parameters('SteerCoChannelId')",
+                          "body/messageBody": "@{string(outputs('Compose_card'))}"
+                        },
+                        "retryPolicy": {
+                          "type": "none"
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_card": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Mark_posted": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PatchItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('PMOSiteUrl')",
+                          "table": "PMO Digest History",
+                          "id": "@body('Claim_digest')?['ID']",
+                          "item/Title": "digest|@{outputs('Compose_today')}",
+                          "item/DigestDate": "@body('Claim_digest')?['DigestDate']",
+                          "item/Status/Value": "Posted"
+                        }
+                      },
+                      "runAfter": {
+                        "Post_digest_card": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Mark_failed": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "PatchItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('PMOSiteUrl')",
+                          "table": "PMO Digest History",
+                          "id": "@body('Claim_digest')?['ID']",
+                          "item/Title": "digest|@{outputs('Compose_today')}",
+                          "item/DigestDate": "@body('Claim_digest')?['DigestDate']",
+                          "item/Status/Value": "Failed"
+                        }
+                      },
+                      "runAfter": {
+                        "Post_digest_card": [
+                          "Failed",
+                          "TimedOut"
+                        ]
+                      }
+                    },
+                    "Email_digest_not_posted": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365",
+                          "operationId": "SendEmailV2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "emailMessage/To": "@{concat(parameters('PMOOwnerEmail'), if(empty(parameters('PMOSupportMailboxEmail')), '', concat(';', parameters('PMOSupportMailboxEmail'))))}",
+                          "emailMessage/Subject": "PMO daily digest not posted @{outputs('Compose_today')}",
+                          "emailMessage/Body": "<p>The daily executive overdue digest could not be posted to the Steering Committee channel. Teams said: @{coalesce(outputs('Post_digest_card')?['body']?['error']?['message'], string(outputs('Post_digest_card')?['statusCode']))}</p><p>It covered @{length(body('Get_overdue_escalations')?['value'])} overdue escalation(s) and @{length(body('Get_overdue_actions')?['value'])} overdue board action(s). The PMO Digest History row is marked Failed. Fix the cause (usually the team or channel ID, or the flow owner is no longer a channel member), delete that row, and resubmit the run.</p>",
+                          "emailMessage/Importance": "High"
+                        }
+                      },
+                      "runAfter": {
+                        "Mark_failed": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  },
+                  "runAfter": {
+                    "Get_todays_digest": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Get_overdue_escalations": [
+                  "Succeeded"
+                ],
+                "Get_overdue_actions": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {}
+        }
+      },
+      "runAfter": {}
+    },
+    "Catch_run_failed": {
+      "type": "Scope",
+      "description": "Run-level failure alert: any error in Scope_Main that no step handled.",
+      "actions": {
+        "Select_failed_steps": {
+          "type": "Select",
+          "inputs": {
+            "from": "@result('Scope_Main')",
+            "select": "@concat('<li><b>', item()?['name'], '</b>: ', item()?['status'], ' ', coalesce(item()?['error']?['code'], item()?['outputs']?['statusCode'], ''), ' ', coalesce(item()?['error']?['message'], ''), '</li>')"
+          },
+          "runAfter": {}
+        },
+        "Alert_run_failed": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@{concat(parameters('PMOOwnerEmail'), if(empty(parameters('PMOSupportMailboxEmail')), '', concat(';', parameters('PMOSupportMailboxEmail'))))}",
+              "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
+              "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error it did not handle, so some of its work may not have been done. Nothing has been retried.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a> (started @{workflow()?['run']?['startTime']})</p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Open the run, find the failed step and its raw output, fix the cause, then resubmit the run. See Stopping and recovery in the EnterprisePMO deployment guide.</p>",
+              "emailMessage/Importance": "High"
+            }
+          },
+          "runAfter": {
+            "Select_failed_steps": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Scope_Main": [
+          "Failed",
+          "TimedOut"
+        ]
+      }
+    }
+  }
+}

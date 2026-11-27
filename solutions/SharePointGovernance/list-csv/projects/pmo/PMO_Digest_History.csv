@@ -1,0 +1,4 @@
+﻿Title,DigestDate,Status,EscalationsCount,ActionsCount,FlowRunId
+EXAMPLE 1 - delete after import,2026-12-01 09:00,Posting,1,1,Example
+EXAMPLE 2 - delete after import,2026-12-01 09:00,Posted,1,1,Example
+EXAMPLE 3 - delete after import,2026-12-01 09:00,Failed,1,1,Example

@@ -1,0 +1,500 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "displayName": "Portal P1 - Asset Management portal snapshot",
+  "description": "Weekdays at 06:30 and 12:30 UK. Reads the Asset Register and Asset Requests lists and republishes the Asset Management portal page with them embedded as its snapshot, so everyone sees current figures and the time they were taken. Uses the portal's own snapshot format (assets, requests, meta). The portal ignores a snapshot with no assets, so an empty Asset Register leaves it showing its sample data. Does nothing while PortalSnapshotsEnabled is No.",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    },
+    "shared_office365": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    },
+    "PortalSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{portal-site}"
+    },
+    "PortalPagesFolder": {
+      "type": "String",
+      "defaultValue": "/SitePages"
+    },
+    "PortalTemplatesFolder": {
+      "type": "String",
+      "defaultValue": "/SiteAssets/PortalTemplates"
+    },
+    "PortalSnapshotsEnabled": {
+      "type": "Bool",
+      "defaultValue": false
+    },
+    "PortalOwnerEmail": {
+      "type": "String",
+      "defaultValue": "{portal-support-mailbox}@{domain}"
+    },
+    "PortalSupportMailboxEmail": {
+      "type": "String",
+      "defaultValue": ""
+    },
+    "PortalAssetSiteUrl": {
+      "type": "String",
+      "defaultValue": "https://{tenant}.sharepoint.com/sites/{source-site}"
+    }
+  },
+  "triggers": {
+    "Weekdays_0630_and_1230_UK": {
+      "type": "Recurrence",
+      "recurrence": {
+        "frequency": "Week",
+        "interval": 1,
+        "timeZone": "GMT Standard Time",
+        "schedule": {
+          "hours": [
+            6,
+            12
+          ],
+          "minutes": [
+            30
+          ],
+          "weekDays": [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday"
+          ]
+        }
+      },
+      "runtimeConfiguration": {
+        "concurrency": {
+          "runs": 1
+        }
+      }
+    }
+  },
+  "actions": {
+    "Init_Previous": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "Previous",
+            "type": "object",
+            "value": {}
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Scope_Main": {
+      "type": "Scope",
+      "actions": {
+        "Condition_Enabled": {
+          "type": "If",
+          "expression": {
+            "equals": [
+              "@parameters('PortalSnapshotsEnabled')",
+              true
+            ]
+          },
+          "actions": {
+            "Compose_stamp": {
+              "type": "Compose",
+              "inputs": "@{formatDateTime(convertFromUtc(utcNow(), 'GMT Standard Time'), 'dd MMM yyyy, HH:mm')}",
+              "runAfter": {}
+            },
+            "Get_template": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetFileContentByPath",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PortalSiteUrl')",
+                  "path": "@{concat(parameters('PortalTemplatesFolder'), '/hpuk-asset-management-portal.html')}",
+                  "inferContentType": false
+                }
+              },
+              "runAfter": {
+                "Compose_stamp": [
+                  "Succeeded"
+                ]
+              },
+              "description": "The portal page with an empty snapshot block. Upload new portal versions here, never a saved snapshot."
+            },
+            "Compose_template_text": {
+              "type": "Compose",
+              "inputs": "@base64ToString(body('Get_template')?['$content'])",
+              "runAfter": {
+                "Get_template": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Get_published": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetFileContentByPath",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PortalSiteUrl')",
+                  "path": "@{concat(parameters('PortalPagesFolder'), '/hpuk-asset-management-portal.html')}",
+                  "inferContentType": false
+                }
+              },
+              "runAfter": {
+                "Compose_template_text": [
+                  "Succeeded"
+                ]
+              },
+              "description": "The page as last published. Missing on the first run, which is fine: it only supplies previous figures (KPI deltas, SAM rows)."
+            },
+            "Compose_published_text": {
+              "type": "Compose",
+              "inputs": "@if(equals(actions('Get_published')?['status'], 'Succeeded'), base64ToString(coalesce(body('Get_published')?['$content'], '')), '')",
+              "runAfter": {
+                "Get_published": [
+                  "Succeeded",
+                  "Failed"
+                ]
+              }
+            },
+            "Condition_Has_previous": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "contains": [
+                      "@outputs('Compose_published_text')",
+                      "<script id=\"embedded-snapshot\" type=\"application/json\">"
+                    ]
+                  },
+                  {
+                    "not": {
+                      "contains": [
+                        "@outputs('Compose_published_text')",
+                        "<script id=\"embedded-snapshot\" type=\"application/json\">null</script>"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "actions": {
+                "Set_previous": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "Previous",
+                    "value": "@json(first(split(last(split(outputs('Compose_published_text'), '<script id=\"embedded-snapshot\" type=\"application/json\">')), '</script>')))"
+                  },
+                  "runAfter": {}
+                },
+                "Note_previous_unreadable": {
+                  "type": "Compose",
+                  "inputs": "The published page's snapshot could not be read; previous figures are ignored this run.",
+                  "runAfter": {
+                    "Set_previous": [
+                      "Failed"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Compose_published_text": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Get_assets": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetItems",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PortalAssetSiteUrl')",
+                  "table": "Asset Register",
+                  "$top": 5000,
+                  "$orderby": "AssetTag asc"
+                }
+              },
+              "runAfter": {
+                "Condition_Has_previous": [
+                  "Succeeded"
+                ]
+              },
+              "runtimeConfiguration": {
+                "paginationPolicy": {
+                  "minimumItemCount": 100000
+                }
+              }
+            },
+            "Get_requests": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetItems",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('PortalAssetSiteUrl')",
+                  "table": "Asset Requests",
+                  "$top": 5000,
+                  "$orderby": "SubmittedDate desc"
+                }
+              },
+              "runAfter": {
+                "Condition_Has_previous": [
+                  "Succeeded"
+                ]
+              },
+              "runtimeConfiguration": {
+                "paginationPolicy": {
+                  "minimumItemCount": 100000
+                }
+              }
+            },
+            "Select_assets": {
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Get_assets')?['value']",
+                "select": {
+                  "AssetTag": "@coalesce(item()?['AssetTag'], '')",
+                  "Title": "@coalesce(item()?['Title'], '')",
+                  "Category": "@coalesce(item()?['Category']?['Value'], '')",
+                  "PortLocation": "@coalesce(item()?['PortLocation']?['Value'], '')",
+                  "AssignedOwner": "@coalesce(item()?['AssignedOwner'], '')",
+                  "LifecycleStatus": "@coalesce(item()?['LifecycleStatus']?['Value'], '')",
+                  "WarrantyExpiry": "@if(empty(item()?['WarrantyExpiry']), '', formatDateTime(convertFromUtc(coalesce(item()?['WarrantyExpiry'], '1900-01-01T00:00:00Z'), 'GMT Standard Time'), 'yyyy-MM-dd'))",
+                  "SerialNumber": "@coalesce(item()?['SerialNumber'], '')",
+                  "CostCentre": "@coalesce(item()?['CostCentre'], '')",
+                  "SensitivityLabel": "@coalesce(item()?['SensitivityLabel']?['Value'], 'Internal')"
+                }
+              },
+              "runAfter": {
+                "Get_assets": [
+                  "Succeeded"
+                ],
+                "Get_requests": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Select_requests": {
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Get_requests')?['value']",
+                "select": {
+                  "RequestID": "@coalesce(item()?['RequestID'], '')",
+                  "Title": "@coalesce(item()?['Title'], '')",
+                  "RequestType": "@coalesce(item()?['RequestType']?['Value'], '')",
+                  "PortLocation": "@coalesce(item()?['PortLocation']?['Value'], '')",
+                  "Requester": "@coalesce(item()?['Requester']?['DisplayName'], '')",
+                  "SubmittedDate": "@if(empty(item()?['SubmittedDate']), '', formatDateTime(convertFromUtc(coalesce(item()?['SubmittedDate'], '1900-01-01T00:00:00Z'), 'GMT Standard Time'), 'yyyy-MM-dd'))",
+                  "TargetSLADate": "@if(empty(item()?['TargetSLADate']), '', formatDateTime(convertFromUtc(coalesce(item()?['TargetSLADate'], '1900-01-01T00:00:00Z'), 'GMT Standard Time'), 'yyyy-MM-dd'))",
+                  "ApprovalStatus": "@coalesce(item()?['ApprovalStatus']?['Value'], '')"
+                }
+              },
+              "runAfter": {
+                "Select_assets": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Compose_payload": {
+              "type": "Compose",
+              "inputs": {
+                "assets": "@body('Select_assets')",
+                "requests": "@body('Select_requests')",
+                "meta": {
+                  "mode": "saved",
+                  "lastUpdated": "@{concat(outputs('Compose_stamp'), ' UK (SharePoint list snapshot)')}",
+                  "assetSource": "SharePoint list: Asset Register (refreshed by flow P1)",
+                  "requestSource": "SharePoint list: Asset Requests (refreshed by flow P1)"
+                }
+              },
+              "runAfter": {
+                "Select_requests": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Compose_json": {
+              "type": "Compose",
+              "inputs": "@replace(string(outputs('Compose_payload')), '<', '\\u003c')",
+              "runAfter": {},
+              "description": "Every < escaped, so nothing in the data can close the script block early (the same escaping as Save Snapshot HTML)."
+            },
+            "Condition_Template_ready": {
+              "type": "If",
+              "description": "The template must contain the empty snapshot block exactly as the portal ships it.",
+              "expression": {
+                "contains": [
+                  "@outputs('Compose_template_text')",
+                  "<script id=\"embedded-snapshot\" type=\"application/json\">null</script>"
+                ]
+              },
+              "actions": {
+                "Compose_page": {
+                  "type": "Compose",
+                  "inputs": "@replace(outputs('Compose_template_text'), '<script id=\"embedded-snapshot\" type=\"application/json\">null</script>', concat('<script id=\"embedded-snapshot\" type=\"application/json\">', outputs('Compose_json'), '</script>'))",
+                  "runAfter": {}
+                },
+                "Condition_Size_ok": {
+                  "type": "If",
+                  "description": "SharePoint HTML pages are limited to 10 MB.",
+                  "expression": {
+                    "less": [
+                      "@length(outputs('Compose_page'))",
+                      10000000
+                    ]
+                  },
+                  "actions": {
+                    "Write_page": {
+                      "type": "OpenApiConnection",
+                      "description": "Create file replaces the published page (a new version when the library keeps versions).",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "CreateFile",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('PortalSiteUrl')",
+                          "folderPath": "@parameters('PortalPagesFolder')",
+                          "name": "hpuk-asset-management-portal.html",
+                          "body": "@outputs('Compose_page')"
+                        }
+                      },
+                      "runAfter": {}
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Email_too_large": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_office365",
+                            "operationId": "SendEmailV2",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                          },
+                          "parameters": {
+                            "emailMessage/To": "@{concat(parameters('PortalOwnerEmail'), if(empty(parameters('PortalSupportMailboxEmail')), '', concat(';', parameters('PortalSupportMailboxEmail'))))}",
+                            "emailMessage/Subject": "Portal snapshot not published: hpuk-asset-management-portal.html is too large",
+                            "emailMessage/Body": "<p>The refreshed hpuk-asset-management-portal.html would be @{div(length(outputs('Compose_page')), 1048576)} MB, over SharePoint's 10 MB limit for HTML pages, so it was not written. The published page still shows the previous snapshot.</p><p>Reduce what the flow publishes (for example fewer Run Log days) or archive closed items.</p>",
+                            "emailMessage/Importance": "High"
+                          }
+                        },
+                        "runAfter": {}
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Compose_page": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Email_template_not_ready": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_office365",
+                        "operationId": "SendEmailV2",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                      },
+                      "parameters": {
+                        "emailMessage/To": "@{concat(parameters('PortalOwnerEmail'), if(empty(parameters('PortalSupportMailboxEmail')), '', concat(';', parameters('PortalSupportMailboxEmail'))))}",
+                        "emailMessage/Subject": "Portal snapshot not published: hpuk-asset-management-portal.html template has no empty snapshot block",
+                        "emailMessage/Body": "<p>The template @{concat(parameters('PortalTemplatesFolder'), '/hpuk-asset-management-portal.html')} doesn't contain the empty snapshot block, so the flow can't fill it in. This happens when a saved snapshot is uploaded as the template.</p><p>Upload the portal file from the PortalSnapshots kit (templates/hpuk-asset-management-portal.html) to the templates folder, then run the flow again.</p>",
+                        "emailMessage/Importance": "High"
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                }
+              },
+              "runAfter": {
+                "Compose_json": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {}
+        }
+      },
+      "runAfter": {
+        "Init_Previous": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Catch_run_failed": {
+      "type": "Scope",
+      "description": "Run-level failure alert: any error in Scope_Main that no step handled.",
+      "actions": {
+        "Select_failed_steps": {
+          "type": "Select",
+          "inputs": {
+            "from": "@result('Scope_Main')",
+            "select": "@concat('<li><b>', item()?['name'], '</b>: ', item()?['status'], ' ', coalesce(item()?['error']?['code'], item()?['outputs']?['statusCode'], ''), ' ', coalesce(item()?['error']?['message'], ''), '</li>')"
+          },
+          "runAfter": {}
+        },
+        "Alert_run_failed": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "SendEmailV2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "emailMessage/To": "@{concat(parameters('PortalOwnerEmail'), if(empty(parameters('PortalSupportMailboxEmail')), '', concat(';', parameters('PortalSupportMailboxEmail'))))}",
+              "emailMessage/Subject": "@{concat('Flow failed: ', workflow()?['tags']?['flowDisplayName'])}",
+              "emailMessage/Body": "<p>The flow <b>@{workflow()?['tags']?['flowDisplayName']}</b> stopped with an error, so the portal page was not refreshed; it still shows the previous snapshot and its Last Updated time.</p><p>Run: <a href=\"@{concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])}\">@{workflow()?['run']?['name']}</a></p><ul>@{join(body('Select_failed_steps'), '')}</ul><p>Fix the cause and resubmit the run (or run the flow again). See PortalSnapshots/README.md, When a refresh fails.</p>",
+              "emailMessage/Importance": "High"
+            }
+          },
+          "runAfter": {
+            "Select_failed_steps": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Scope_Main": [
+          "Failed",
+          "TimedOut"
+        ]
+      }
+    }
+  }
+}

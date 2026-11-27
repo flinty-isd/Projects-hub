@@ -1,0 +1,6 @@
+﻿Title,GateLabel,GateOwner,Criteria,GateType,SortOrder
+EXAMPLE 1 - delete after import,Example,Example,Example text,Hard Gate,1
+EXAMPLE 2 - delete after import,Example,Example,Example text,Decision Gate,1
+EXAMPLE 3 - delete after import,Example,Example,Example text,Go-Live,1
+EXAMPLE 4 - delete after import,Example,Example,Example text,Closure,1
+EXAMPLE 5 - delete after import,Example,Example,Example text,BAU Review,1

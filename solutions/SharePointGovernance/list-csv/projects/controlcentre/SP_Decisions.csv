@@ -1,0 +1,4 @@
+﻿Title,DecisionID,DecisionDate,Owner,Rationale,Status,RelatedSitePage
+EXAMPLE 1 - delete after import,Example,2026-12-01 09:00,,Example text,Approved,Example
+EXAMPLE 2 - delete after import,Example,2026-12-01 09:00,,Example text,Pending,Example
+EXAMPLE 3 - delete after import,Example,2026-12-01 09:00,,Example text,Rejected,Example

@@ -1,0 +1,6 @@
+﻿Title,ControlID,Framework,ControlOwner,ComplianceStatus,LastAssessed,Port,Evidence
+EXAMPLE 1 - delete after import,Example,Example,Example,Compliant,2026-12-01,All,Example text
+EXAMPLE 2 - delete after import,Example,Example,Example,Partially Compliant,2026-12-01,Felixstowe,Example text
+EXAMPLE 3 - delete after import,Example,Example,Example,Non-Compliant,2026-12-01,Harwich,Example text
+EXAMPLE 4 - delete after import,Example,Example,Example,Not Assessed,2026-12-01,Thamesport,Example text
+EXAMPLE 5 - delete after import,Example,Example,Example,Compliant,2026-12-01,Corporate,Example text

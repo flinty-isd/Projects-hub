@@ -1,0 +1,6 @@
+﻿Title,RiskRef,Category,RiskOwner,Likelihood,Impact,Treatment,RiskStatus,Port
+EXAMPLE 1 - delete after import,Example,Example,Example,3,3,Mitigate,Open,All
+EXAMPLE 2 - delete after import,Example,Example,Example,3,3,Accept,Closed,Felixstowe
+EXAMPLE 3 - delete after import,Example,Example,Example,3,3,Transfer,Open,Harwich
+EXAMPLE 4 - delete after import,Example,Example,Example,3,3,Avoid,Closed,Thamesport
+EXAMPLE 5 - delete after import,Example,Example,Example,3,3,Mitigate,Open,Corporate

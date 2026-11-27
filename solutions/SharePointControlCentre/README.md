@@ -39,7 +39,7 @@ and `validate_flows.py` via their `--root` flag rather than duplicating them.
 1. **Create the lists.**
    ```powershell
    Install-Module PnP.PowerShell -Scope CurrentUser   # if not already installed
-   .\runbooks\Set-ControlCentreLists.ps1 -SiteUrl "https://hutchisonports.sharepoint.com/sites/<your-site>"
+   .\runbooks\Set-ControlCentreLists.ps1 -SiteUrl "https://hutchisonports.sharepoint.com/sites/<your-site>" -ClientId <pnp-app-id>
    ```
    Safe to re-run — it only adds what's missing. `SP_MigrationRegister` is
    assumed to already exist (it's the list `HPUK_Migration_Register_Bulk_Update_1.xlsx`

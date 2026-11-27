@@ -1,0 +1,5 @@
+﻿Title,Port,EmailGroup,TeamId,ChannelId,Enabled,BusinessOwner
+EXAMPLE 1 - delete after import,Felixstowe,Example,Example,Example,Yes,
+EXAMPLE 2 - delete after import,Harwich,Example,Example,Example,Yes,
+EXAMPLE 3 - delete after import,Thamesport,Example,Example,Example,Yes,
+EXAMPLE 4 - delete after import,All ports,Example,Example,Example,Yes,
