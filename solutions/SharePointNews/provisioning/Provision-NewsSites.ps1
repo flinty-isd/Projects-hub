@@ -35,7 +35,9 @@
       * locks Notices Archive, Comms Distribution and Delivery Log to the
         configuration maintainers group (and the named flow owner where it writes)
       * turns on draft (minor) versions on Site Pages, with drafts visible only to
-        editors, so C1 can unpublish expired posts out of readers' sight
+        editors (work in progress stays away from readers)
+      * adds a News archive view to Site Pages on both sites (Status = Expired,
+        newest first), shown on the News archive page (pages/News-Archive-Page.md)
       * keeps content approval off on Site Pages: publishers are pre-approved,
         so a published page is live straight away (turns it off if it was on)
       * creates and publishes Publisher-Guide.aspx on HPUK News from
@@ -317,8 +319,8 @@ foreach ($site in $sites) {
         Write-Output '  ~ Site Pages: content approval turned off'
     }
 
-    # Expired posts are unpublished (back to draft) by C1, which needs draft versions on Site Pages.
-    # Drafts are visible only to people who can edit, so readers can't open an expired post.
+    # Drafts are visible only to people who can edit, so work in progress stays away from readers.
+    # (C1 archives expired posts as published ordinary pages; it doesn't rely on drafts.)
     $pages = Get-PnPList -Identity 'Site Pages' -Connection $conn
     if (-not $pages.EnableMinorVersions -or "$($pages.DraftVersionVisibility)" -ne 'Author') {
         Set-PnPList -Identity 'Site Pages' -EnableVersioning $true -EnableMinorVersions $true -Connection $conn | Out-Null
@@ -327,6 +329,15 @@ foreach ($site in $sites) {
         $pages.Update()
         Invoke-PnPQuery -Connection $conn
         Write-Output '  ~ Site Pages: draft versions on, drafts visible to editors only'
+    }
+
+    # News archive: expired posts (C1 makes them ordinary pages with Status Expired), newest first.
+    $expiryField = if ($site.Key -eq 'Other News') { 'ExpiryDate' } else { 'Expiry_x0020_Date' }
+    if (-not (Get-PnPView -List 'Site Pages' -Identity 'News archive' -Connection $conn -ErrorAction SilentlyContinue)) {
+        Add-PnPView -List 'Site Pages' -Title 'News archive' `
+            -Query '<Where><Eq><FieldRef Name="Status"/><Value Type="Choice">Expired</Value></Eq></Where><OrderBy><FieldRef Name="FirstPublishedDate" Ascending="FALSE"/></OrderBy>' `
+            -Fields 'LinkFilename', 'Title', 'Description', 'Department', 'Category', 'Port', 'FirstPublishedDate', $expiryField -RowLimit 50 -Paged -Connection $conn | Out-Null
+        Write-Output '  + view Site Pages: News archive'
     }
 
     # Video for news posts: same permissions as the site, plays through Stream.
