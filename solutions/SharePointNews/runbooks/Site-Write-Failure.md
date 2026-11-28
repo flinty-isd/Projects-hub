@@ -111,12 +111,12 @@ change.
 
 ## 5. Rerun the flow safely
 
-C1 is safe to rerun. It only picks pages whose Expiry Date has passed and
-that aren't already *Expired* with Show in News = No, so pages already done
-are skipped and nothing is changed twice.
+C1 is safe to rerun. It only picks pages that are still news posts with an
+Expiry Date in the past. Once a page has been removed from news it isn't
+picked up again, so nothing is changed twice.
 
 1. **Dry run first.** Leave `ExpiryWritesEnabled` at **No** (solution →
-   **Environment variables**). Open **C1 News Expiry** → **Run**. Check the
+   **Environment variables**). Open **C1 Expire news posts** → **Run**. Check the
    dry-run email from the Communications mailbox lists the pages you expect,
    and only those.
 2. **Switch writes on.** Set `ExpiryWritesEnabled` to **Yes**. If you
@@ -125,10 +125,12 @@ are skipped and nothing is changed twice.
 3. **Run C1 manually** and watch it. It should finish in a few minutes.
 4. **Check the result:**
    - The expiry report (sent to `ExpiryReportEmail`, if set) lists the pages
-     under *Taken out of the news*, and *Could not be updated* says None.
-   - On each page in **Site Pages**: Status = *Expired*, Show in News = No.
-     The page version hasn't changed and no draft has appeared.
-   - The posts no longer appear in the news web parts.
+     under *Removed from news*, and *Could not be confirmed* says None.
+   - On each page in **Site Pages**: Status = *Expired*, Show in News = No,
+     and it is no longer a news post. It is still published, the page
+     version hasn't changed and no draft has appeared.
+   - Within a few hours the posts no longer appear in the news web parts,
+     but their links still open them.
 5. **If it still fails:** set `ExpiryWritesEnabled` back to **No**, open the
    failed action's raw outputs again and escalate to the news flow owner
    with the `innerError` message and the `source` URL.

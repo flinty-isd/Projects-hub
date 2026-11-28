@@ -28,7 +28,8 @@
     a site is excluded, or distribution reports an error. Distribution can take
     up to 7 days: run again without -Apply until Distribution shows Success.
 
-    News expiry (flow C1) never deletes anything: it only unpublishes posts.
+    News expiry (flow C1) never deletes or unpublishes anything: it only removes
+    expired posts from news.
 
 .EXAMPLE
     # Check only (safe at any time)

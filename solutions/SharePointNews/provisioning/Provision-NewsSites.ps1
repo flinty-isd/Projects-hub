@@ -35,7 +35,7 @@
       * locks Notices Archive, Comms Distribution and Delivery Log to the
         configuration maintainers group (and the named flow owner where it writes)
       * turns on draft (minor) versions on Site Pages, with drafts visible only to
-        editors, so C1 can unpublish expired posts out of readers' sight
+        editors, so publishers' drafts stay out of readers' sight
       * keeps content approval off on Site Pages: publishers are pre-approved,
         so a published page is live straight away (turns it off if it was on)
       * creates and publishes Publisher-Guide.aspx on HPUK News from
@@ -317,8 +317,8 @@ foreach ($site in $sites) {
         Write-Output '  ~ Site Pages: content approval turned off'
     }
 
-    # Expired posts are unpublished (back to draft) by C1, which needs draft versions on Site Pages.
-    # Drafts are visible only to people who can edit, so readers can't open an expired post.
+    # Draft versions on Site Pages, visible only to people who can edit, so readers never see
+    # a publisher's unfinished draft. (C1 removes expired posts from news; it no longer unpublishes.)
     $pages = Get-PnPList -Identity 'Site Pages' -Connection $conn
     if (-not $pages.EnableMinorVersions -or "$($pages.DraftVersionVisibility)" -ne 'Author') {
         Set-PnPList -Identity 'Site Pages' -EnableVersioning $true -EnableMinorVersions $true -Connection $conn | Out-Null
